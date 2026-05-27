@@ -1,0 +1,23 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Redirect /api/yango/* to the yango-proxy function
+[[redirects]]
+  from = "/api/yango/*"
+  to = "/.netlify/functions/yango-proxy"
+  status = 200
+
+# Redirect /api/uber/* to the uber-proxy function
+[[redirects]]
+  from = "/api/uber/*"
+  to = "/.netlify/functions/uber-proxy"
+  status = 200
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
