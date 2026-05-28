@@ -35,7 +35,7 @@ exports.handler = async (event) => {
   try { connectLambda(event); } catch (e) {}
 
   try {
-    const store = getStore({ name: 'uber-history', consistency: 'strong' });
+    const store = getStore('uber-history');
     const qs = event.queryStringParameters || {};
 
     let days;

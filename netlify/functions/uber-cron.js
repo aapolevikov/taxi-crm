@@ -162,7 +162,7 @@ exports.handler = async (event) => {
 
   // Пишем в Blobs (strong consistency — чтобы читалка сразу видела свежее).
   try {
-    const store = getStore({ name: 'uber-history', consistency: 'strong' });
+    const store = getStore('uber-history');
     await store.setJSON(day, dayRecord);
     console.log('[uber-cron] OK — день', day, '· водителей:', report.length);
     return { statusCode: 200, body: 'OK ' + day + ' (' + report.length + ')' };
