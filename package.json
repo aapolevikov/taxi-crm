@@ -1,0 +1,9 @@
+{
+  "name": "taxi-crm",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mr Ride CRM — Netlify functions",
+  "dependencies": {
+    "@netlify/blobs": "^10.0.0"
+  }
+}
