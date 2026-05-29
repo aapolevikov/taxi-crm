@@ -325,6 +325,33 @@ exports.handler = async (event) => {
       count: driverList.length,
       drivers: driverList
     };
+    // If client wants the raw orders too (for "Last trips" display in CRM),
+    // include only finished ones with the essentials (driver, route, price, time).
+    if (qp.withOrders === '1') {
+      resp.orders = orders
+        .filter(o => String(o.order_status || '').toLowerCase() === 'finished')
+        .map(o => {
+          const stops = Array.isArray(o.order_stops) ? o.order_stops : [];
+          const pickup = stops.find(s => s.type === 'pickup');
+          const dropoff = stops.find(s => s.type === 'dropoff');
+          const op = o.order_price || {};
+          return {
+            ref: o.order_reference,
+            driver_uuid: o.driver_uuid,
+            driver_name: o.driver_name,
+            from: pickup ? pickup.address : null,
+            to:   dropoff ? dropoff.address : null,
+            pickup_ts:   o.order_pickup_timestamp,
+            dropoff_ts:  o.order_drop_off_timestamp,
+            finished_ts: o.order_finished_timestamp,
+            net_earnings: parseFloat(op.net_earnings) || 0,
+            ride_price:   parseFloat(op.ride_price)   || 0,
+            tip:          parseFloat(op.tip)          || 0,
+            payment_method: o.payment_method,
+            distance_m: o.ride_distance || 0
+          };
+        });
+    }
     if (debug) {
       resp.debug = {
         driversRaw: drivers.length,
