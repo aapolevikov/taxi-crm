@@ -189,10 +189,15 @@ exports.handler = async (event) => {
                          : d.cancellationRate != null ? d.cancellationRate : null,
         // Aggregates filled below
         totalTrips: 0,
-        totalEarnings: 0,
+        totalEarnings: 0,  // driver's clean take-home (net + tips + tolls)
+        grossPrice: 0,     // sum of ride_price (what clients paid)
+        commission: 0,     // sum of Bolt commissions
+        tip: 0,            // sum of tips
         cashEarnings: 0,
         cardEarnings: 0,
-        hoursOnline: 0
+        mileage: 0,        // sum of ride_distance, in km
+        tripDurationSec: 0,// sum of pickup→dropoff durations
+        hoursOnline: 0     // computed from state logs
       });
     }
 
@@ -208,25 +213,79 @@ exports.handler = async (event) => {
       if (!dUuid) continue;
       const rec = byDriverUuid.get(dUuid);
       if (!rec) continue;
-      // Bolt finished statuses (we'll see the actual ones in debug.statusCounts)
-      const finished = (
-        status === 'finished' || status === 'completed' ||
-        status === 'complete' || status === 'finished_state' ||
-        status === 'paid_out'
-      );
+      // Bolt uses "finished" for successful trips
+      const finished = (status === 'finished');
       if (!finished) continue;
       if (!sampleFinishedOrder) sampleFinishedOrder = o;
       rec.totalTrips += 1;
-      // Earnings field — try multiple possibilities, Bolt may use any of these
-      const earn = parseFloat(
-        o.driver_earnings_with_vat || o.driver_earnings ||
-        o.ride_price || o.price ||
-        o.driver_amount || o.amount || 0
-      ) || 0;
+      // Earnings live inside order_price object:
+      //   net_earnings = driver's clean payout after Bolt commission
+      //   ride_price   = gross price (what client paid)
+      //   commission   = Bolt's fee
+      const op = o.order_price || {};
+      const netEarn = parseFloat(op.net_earnings) || 0;
+      const grossPrice = parseFloat(op.ride_price) || 0;
+      const tip = parseFloat(op.tip) || 0;
+      const tollFee = parseFloat(op.toll_fee) || 0;
+      const earn = netEarn + tip + tollFee; // driver's actual take-home
       rec.totalEarnings += earn;
+      rec.grossPrice += grossPrice;
+      rec.commission += (parseFloat(op.commission) || 0);
+      rec.tip += tip;
       const payMethod = String(o.payment_method || '').toLowerCase();
-      if (payMethod.includes('cash')) rec.cashEarnings += earn;
+      if (payMethod === 'cash') rec.cashEarnings += earn;
       else rec.cardEarnings += earn;
+      // Ride distance is in meters in Bolt payload
+      const dist = parseFloat(o.ride_distance) || 0;
+      rec.mileage += dist / 1000; // convert to km
+      // Trip duration from pickup to drop_off (seconds)
+      if (o.order_pickup_timestamp && o.order_drop_off_timestamp) {
+        const tripSec = o.order_drop_off_timestamp - o.order_pickup_timestamp;
+        if (tripSec > 0 && tripSec < 24 * 3600) {
+          rec.tripDurationSec += tripSec;
+        }
+      }
+    }
+
+    // State logs → online hours
+    // Bolt sends state changes as discrete events with `created` (timestamp)
+    // and `state` (active/inactive/busy/etc.). To compute online time we
+    // sort each driver's events chronologically and treat each consecutive
+    // pair as an interval whose duration is added if the starting state
+    // counts as "online" (i.e. not "inactive" / "offline").
+    const logsByDriver = new Map();
+    for (const log of stateLogs) {
+      const dUuid = String(log.driver_uuid || log.driver_id || '');
+      if (!dUuid) continue;
+      if (!logsByDriver.has(dUuid)) logsByDriver.set(dUuid, []);
+      logsByDriver.get(dUuid).push({
+        ts: log.created || log.timestamp || 0,
+        state: String(log.state || '').toLowerCase()
+      });
+    }
+    const ONLINE_STATES = new Set(['active', 'online', 'busy', 'on_order',
+                                   'has_order', 'available', 'working']);
+    for (const [dUuid, events] of logsByDriver.entries()) {
+      const rec = byDriverUuid.get(dUuid);
+      if (!rec) continue;
+      events.sort((a, b) => a.ts - b.ts);
+      // Clip events to the requested period
+      let onlineSec = 0;
+      for (let i = 0; i < events.length - 1; i++) {
+        const cur = events[i];
+        const nxt = events[i + 1];
+        if (!ONLINE_STATES.has(cur.state)) continue;
+        const segStart = Math.max(cur.ts, start_ts);
+        const segEnd = Math.min(nxt.ts, end_ts);
+        if (segEnd > segStart) onlineSec += (segEnd - segStart);
+      }
+      // If the last event is "online" and extends past end_ts → cap at end_ts
+      const last = events[events.length - 1];
+      if (last && ONLINE_STATES.has(last.state)) {
+        const segStart = Math.max(last.ts, start_ts);
+        if (end_ts > segStart) onlineSec += (end_ts - segStart);
+      }
+      rec.hoursOnline += onlineSec / 3600;
     }
 
     // State logs → online hours
@@ -249,9 +308,14 @@ exports.handler = async (event) => {
     const driverList = Array.from(byDriverUuid.values()).map(d => ({
       ...d,
       totalEarnings: +d.totalEarnings.toFixed(2),
+      grossPrice: +d.grossPrice.toFixed(2),
+      commission: +d.commission.toFixed(2),
+      tip: +d.tip.toFixed(2),
       cashEarnings: +d.cashEarnings.toFixed(2),
       cardEarnings: +d.cardEarnings.toFixed(2),
-      hoursOnline: +d.hoursOnline.toFixed(4)
+      mileage: +d.mileage.toFixed(2),
+      hoursOnline: +d.hoursOnline.toFixed(4),
+      hoursOnTrip: +(d.tripDurationSec / 3600).toFixed(4)
     }));
 
     const resp = {
