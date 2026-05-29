@@ -75,7 +75,10 @@ async function fetchAllPages(path, token, baseBody, dataKey) {
       offset
     });
     if (status !== 200 || !body || body.code !== 0) {
-      throw new Error(path + ' failed: ' + JSON.stringify(body));
+      const err = new Error(path + ' failed: ' + JSON.stringify(body));
+      err.sentBody = { ...baseBody, limit, offset };
+      err.responseBody = body;
+      throw err;
     }
     const chunk = (body.data && body.data[dataKey]) || [];
     out.push(...chunk);
@@ -116,7 +119,15 @@ exports.handler = async (event) => {
 
   try {
     const token = await getToken();
-    const baseBody = { company_ids: [companyId], start_ts, end_ts };
+    // Different Bolt endpoints accept different shapes: some want
+    // company_id (singular int), others want company_ids (array).
+    // We send both keys so each endpoint reads whichever it expects.
+    const baseBody = {
+      company_id: companyId,
+      company_ids: [companyId],
+      start_ts,
+      end_ts
+    };
 
     // STEP A — Drivers list (full roster, not just active in period)
     const drivers = await fetchAllPages(
@@ -245,8 +256,10 @@ exports.handler = async (event) => {
         ok: false,
         reason: 'BOLT_API_ERROR',
         error: String(e.message || e),
+        sentBody: e.sentBody || null,
+        responseBody: e.responseBody || null,
         stack: debug ? String(e.stack || '') : undefined
-      })
+      }, null, 2)
     };
   }
 };
