@@ -1,8 +1,14 @@
-// Mr Ride CRM — Bolt scheduled cron.
-// Pulls today's Bolt data via internal bolt-api function and stores the
-// per-driver snapshot in Netlify Blobs under key YYYY-MM-DD (Dubai date).
-// Schedule this in netlify.toml under [functions."bolt-cron"]:
-//   schedule = "0 * * * *"   (every hour, on the hour)
+// Mr Ride CRM — Bolt scheduled cron + backfill.
+//
+// Two modes:
+//   1. Default (no params): pulls TODAY's Bolt data and stores it in Blobs
+//      under key YYYY-MM-DD. Used by the scheduled hourly run.
+//   2. Backfill (?from=YYYY-MM-DD&to=YYYY-MM-DD): pulls every day in the
+//      range and stores each one. Use this once to seed history.
+//
+// Schedule (in netlify.toml):
+//   [functions."bolt-cron"]
+//     schedule = "0 * * * *"   (every hour, on the hour)
 
 const { getStore, connectLambda } = require('@netlify/blobs');
 
@@ -12,6 +18,38 @@ function _todayDubai() {
   return t.toISOString().slice(0, 10);
 }
 
+function _datesBetween(from, to) {
+  const out = [];
+  const start = new Date(from + 'T00:00:00Z');
+  const end   = new Date(to   + 'T00:00:00Z');
+  for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    out.push(d.toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+async function _fetchDaySnapshot(day, base) {
+  const apiUrl = base + '/.netlify/functions/bolt-api?start=' + day + '&end=' + day;
+  const resp = await fetch(apiUrl);
+  const json = await resp.json();
+  if (!json || !json.ok || !Array.isArray(json.drivers)) {
+    return { ok: false, day, response: json };
+  }
+  const snapshot = {};
+  json.drivers.forEach(d => {
+    if (!d.uuid) return;
+    snapshot[d.uuid] = {
+      trips:        Number(d.totalTrips)    || 0,
+      income:       Number(d.totalEarnings) || 0,
+      hoursOnTrip:  Number(d.hoursOnTrip)   || 0,
+      mileage:      Number(d.mileage)       || 0,
+      cashEarnings: Number(d.cashEarnings)  || 0,
+      cardEarnings: Number(d.cardEarnings)  || 0
+    };
+  });
+  return { ok: true, day, snapshot };
+}
+
 exports.handler = async (event) => {
   const CORS = {
     'Access-Control-Allow-Origin': '*',
@@ -19,50 +57,54 @@ exports.handler = async (event) => {
   };
   try {
     connectLambda(event);
-
-    // Use today's Dubai date as the snapshot key. We re-pull and overwrite
-    // throughout the day so the "today" record stays fresh.
-    const day = _todayDubai();
-
-    // Call our own bolt-api function to get the aggregates.
-    // Use full URL (Netlify functions can call siblings via deploy URL).
+    const store = getStore('bolt-history');
     const base = process.env.URL || 'https://misterridegroup.com';
-    const apiUrl = base + '/.netlify/functions/bolt-api?start=' + day + '&end=' + day;
 
-    const resp = await fetch(apiUrl);
-    const json = await resp.json();
-    if (!json || !json.ok || !Array.isArray(json.drivers)) {
+    const qp = (event && event.queryStringParameters) || {};
+
+    // BACKFILL MODE — fill a date range one-shot
+    if (qp.from && qp.to) {
+      const days = _datesBetween(qp.from, qp.to);
+      const results = [];
+      for (const day of days) {
+        const res = await _fetchDaySnapshot(day, base);
+        if (res.ok) {
+          await store.set(day, JSON.stringify(res.snapshot));
+          results.push({ day, driversStored: Object.keys(res.snapshot).length });
+        } else {
+          results.push({ day, error: 'bad response', response: res.response });
+        }
+      }
+      return {
+        statusCode: 200, headers: CORS,
+        body: JSON.stringify({
+          ok: true,
+          mode: 'backfill',
+          from: qp.from, to: qp.to,
+          daysProcessed: results.length,
+          results
+        }, null, 2)
+      };
+    }
+
+    // DEFAULT MODE — pull today's data and store it
+    const day = _todayDubai();
+    const res = await _fetchDaySnapshot(day, base);
+    if (!res.ok) {
       return {
         statusCode: 200, headers: CORS,
         body: JSON.stringify({
           ok: false, reason: 'BOLT_API_BAD',
-          dayKey: day, response: json
+          dayKey: day, response: res.response
         })
       };
     }
-
-    // Reshape into the same format that the frontend already expects:
-    //   { uuid: { trips, income, hoursOnTrip, mileage, cashEarnings, cardEarnings } }
-    const snapshot = {};
-    json.drivers.forEach(d => {
-      if (!d.uuid) return;
-      snapshot[d.uuid] = {
-        trips:        Number(d.totalTrips)    || 0,
-        income:       Number(d.totalEarnings) || 0,
-        hoursOnTrip:  Number(d.hoursOnTrip)   || 0,
-        mileage:      Number(d.mileage)       || 0,
-        cashEarnings: Number(d.cashEarnings)  || 0,
-        cardEarnings: Number(d.cardEarnings)  || 0
-      };
-    });
-
-    const store = getStore('bolt-history');
-    await store.set(day, JSON.stringify(snapshot));
-
+    await store.set(day, JSON.stringify(res.snapshot));
     return {
       statusCode: 200, headers: CORS,
       body: JSON.stringify({
-        ok: true, dayKey: day, driversStored: Object.keys(snapshot).length
+        ok: true, mode: 'hourly',
+        dayKey: day, driversStored: Object.keys(res.snapshot).length
       })
     };
   } catch (e) {
@@ -70,7 +112,8 @@ exports.handler = async (event) => {
       statusCode: 200, headers: CORS,
       body: JSON.stringify({
         ok: false, reason: 'BOLT_CRON_ERROR',
-        error: String(e.message || e)
+        error: String(e.message || e),
+        stack: String(e.stack || '')
       })
     };
   }
