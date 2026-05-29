@@ -160,21 +160,34 @@ exports.handler = async (event) => {
     }
 
     // ─── Aggregate per driver ───
-    // Index helpers
+    // Index helpers — Bolt uses `driver_uuid` (NOT id/uuid/driver_id) as the
+    // primary key, and orders reference drivers by the same `driver_uuid`.
     const byDriverUuid = new Map();
     for (const d of drivers) {
-      const uuid = d.id || d.uuid || d.driver_id || d.driverUuid;
+      const uuid = d.driver_uuid || d.id || d.uuid;
       if (!uuid) continue;
+      const fullName = [d.first_name, d.last_name].filter(Boolean).join(' ').trim()
+                    || d.name || '';
       byDriverUuid.set(String(uuid), {
         uuid: String(uuid),
-        name: d.name || [d.first_name, d.last_name].filter(Boolean).join(' ') || '',
+        partnerUuid: d.partner_uuid || null,
+        name: fullName,
         phone: d.phone || d.phone_number || '',
-        status: d.state || d.status || '',
-        rating: d.rating || null,
+        email: d.email || '',
+        state: d.state || d.status || '',
+        rating: d.driver_rating != null ? d.driver_rating : (d.rating || null),
+        driverScore: d.driver_score != null ? d.driver_score : null,
+        hasCashPayment: d.has_cash_payment === true,
+        activeCategories: d.active_categories || [],
+        inactiveCategories: d.inactive_categories || [],
+        vehicleModel: d.active_vehicle && d.active_vehicle.model || '',
+        vehiclePlate: d.active_vehicle && d.active_vehicle.reg_number || '',
+        // Performance metrics — we'll fill these if Bolt returns them
         acceptanceRate: d.acceptance_rate != null ? d.acceptance_rate
                        : d.acceptanceRate != null ? d.acceptanceRate : null,
         cancellationRate: d.cancellation_rate != null ? d.cancellation_rate
                          : d.cancellationRate != null ? d.cancellationRate : null,
+        // Aggregates filled below
         totalTrips: 0,
         totalEarnings: 0,
         cashEarnings: 0,
@@ -183,21 +196,35 @@ exports.handler = async (event) => {
       });
     }
 
+    // Collect unique order statuses + sample finished order for diagnostics
+    const statusCounts = {};
+    let sampleFinishedOrder = null;
+
     // Order → driver aggregation
     for (const o of orders) {
-      const dUuid = String(o.driver_id || o.driver_uuid || o.driverId || '');
+      const status = String(o.order_status || o.status || '').toLowerCase();
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+      const dUuid = String(o.driver_uuid || o.driver_id || '');
       if (!dUuid) continue;
       const rec = byDriverUuid.get(dUuid);
       if (!rec) continue;
-      // Only count completed (Bolt has finished_state or status field)
-      const finished = (o.status === 'finished' || o.status === 'completed' ||
-                       o.state === 'finished'  || o.finished_state === 'finished');
+      // Bolt finished statuses (we'll see the actual ones in debug.statusCounts)
+      const finished = (
+        status === 'finished' || status === 'completed' ||
+        status === 'complete' || status === 'finished_state' ||
+        status === 'paid_out'
+      );
       if (!finished) continue;
+      if (!sampleFinishedOrder) sampleFinishedOrder = o;
       rec.totalTrips += 1;
-      const earn = parseFloat(o.driver_earnings || o.driver_amount ||
-                              o.earnings || o.amount || o.ride_price || 0) || 0;
+      // Earnings field — try multiple possibilities, Bolt may use any of these
+      const earn = parseFloat(
+        o.driver_earnings_with_vat || o.driver_earnings ||
+        o.ride_price || o.price ||
+        o.driver_amount || o.amount || 0
+      ) || 0;
       rec.totalEarnings += earn;
-      const payMethod = String(o.payment_method || o.pay_method || '').toLowerCase();
+      const payMethod = String(o.payment_method || '').toLowerCase();
       if (payMethod.includes('cash')) rec.cashEarnings += earn;
       else rec.cardEarnings += earn;
     }
@@ -239,8 +266,10 @@ exports.handler = async (event) => {
         driversRaw: drivers.length,
         ordersRaw: orders.length,
         stateLogsRaw: stateLogs.length,
+        statusCounts,
         sampleDriver: drivers[0] || null,
         sampleOrder: orders[0] || null,
+        sampleFinishedOrder: sampleFinishedOrder,
         sampleStateLog: stateLogs[0] || null
       };
     }
