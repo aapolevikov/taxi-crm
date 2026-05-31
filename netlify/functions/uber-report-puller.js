@@ -201,6 +201,11 @@ exports.handler = async (event) => {
               fetchedAt: new Date().toISOString()
             });
             log.push('SAVED ' + key + ' (' + csv.length + 'b)');
+            // отметка времени сохранения: чтобы не пересоздавать тот же отчёт слишком часто
+            if (!pending.done) pending.done = [];
+            const di = pending.done.findIndex(x => x.type === item.type && x.day === item.day);
+            if (di >= 0) pending.done[di].savedAt = Date.now();
+            else pending.done.push({ type: item.type, day: item.day, savedAt: Date.now() });
           } catch (e) { log.push('BLOBS_WRITE_ERR ' + String(e && e.message || e)); stillPending.push(item); }
         } else if (isFailed(r.reportStatus)) {
           log.push('REPORT_FAILED ' + item.reportID + ' ' + (r.reportFailedReason || ''));
@@ -213,10 +218,16 @@ exports.handler = async (event) => {
     }
   }
 
-  // ── ФАЗА A: создаём отчёты за окно для тех типов, которых ещё нет в pending ──
+  // ── ФАЗА A: создаём отчёты за окно. Не пересоздаём, если уже генерится (pending)
+  //    или сохранён недавно (кулдаун) — чтобы частые/ручные прогоны не плодили дубли,
+  //    но плановые прогоны (утро/вечер, ~12ч врозь) обновляли данные. ──
+  const SAVE_COOLDOWN_MS = 2 * 3600000; // 2 часа
   for (const type of REPORT_TYPES) {
-    const already = pending.items.some(it => it.type === type && it.day === endDate);
-    if (already) { log.push('SKIP_EXISTS ' + type); continue; }
+    const inPending = pending.items.some(it => it.type === type && it.day === endDate);
+    const doneRec = (pending.done || []).find(x => x.type === type && x.day === endDate);
+    const recentlySaved = doneRec && (Date.now() - (doneRec.savedAt || 0)) < SAVE_COOLDOWN_MS;
+    if (inPending) { log.push('SKIP_PENDING ' + type); continue; }
+    if (recentlySaved) { log.push('SKIP_RECENT ' + type); continue; }
     const gen = await portalCall(cookie, orgUUID, 'GenerateVsPaymentReport', Q_GENERATE, {
       orgUUID,
       paymentReportType: type,
@@ -231,6 +242,12 @@ exports.handler = async (event) => {
     if (!rid) { log.push('GEN_NO_ID ' + type); continue; }
     pending.items.push({ type, day: endDate, reportID: rid, createdAt: Date.now(), startDate, endDate });
     log.push('CREATED ' + type + ' ' + rid);
+  }
+
+  // Чистим старые отметки done (старше 3 дней), чтобы pending не разрастался
+  if (Array.isArray(pending.done)) {
+    const keepFrom = dubaiDate(-3);
+    pending.done = pending.done.filter(x => (x.day || '') >= keepFrom);
   }
 
   // Сохраняем pending
