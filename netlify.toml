@@ -28,7 +28,10 @@
   schedule = "0 * * * *"
 
 # Scheduled function: автосбор отчётов Uber (поездки + суммы) 2 раза в день.
-# 10:00 и 22:00 UTC = 14:00 и 02:00 по Дубаю. Двухфазно: создаёт отчёты, затем
-# забирает готовые и кладёт сырой CSV в Blobs (store "uber-reports").
+# 10:00 и 22:00 UTC = 14:00 и 02:00 по Дубаю.
 [functions."uber-report-puller"]
   schedule = "0 10,22 * * *"
+
+# Scheduled function: сбор GPS-позиций Cabman раз в минуту (история маршрутов).
+[functions."cabman-track"]
+  schedule = "* * * * *"
