@@ -19,7 +19,20 @@ let _blobs = null;
 async function store(){
   if(_blobs) return _blobs;
   const mod = await import('@netlify/blobs');
-  _blobs = mod.getStore('cabman-history');
+  // Netlify provides these env vars automatically in the functions runtime.
+  // Passing them explicitly makes Blobs work for HTTP-invoked functions too
+  // (not just scheduled ones), avoiding "environment has not been configured" errors.
+  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+  const token  = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN || process.env.NETLIFY_AUTH_TOKEN;
+  try{
+    if(siteID && token){
+      _blobs = mod.getStore({ name:'cabman-history', siteID, token });
+    } else {
+      _blobs = mod.getStore('cabman-history');
+    }
+  }catch(e){
+    _blobs = mod.getStore('cabman-history');
+  }
   return _blobs;
 }
 
@@ -111,11 +124,18 @@ exports.handler = async function(event){
       return json(200,{ok:true, snapshot:snap});
     }
 
-    // live / collect → fetch from Cabman + append history
+    // live / collect → fetch from Cabman
     const vehicles = await fetchCabman();
-    await appendHistory(vehicles);
-    if(action==='collect') return json(200,{ok:true, collected:vehicles.length, at:new Date().toISOString()});
-    return json(200,{ok:true, at:new Date().toISOString(), count:vehicles.length, vehicles});
+    // Write history ONLY on scheduled/collect runs (Blobs context is available there).
+    // Browser 'live' calls just display data — no Blobs write, no errors.
+    const isScheduled = !!(event.headers && (event.headers['x-nf-event'] || event.headers['X-Nf-Event']))
+      || action==='collect';
+    let historySaved = false;
+    if(isScheduled){
+      try{ await appendHistory(vehicles); historySaved = true; }catch(histErr){ historySaved = false; }
+    }
+    if(action==='collect') return json(200,{ok:true, collected:vehicles.length, historySaved, at:new Date().toISOString()});
+    return json(200,{ok:true, at:new Date().toISOString(), count:vehicles.length, historySaved, vehicles});
 
   }catch(e){
     return json(500,{ok:false, error:String(e&&e.message||e)});
