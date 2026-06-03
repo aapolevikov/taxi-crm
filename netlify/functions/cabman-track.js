@@ -16,22 +16,25 @@
 const RETENTION_DAYS = 90;
 
 let _blobs = null;
-async function store(){
+async function store(event){
   if(_blobs) return _blobs;
   const mod = await import('@netlify/blobs');
-  // Netlify provides these env vars automatically in the functions runtime.
-  // Passing them explicitly makes Blobs work for HTTP-invoked functions too
-  // (not just scheduled ones), avoiding "environment has not been configured" errors.
-  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
-  const token  = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN || process.env.NETLIFY_AUTH_TOKEN;
+  // Preferred: connectLambda wires up the Blobs context from the invocation
+  // event automatically — no env vars / token needed. Works for both HTTP
+  // and scheduled calls on Netlify.
   try{
-    if(siteID && token){
-      _blobs = mod.getStore({ name:'cabman-history', siteID, token });
-    } else {
-      _blobs = mod.getStore('cabman-history');
+    if(event && typeof mod.connectLambda === 'function'){
+      mod.connectLambda(event);
     }
-  }catch(e){
+  }catch(_){}
+  try{
     _blobs = mod.getStore('cabman-history');
+  }catch(e){
+    // Fallback to explicit creds only if they happen to exist (kept optional)
+    const siteID = process.env.CABMAN_BLOBS_SITE_ID;
+    const token  = process.env.CABMAN_BLOBS_TOKEN;
+    if(siteID && token){ _blobs = mod.getStore({ name:'cabman-history', siteID, token }); }
+    else { throw e; }
   }
   return _blobs;
 }
@@ -69,8 +72,8 @@ async function fetchCabman(){
 
 function dayKey(iso){ return (iso||'').slice(0,10); } // 'YYYY-MM-DD'
 
-async function appendHistory(vehicles){
-  const s = await store();
+async function appendHistory(vehicles, event){
+  const s = await store(event);
   const today = dayKey(new Date().toISOString());
   // group append per vehicle/day
   for(const v of vehicles){
@@ -109,7 +112,7 @@ exports.handler = async function(event){
       const vehicle = q.vehicle;
       const from = q.from, to = q.to;
       if(!vehicle || !from || !to) return json(400,{ok:false,error:'need vehicle, from, to'});
-      const s = await store();
+      const s = await store(event);
       let points = [];
       for(const day of datesBetween(from,to)){
         try{ const pts = await s.get('track:'+vehicle+':'+day, {type:'json'}); if(Array.isArray(pts)) points = points.concat(pts); }catch(_){}
@@ -119,20 +122,20 @@ exports.handler = async function(event){
     }
 
     if(action==='latest'){
-      const s = await store();
+      const s = await store(event);
       let snap=null; try{ snap = await s.get('latest',{type:'json'}); }catch(_){}
       return json(200,{ok:true, snapshot:snap});
     }
 
     // live / collect → fetch from Cabman
     const vehicles = await fetchCabman();
-    // Write history ONLY on scheduled/collect runs (Blobs context is available there).
-    // Browser 'live' calls just display data — no Blobs write, no errors.
+    // Write history on scheduled runs AND on manual collect. connectLambda gives
+    // Blobs context in both. Plain 'live' (browser auto-refresh) skips writing.
     const isScheduled = !!(event.headers && (event.headers['x-nf-event'] || event.headers['X-Nf-Event']))
       || action==='collect';
     let historySaved = false;
     if(isScheduled){
-      try{ await appendHistory(vehicles); historySaved = true; }catch(histErr){ historySaved = false; }
+      try{ await appendHistory(vehicles, event); historySaved = true; }catch(histErr){ historySaved = false; }
     }
     if(action==='collect') return json(200,{ok:true, collected:vehicles.length, historySaved, at:new Date().toISOString()});
     return json(200,{ok:true, at:new Date().toISOString(), count:vehicles.length, historySaved, vehicles});
