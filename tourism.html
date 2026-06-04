@@ -167,30 +167,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .set-row .si{font-size:20px;color:var(--accent)}
 .set-row .st-txt{flex:1}
 .set-row .st-txt .t{font-weight:600;font-size:13px}
-/* ─── Воронка (kanban в стиле доски задач) ─── */
-.cols{display:flex;gap:14px;align-items:flex-start}
-.fcol{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:10px;flex:1;min-width:0;min-height:140px;transition:.15s;display:flex;flex-direction:column}
-.fcol.dragover{background:var(--accent-l);border-color:var(--accent);border-style:dashed}
-.fcol-hdr{display:flex;align-items:center;gap:8px;padding:4px 6px 10px;font-weight:700;font-size:14px}
-.fcol-hdr .cnt{background:var(--bg3);color:var(--text2);border-radius:10px;padding:1px 8px;font-size:12px;font-weight:600}
-.fcol-hdr .add-top{margin-left:auto;background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:0 4px}
-.fcol-hdr .add-top:hover{color:var(--accent)}
-.fcol-body{flex:1}
-.fcol-foot{margin-top:4px}
-.fcol-foot button{width:100%;background:none;border:1px dashed var(--border2);color:var(--text3);border-radius:var(--r);padding:8px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
-.fcol-foot button:hover{background:var(--bg);color:var(--accent);border-color:var(--accent)}
-.fcard{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:10px;cursor:grab;position:relative;border-top:3px solid var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.04)}
-.fcard:active{cursor:grabbing}
-.fcard.dragging{opacity:.4}
-.fcard .fc-name{font-weight:700;font-size:14px;margin-bottom:6px;padding-right:60px}
-.fcard .fc-meta{font-size:12px;color:var(--text2);line-height:1.6;word-break:break-word}
-.fcard .fc-req{font-size:12px;color:var(--text);background:var(--bg2);border-radius:6px;padding:6px 8px;margin-top:6px}
-.fcard .fc-hover{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:.12s}
-.fcard:hover .fc-hover{opacity:1}
-.fcard .fc-hb{width:24px;height:24px;border:1px solid var(--border);background:var(--bg);border-radius:6px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);padding:0}
-.fcard .fc-hb:hover{background:var(--bg2)}
-.fcard .fc-hb.go:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
-.fcard .fc-hb.del:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+/* ─── Воронка (как доска задач в app.html) ─── */
+.board-wrap{display:flex;gap:14px;overflow-x:auto;padding-bottom:16px;-webkit-overflow-scrolling:touch;align-items:flex-start}
+.board-wrap::-webkit-scrollbar{height:6px}
+.board-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.board-col{flex-shrink:0;width:300px;display:flex;flex-direction:column}
+.board-col-hdr{display:flex;align-items:center;gap:6px;padding:10px 12px;background:var(--bg2);border-radius:var(--rl) var(--rl) 0 0;border:1px solid var(--border);border-bottom:none}
+.board-col-title{font-size:13px;font-weight:600;flex:1}
+.board-col-count{background:var(--border2);color:var(--text2);font-size:11px;font-weight:600;padding:2px 7px;border-radius:20px}
+.board-col-body{flex:1;background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--rl) var(--rl);padding:8px;display:flex;flex-direction:column;gap:8px;min-height:180px;transition:background .15s}
+.board-col-body.drag-over{background:var(--accent-l);border-color:var(--accent)}
+.board-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;cursor:grab;transition:box-shadow .15s,opacity .15s;position:relative;user-select:none}
+.board-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.board-card.dragging{opacity:.4;cursor:grabbing;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.board-card-line{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
+.board-card-title{font-size:13px;font-weight:600;margin-bottom:6px;line-height:1.4;padding-right:54px}
+.board-card-meta{font-size:11px;color:var(--text2);line-height:1.6;word-break:break-word}
+.board-card-req{font-size:11px;color:var(--text);background:var(--bg2);border-radius:6px;padding:5px 7px;margin-top:6px}
+.board-card-actions{position:absolute;top:6px;right:6px;display:none;gap:2px}
+.board-card:hover .board-card-actions{display:flex}
+.card-action-btn{background:var(--bg2);border:none;border-radius:4px;padding:3px 5px;cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:center}
+.card-action-btn:hover{background:var(--border);color:var(--text)}
+.card-action-btn.go:hover{background:var(--accent);color:#fff}
+.card-action-btn.del:hover{background:var(--danger);color:#fff}
+.board-add-card{padding:8px 12px;background:transparent;border:1px dashed var(--border2);border-radius:var(--r);cursor:pointer;font-size:12px;color:var(--text3);text-align:center;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px;width:100%}
+.board-add-card:hover{background:var(--bg);color:var(--accent);border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -264,7 +265,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn-sec" onclick="seedFunnelDemo()"><i class="ti ti-flask"></i> Демо-лиды</button>
         <button class="btn-add" onclick="openLeadModal()"><i class="ti ti-plus"></i> Новая заявка</button>
       </div>
-      <div id="funnelCols" class="cols"></div>
+      <div id="funnelCols" class="board-wrap"></div>
     </div><!-- /page-funnel -->
 
     <!-- PAGE: DASHBOARD -->
@@ -677,62 +678,80 @@ function renderFunnel(){
   var box=document.getElementById('funnelCols');
   if(!box) return;
   var cols=[
-    {key:'inbox',   title:'Входящие',     color:'var(--danger)'},
-    {key:'thinking',title:'Думает',        color:'var(--warn)'},
-    {key:'dead',    title:'Неактуальные', color:'var(--text3)'},
+    {key:'inbox',   title:'Входящие',     line:'#e74c3c'},
+    {key:'thinking',title:'Думает',        line:'#f5a623'},
+    {key:'dead',    title:'Неактуальные', line:'#999999'},
   ];
   box.innerHTML=cols.map(function(c){
     var items=ORDERS.filter(function(o){return o.status===c.key;});
-    return '<div class="fcol" data-status="'+c.key+'" '+
-        'ondragover="funnelDragOver(event,this)" ondragleave="funnelDragLeave(this)" ondrop="funnelDrop(event,this)">'+
-      '<div class="fcol-hdr">'+
-        '<span style="color:'+c.color+'">'+c.title+'</span>'+
-        '<span class="cnt">'+items.length+'</span>'+
-        '<button class="add-top" title="Добавить заявку" onclick="openLeadModal(null,\''+c.key+'\')">+</button>'+
+    var cards=items.map(function(o){return leadCard(o,c.line);}).join('');
+    return '<div class="board-col">'+
+      '<div class="board-col-hdr">'+
+        '<span class="board-col-title">'+c.title+'</span>'+
+        '<span class="board-col-count">'+items.length+'</span>'+
+        '<button style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:0 2px;line-height:1" onclick="openLeadModal(null,\''+c.key+'\')">+</button>'+
       '</div>'+
-      '<div class="fcol-body">'+
-        items.map(function(o){return leadCard(o,c.color);}).join('')+
+      '<div class="board-col-body" id="fcol-'+c.key+'" '+
+        'ondragover="funnelDragOver(event,\''+c.key+'\')" ondragleave="funnelDragLeave(event)" ondrop="funnelDrop(event,\''+c.key+'\')">'+
+        cards+
+        '<button class="board-add-card" onclick="openLeadModal(null,\''+c.key+'\')"><i class="ti ti-plus" style="font-size:14px"></i> Добавить заявку</button>'+
       '</div>'+
-      '<div class="fcol-foot"><button onclick="openLeadModal(null,\''+c.key+'\')"><i class="ti ti-plus"></i> Добавить заявку</button></div>'+
     '</div>';
   }).join('');
 }
 
-function leadCard(o,color){
+function leadCard(o,line){
   var go = o.status!=='dead'
-    ? '<button class="fc-hb go" title="Перевести в доску заявок" onclick="event.stopPropagation();convertLead(\''+o.id+'\')"><i class="ti ti-arrow-right"></i></button>'
+    ? '<button class="card-action-btn go" title="Перевести в доску заявок" onclick="convertLead(\''+o.id+'\',event)"><i class="ti ti-arrow-right"></i></button>'
     : '';
-  return '<div class="fcard" draggable="true" style="border-top-color:'+color+'" '+
-      'ondragstart="funnelDragStart(event,\''+o.id+'\')" ondragend="funnelDragEnd(this)">'+
-    '<div class="fc-hover">'+go+
-      '<button class="fc-hb" title="Редактировать" onclick="event.stopPropagation();openLeadModal(\''+o.id+'\')">✎</button>'+
-      '<button class="fc-hb del" title="Удалить" onclick="event.stopPropagation();delOrder(\''+o.id+'\')">×</button>'+
+  return '<div class="board-card" draggable="true" data-id="'+o.id+'" '+
+      'ondragstart="funnelDragStart(event,\''+o.id+'\')" ondragend="funnelDragEnd(event)">'+
+    '<div class="board-card-line" style="background:'+line+'"></div>'+
+    '<div class="board-card-actions" onclick="event.stopPropagation()">'+go+
+      '<button class="card-action-btn" title="Редактировать" onclick="openLeadModal(\''+o.id+'\')"><i class="ti ti-pencil"></i></button>'+
+      '<button class="card-action-btn del" title="Удалить" onclick="delOrderEv(\''+o.id+'\',event)"><i class="ti ti-x"></i></button>'+
     '</div>'+
-    '<div class="fc-name">'+esc(o.client)+'</div>'+
-    '<div class="fc-meta">'+
-      (o.phone?'📞 '+esc(o.phone)+'<br>':'')+
-      (o.trip_date?'📅 '+esc(o.trip_date):'')+
+    '<div class="board-card-title">'+esc(o.client)+'</div>'+
+    '<div class="board-card-meta">'+
+      (o.phone?'📞 '+esc(o.phone):'')+
+      (o.trip_date?(o.phone?'<br>':'')+'📅 '+esc(o.trip_date):'')+
     '</div>'+
-    (o.request?'<div class="fc-req">'+esc(o.request)+'</div>':'')+
+    (o.request?'<div class="board-card-req">'+esc(o.request)+'</div>':'')+
   '</div>';
 }
 
-// drag handlers
-function funnelDragStart(e,id){ dragId=id; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
-function funnelDragEnd(el){ el.classList.remove('dragging'); }
-function funnelDragOver(e,col){ e.preventDefault(); col.classList.add('dragover'); }
-function funnelDragLeave(col){ col.classList.remove('dragover'); }
-async function funnelDrop(e,col){
-  e.preventDefault(); col.classList.remove('dragover');
+// drag & drop (как в app.html)
+function funnelDragStart(e,id){
+  dragId=id; e.dataTransfer.effectAllowed='move';
+  var el=e.target; setTimeout(function(){ if(el)el.classList.add('dragging'); },0);
+}
+function funnelDragEnd(e){
+  dragId=null;
+  document.querySelectorAll('.board-card').forEach(function(c){c.classList.remove('dragging');});
+  document.querySelectorAll('.board-col-body').forEach(function(c){c.classList.remove('drag-over');});
+}
+function funnelDragOver(e,key){
+  e.preventDefault(); e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.board-col-body').forEach(function(c){c.classList.remove('drag-over');});
+  var col=document.getElementById('fcol-'+key); if(col)col.classList.add('drag-over');
+}
+function funnelDragLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget)) e.currentTarget.classList.remove('drag-over');
+}
+async function funnelDrop(e,toKey){
+  e.preventDefault();
+  document.querySelectorAll('.board-col-body').forEach(function(c){c.classList.remove('drag-over');});
   if(!dragId) return;
-  var st=col.getAttribute('data-status');
   var id=dragId; dragId=null;
   var o=ORDERS.find(function(x){return x.id===id;});
-  if(o && o.status===st) return;          // не двигаем в ту же колонку
-  var res = await sb.from('tour_orders').update({status: st}).eq('id', id);
+  if(o && o.status===toKey) return;
+  var res = await sb.from('tour_orders').update({status: toKey}).eq('id', id);
   if(res.error){ alert('Ошибка: '+res.error.message); return; }
   loadOrders();
 }
+
+// удалить с остановкой всплытия
+function delOrderEv(id,e){ if(e) e.stopPropagation(); delOrder(id); }
 
 function openLeadModal(id, presetStatus){
   editingLead = id||null;
@@ -775,7 +794,8 @@ async function moveLead(id, st){
 }
 
 // сделка: лид -> на доску по водителям (статус new)
-async function convertLead(id){
+async function convertLead(id,e){
+  if(e) e.stopPropagation();
   var res = await sb.from('tour_orders').update({status:'new'}).eq('id', id);
   if(res.error){ alert('Ошибка: '+res.error.message); return; }
   alert('Заявка передана на доску по водителям (раздел «Доска заявок»). Там назначьте водителя и детали поездки.');
