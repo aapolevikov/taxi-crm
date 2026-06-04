@@ -56,6 +56,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .alert-hdr .badge{background:var(--danger);color:#fff;border-radius:20px;padding:1px 8px;font-size:11px}
 .alert-hdr.ok .badge{background:var(--accent)}
 .new-cards{display:flex;gap:10px;flex-wrap:wrap}
+.free-zone{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:16px}
+.free-hdr{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-bottom:10px}
+.free-hdr i{color:var(--accent)}
+.badge.free{background:var(--accent-l);color:var(--accent-t)}
+.free-cards{display:flex;gap:8px;flex-wrap:wrap}
+.free-chip{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:13px}
+.free-chip .dot{width:8px;height:8px;border-radius:50%}
+.free-chip .car{color:var(--text3);font-size:12px}
+.free-none{font-size:13px;color:var(--text2)}
 .new-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;min-width:200px;max-width:260px}
 .new-card .nm{font-weight:600;font-size:14px}
 .new-card .meta{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.5}
@@ -83,6 +92,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .trip .tm .lbl{font-size:10px;color:var(--text3);display:block}
 .trip .tm .val{font-weight:600}
 .trip .tm .val.morning{color:#e8a33d}
+.trip .tm .val.day{color:#0d9e75}
 .trip .tm .val.evening{color:#5b8fd6}
 .trip .addr{font-size:12px;color:var(--text2);flex:1;min-width:140px}
 .trip .ph{font-size:12px;color:var(--text3)}
@@ -157,7 +167,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .set-row .si{font-size:20px;color:var(--accent)}
 .set-row .st-txt{flex:1}
 .set-row .st-txt .t{font-weight:600;font-size:13px}
-.set-row .st-txt .d{font-size:12px;color:var(--text3);margin-top:2px}
+/* ─── Воронка (kanban с перетаскиванием) ─── */
+.fcol{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:10px;min-height:200px;transition:.15s}
+.fcol.dragover{background:var(--accent-l);border-color:var(--accent);border-style:dashed}
+.fcol-hdr{display:flex;align-items:center;gap:8px;padding:4px 6px 10px;font-weight:700;font-size:14px}
+.fcol-hdr .cnt{margin-left:auto;background:var(--bg3);color:var(--text2);border-radius:10px;padding:1px 8px;font-size:12px;font-weight:600}
+.fcard{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:10px;cursor:grab;position:relative;border-top:3px solid var(--accent)}
+.fcard:active{cursor:grabbing}
+.fcard.dragging{opacity:.4}
+.fcard .fc-name{font-weight:700;font-size:14px;margin-bottom:6px}
+.fcard .fc-meta{font-size:12px;color:var(--text2);line-height:1.6;word-break:break-word}
+.fcard .fc-req{font-size:12px;color:var(--text);background:var(--bg2);border-radius:6px;padding:6px 8px;margin-top:6px}
+.fcard .fc-acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.fcard .fc-deal{width:100%;justify-content:center;background:var(--accent);color:#fff;border:none;padding:7px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px}
+.fcard .fc-deal:hover{background:var(--accent-h)}
+.fcard .fc-icon{background:none;border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer}
+.fcard .fc-icon:hover{background:var(--bg2);color:var(--text)}
 </style>
 </head>
 <body>
@@ -206,6 +231,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <span class="badge" id="alertBadge">0</span>
       </div>
       <div class="new-cards" id="newCards"></div>
+    </div>
+
+    <!-- Free drivers zone -->
+    <div class="free-zone" id="freeZone">
+      <div class="free-hdr">
+        <i class="ti ti-steering-wheel"></i>
+        <span>Свободные водители</span>
+        <span class="badge free" id="freeBadge">0</span>
+      </div>
+      <div class="free-cards" id="freeCards"></div>
     </div>
 
     <!-- Board: driver lanes -->
@@ -301,11 +336,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="field-2">
       <div class="field-row">
-        <label>Время утром</label>
+        <label>Утро</label>
         <input id="f_morning" placeholder="9:30">
       </div>
       <div class="field-row">
-        <label>Время вечером / обратно</label>
+        <label>День</label>
+        <input id="f_day" placeholder="14:00">
+      </div>
+      <div class="field-row">
+        <label>Вечер</label>
         <input id="f_evening" placeholder="18:00">
       </div>
     </div>
@@ -349,14 +388,14 @@ function rowToOrder(r){
   return {id:r.id, client:r.client, phone:r.phone, from:r.from_loc, to:r.to_loc,
           morning:r.morning, evening:r.evening, driver:r.driver,
           status:r.status, note:r.note, type:r.type,
-          request:r.request, trip_date:r.trip_date};
+          request:r.request, trip_date:r.trip_date, day:r.day_time};
 }
 // объект доски -> поля для DB
 function orderToRow(o){
   return {client:o.client, phone:o.phone, from_loc:o.from, to_loc:o.to,
           morning:o.morning, evening:o.evening, driver:o.driver||null,
           status:o.status, note:o.note, type:o.type, company_id:'mrride',
-          request:o.request||null, trip_date:o.trip_date||null};
+          request:o.request||null, trip_date:o.trip_date||null, day_time:o.day||null};
 }
 
 // ─────────── ВОРОНКА: стадии ───────────
@@ -419,12 +458,13 @@ function openOrderModal(id){
   editingId = id||null;
   fillDriverSelect();
   document.getElementById('orderModalTitle').textContent = id ? 'Редактировать заявку' : 'Новая заявка';
-  var o = id ? ORDERS.find(function(x){return x.id===id;}) : {client:'',phone:'',from:'',to:'',morning:'',evening:'',driver:'',note:'',type:'round'};
+  var o = id ? ORDERS.find(function(x){return x.id===id;}) : {client:'',phone:'',from:'',to:'',morning:'',day:'',evening:'',driver:'',note:'',type:'round'};
   document.getElementById('f_client').value=o.client||'';
   document.getElementById('f_phone').value=o.phone||'';
   document.getElementById('f_from').value=o.from||'';
   document.getElementById('f_to').value=o.to||'';
   document.getElementById('f_morning').value=o.morning||'';
+  document.getElementById('f_day').value=o.day||'';
   document.getElementById('f_evening').value=o.evening||'';
   document.getElementById('f_driver').value=o.driver||'';
   document.getElementById('f_note').value=o.note||'';
@@ -442,6 +482,7 @@ async function saveOrder(){
     from:document.getElementById('f_from').value.trim(),
     to:document.getElementById('f_to').value.trim(),
     morning:document.getElementById('f_morning').value.trim(),
+    day:document.getElementById('f_day').value.trim(),
     evening:document.getElementById('f_evening').value.trim(),
     driver:driver,
     note:document.getElementById('f_note').value.trim(),
@@ -485,7 +526,28 @@ function statusLabel(st){ return {new:'Новая',assigned:'Назначена'
 
 function render(){
   renderAlert();
+  renderFreeDrivers();
   if(board==='lanes') renderLanes(); else renderCols();
+}
+
+// Водители без активного клиента (свободны)
+function renderFreeDrivers(){
+  var zone=document.getElementById('freeZone'); if(!zone) return;
+  var busy={};
+  dealOrders().forEach(function(o){
+    if(o.driver && (o.status==='assigned'||o.status==='confirmed')) busy[o.driver]=true;
+  });
+  var free=DRIVERS.filter(function(d){return !busy[d.id];});
+  document.getElementById('freeBadge').textContent=free.length;
+  var box=document.getElementById('freeCards');
+  if(free.length===0){ box.innerHTML='<div class="free-none">Все водители заняты</div>'; return; }
+  box.innerHTML=free.map(function(d){
+    return '<div class="free-chip">'+
+      '<span class="dot" style="background:'+d.color+'"></span>'+
+      '<span>'+esc(d.name)+'</span>'+
+      '<span class="car">'+esc(d.car)+'</span>'+
+    '</div>';
+  }).join('');
 }
 
 function renderAlert(){
@@ -503,7 +565,7 @@ function renderAlert(){
       '<div class="nm">'+esc(o.client)+'</div>'+
       '<div class="meta">'+(o.phone?'📞 '+esc(o.phone)+'<br>':'')+
         (o.from?'📍 '+esc(o.from)+(o.to?' → '+esc(o.to):'')+'<br>':'')+
-        (o.morning||o.evening?'🕐 '+esc(o.morning||'—')+' / '+esc(o.evening||'—'):'')+
+        (o.morning||o.day||o.evening?'🕐 '+esc(o.morning||'—')+' / '+esc(o.day||'—')+' / '+esc(o.evening||'—'):'')+
         (o.note?'<br>📝 '+esc(o.note):'')+
       '</div>'+
       '<div class="acts">'+
@@ -520,6 +582,7 @@ function tripRow(o){
     '<div class="client">'+esc(o.client)+'</div>'+
     '<div class="times">'+
       (o.morning?'<div class="tm"><span class="lbl">утро</span><span class="val morning">'+esc(o.morning)+'</span></div>':'')+
+      (o.day?'<div class="tm"><span class="lbl">день</span><span class="val day">'+esc(o.day)+'</span></div>':'')+
       (o.evening?'<div class="tm"><span class="lbl">вечер</span><span class="val evening">'+esc(o.evening)+'</span></div>':'')+
     '</div>'+
     '<div class="addr">'+(o.from?esc(o.from)+(o.to?' → '+esc(o.to):''):'')+'</div>'+
@@ -575,7 +638,7 @@ function renderCols(){
             '<div class="nm">'+esc(o.client)+'</div>'+
             '<div class="meta">'+(o.phone?'📞 '+esc(o.phone)+'<br>':'')+
               (o.from?'📍 '+esc(o.from)+(o.to?' → '+esc(o.to):''):'')+
-              ((o.morning||o.evening)?'<br>🕐 '+esc(o.morning||'—')+' / '+esc(o.evening||'—'):'')+
+              ((o.morning||o.day||o.evening)?'<br>🕐 '+esc(o.morning||'—')+' / '+esc(o.day||'—')+' / '+esc(o.evening||'—'):'')+
             '</div>'+
             (drv?'<div class="drv">🚗 '+esc(drv.name)+' · '+esc(drv.car)+'</div>':'')+
           '</div>';
@@ -598,7 +661,9 @@ function switchBoard(b){
   render();
 }
 
-// ─────────── ВОРОНКА ЗАЯВОК ───────────
+// ─────────── ВОРОНКА ЗАЯВОК (kanban с перетаскиванием) ───────────
+var dragId = null;
+
 function renderFunnel(){
   var box=document.getElementById('funnelCols');
   if(!box) return;
@@ -609,39 +674,48 @@ function renderFunnel(){
   ];
   box.innerHTML=cols.map(function(c){
     var items=ORDERS.filter(function(o){return o.status===c.key;});
-    return '<div class="col">'+
-      '<div class="col-hdr"><span style="color:'+c.color+'">'+c.title+'</span><span class="lane-count">'+items.length+'</span></div>'+
-      '<div class="col-body">'+
-        (items.length?items.map(leadCard).join(''):'<div class="lane-empty">—</div>')+
+    return '<div class="fcol" data-status="'+c.key+'" '+
+        'ondragover="funnelDragOver(event,this)" ondragleave="funnelDragLeave(this)" ondrop="funnelDrop(event,this)">'+
+      '<div class="fcol-hdr"><span style="color:'+c.color+'">'+c.title+'</span><span class="cnt">'+items.length+'</span></div>'+
+      '<div class="fcol-body">'+
+        (items.length?items.map(function(o){return leadCard(o,c.color);}).join(''):'<div class="lane-empty">— перетащите сюда —</div>')+
       '</div>'+
     '</div>';
   }).join('');
 }
 
-function leadCard(o){
-  var acts='';
-  if(o.status==='inbox'){
-    acts+='<button class="mini-btn" onclick="moveLead(\''+o.id+'\',\'thinking\')">Думает</button>';
-    acts+='<button class="mini-btn primary" onclick="convertLead(\''+o.id+'\')">В работу →</button>';
-    acts+='<button class="mini-btn" onclick="moveLead(\''+o.id+'\',\'dead\')">Неактуальна</button>';
-  } else if(o.status==='thinking'){
-    acts+='<button class="mini-btn primary" onclick="convertLead(\''+o.id+'\')">В работу →</button>';
-    acts+='<button class="mini-btn" onclick="moveLead(\''+o.id+'\',\'dead\')">Неактуальна</button>';
-  } else if(o.status==='dead'){
-    acts+='<button class="mini-btn" onclick="moveLead(\''+o.id+'\',\'inbox\')">Вернуть</button>';
-  }
-  return '<div class="ocard">'+
-    '<div class="nm">'+esc(o.client)+'</div>'+
-    '<div class="meta">'+
+function leadCard(o,color){
+  return '<div class="fcard" draggable="true" style="border-top-color:'+color+'" '+
+      'ondragstart="funnelDragStart(event,\''+o.id+'\')" ondragend="funnelDragEnd(this)">'+
+    '<div class="fc-name">'+esc(o.client)+'</div>'+
+    '<div class="fc-meta">'+
       (o.phone?'📞 '+esc(o.phone)+'<br>':'')+
-      (o.trip_date?'📅 '+esc(o.trip_date)+'<br>':'')+
-      (o.request?'📝 '+esc(o.request):'')+
+      (o.trip_date?'📅 '+esc(o.trip_date):'')+
     '</div>'+
-    '<div class="acts" style="margin-top:8px;flex-wrap:wrap">'+acts+
-      '<button class="mini-btn" onclick="openLeadModal(\''+o.id+'\')">✎</button>'+
-      '<button class="mini-btn" onclick="delOrder(\''+o.id+'\')">🗑</button>'+
+    (o.request?'<div class="fc-req">'+esc(o.request)+'</div>':'')+
+    '<div class="fc-acts">'+
+      (o.status!=='dead'?'<button class="fc-deal" onclick="convertLead(\''+o.id+'\')"><i class="ti ti-arrow-right"></i> Перевести в доску заявок</button>':'')+
+      '<button class="fc-icon" onclick="openLeadModal(\''+o.id+'\')">✎</button>'+
+      '<button class="fc-icon" onclick="delOrder(\''+o.id+'\')">🗑</button>'+
     '</div>'+
   '</div>';
+}
+
+// drag handlers
+function funnelDragStart(e,id){ dragId=id; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
+function funnelDragEnd(el){ el.classList.remove('dragging'); }
+function funnelDragOver(e,col){ e.preventDefault(); col.classList.add('dragover'); }
+function funnelDragLeave(col){ col.classList.remove('dragover'); }
+async function funnelDrop(e,col){
+  e.preventDefault(); col.classList.remove('dragover');
+  if(!dragId) return;
+  var st=col.getAttribute('data-status');
+  var id=dragId; dragId=null;
+  var o=ORDERS.find(function(x){return x.id===id;});
+  if(o && o.status===st) return;          // не двигаем в ту же колонку
+  var res = await sb.from('tour_orders').update({status: st}).eq('id', id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  loadOrders();
 }
 
 function openLeadModal(id){
