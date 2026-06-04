@@ -147,6 +147,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .field-row input:focus,.field-row select:focus,.field-row textarea:focus{border-color:var(--accent);outline:none}
 .field-2{display:flex;gap:10px}
 .field-2>div{flex:1}
+.day-picker{display:flex;gap:6px;flex-wrap:wrap}
+.day-chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;user-select:none;background:var(--bg2)}
+.day-chip input{margin:0;cursor:pointer}
+.day-presets{display:flex;gap:6px;margin-top:8px}
 .modal-acts{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 
 .empty-state{text-align:center;padding:50px 20px;color:var(--text3)}
@@ -415,6 +419,79 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="modal-acts">
       <button class="btn-sec" onclick="closeOrderModal()">Отмена</button>
       <button class="btn-add" onclick="saveOrder()"><i class="ti ti-check"></i> Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: client schedule -->
+<div class="modal-bg" id="clientModal">
+  <div class="modal">
+    <h2 id="clientModalTitle">Новый клиент</h2>
+    <div class="field-2">
+      <div class="field-row">
+        <label>Имя клиента</label>
+        <input id="cl_name" placeholder="Например: Anton">
+      </div>
+      <div class="field-row">
+        <label>Телефон</label>
+        <input id="cl_phone" placeholder="+971 ...">
+      </div>
+    </div>
+    <div class="field-row">
+      <label>Тип</label>
+      <select id="cl_kind" onchange="toggleClientSchedule()">
+        <option value="regular">Постоянный (по расписанию)</option>
+        <option value="onetime">Разовый</option>
+      </select>
+    </div>
+    <div class="field-2">
+      <div class="field-row">
+        <label>Откуда (по умолчанию)</label>
+        <input id="cl_from" placeholder="Адрес подачи">
+      </div>
+      <div class="field-row">
+        <label>Куда (по умолчанию)</label>
+        <input id="cl_to" placeholder="Адрес назначения">
+      </div>
+    </div>
+
+    <div id="cl_sched">
+      <div class="field-row">
+        <label>Дни недели</label>
+        <div class="day-picker" id="cl_days">
+          <label class="day-chip"><input type="checkbox" class="cl-day" value="1">Пн</label>
+          <label class="day-chip"><input type="checkbox" class="cl-day" value="2">Вт</label>
+          <label class="day-chip"><input type="checkbox" class="cl-day" value="3">Ср</label>
+          <label class="day-chip"><input type="checkbox" class="cl-day" value="4">Чт</label>
+          <label class="day-chip"><input type="checkbox" class="cl-day" value="5">Пт</label>
+          <label class="day-chip"><input type="checkbox" class="cl-day" value="6">Сб</label>
+          <label class="day-chip"><input type="checkbox" class="cl-day" value="7">Вс</label>
+        </div>
+        <div class="day-presets">
+          <button class="mini-btn" type="button" onclick="setDays([1,2,3,4,5])">Будни</button>
+          <button class="mini-btn" type="button" onclick="setDays([1,2,3,4,5,6,7])">Каждый день</button>
+          <button class="mini-btn" type="button" onclick="setDays([])">Очистить</button>
+        </div>
+      </div>
+      <div class="field-2">
+        <div class="field-row"><label>Утро — время</label><input id="cl_tm" placeholder="9:30"></div>
+        <div class="field-row"><label>День — время</label><input id="cl_td" placeholder="14:00"></div>
+        <div class="field-row"><label>Вечер — время</label><input id="cl_te" placeholder="18:00"></div>
+      </div>
+      <div class="field-2">
+        <div class="field-row"><label>Утро — водитель</label><select id="cl_sdm"></select></div>
+        <div class="field-row"><label>День — водитель</label><select id="cl_sdd"></select></div>
+        <div class="field-row"><label>Вечер — водитель</label><select id="cl_sde"></select></div>
+      </div>
+      <div class="field-2">
+        <div class="field-row"><label>Период с</label><input id="cl_pfrom" type="date"></div>
+        <div class="field-row"><label>Период по</label><input id="cl_pto" type="date"></div>
+      </div>
+    </div>
+
+    <div class="modal-acts">
+      <button class="btn-sec" onclick="closeClientModal()">Отмена</button>
+      <button class="btn-add" onclick="saveClient()"><i class="ti ti-check"></i> Сохранить</button>
     </div>
   </div>
 </div>
@@ -975,13 +1052,8 @@ async function seedFunnelDemo(){
 }
 
 // ─────────── CLIENTS & CARS data ───────────
-var CLIENTS = [
-  {id:'c1', name:'Anton', phone:'+971 58 258 3346', from:'Marina', to:'School', schedule:'Пн-Пт 9:30 / 18:00', regular:true},
-  {id:'c2', name:'Marina-Renat', phone:'+971 56 768 1750', from:'JBR', to:'Office', schedule:'Пн-Пт 6:50 / 15:15', regular:true},
-  {id:'c3', name:'Gabriela', phone:'+373 691 05 252', from:'Hotel', to:'Beach', schedule:'разово', regular:false},
-  {id:'c4', name:'Oksana', phone:'+971 52 826 6607', from:'Palm', to:'Airport', schedule:'разово', regular:false},
-  {id:'c5', name:'Ariella', phone:'+971 50 189 2920', from:'Marina', to:'Clinic', schedule:'Пн-Пт 9:00 / 18:00', regular:true},
-];
+var CLIENTS = [];   // загружаются из tour_clients
+var editingClientId = null;
 var CARS = [
   {id:'car1', plate:'Kia K5', model:'Kia K5', seats:4, driver:'Ahmed'},
   {id:'car2', plate:'Mazda CX5', model:'Mazda CX5', seats:5, driver:'Alaaeldine'},
@@ -990,10 +1062,13 @@ var CARS = [
 ];
 
 function loadAll(){
-  try{ var s=localStorage.getItem('tourismClients'); if(s) CLIENTS=JSON.parse(s); }catch(e){}
   try{ var d=localStorage.getItem('tourismDrivers'); if(d) DRIVERS=JSON.parse(d); }catch(e){}
 }
-function saveClients(){ localStorage.setItem('tourismClients', JSON.stringify(CLIENTS)); }
+async function loadClients(){
+  var res = await sb.from('tour_clients').select('*').order('created_at',{ascending:true});
+  if(res.error){ console.error('loadClients', res.error); CLIENTS=[]; return; }
+  CLIENTS = res.data||[];
+}
 function saveDrivers(){ localStorage.setItem('tourismDrivers', JSON.stringify(DRIVERS)); }
 
 // ─────────── NAVIGATION ───────────
@@ -1010,7 +1085,7 @@ function goPage(p){
   if(p==='board') render();
   if(p==='funnel') renderFunnel();
   if(p==='dashboard') renderDashboard();
-  if(p==='clients') renderClients();
+  if(p==='clients'){ loadClients().then(renderClients); }
   if(p==='drivers') renderDrivers();
   if(p==='cars') renderCars();
   if(p==='finance') renderFinance();
@@ -1049,15 +1124,157 @@ function statCard(lbl,num,cls,sub){
 }
 
 // ─────────── CLIENTS ───────────
+var DOW=['','Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+function daysLabel(s){
+  var arr=(s||'').split(',').filter(Boolean).map(Number);
+  if(arr.length===0) return '—';
+  if(arr.length===7) return 'каждый день';
+  if(arr.join(',')==='1,2,3,4,5') return 'будни';
+  return arr.map(function(n){return DOW[n];}).join(' ');
+}
+function clientTimesLabel(c){
+  var t=[];
+  if(c.t_morning) t.push('☀ '+c.t_morning);
+  if(c.t_day) t.push('⛅ '+c.t_day);
+  if(c.t_evening) t.push('🌙 '+c.t_evening);
+  return t.length?t.join(' / '):'—';
+}
+
 function renderClients(){
-  var html='<div class="page-head"><span class="ttl">Клиенты</span><span class="spacer"></span><button class="btn-add" onclick="alert(\'В прототипе: здесь будет форма добавления клиента\')"><i class="ti ti-plus"></i> Клиент</button></div>';
-  html+='<div class="info-banner"><i class="ti ti-info-circle"></i> Постоянные клиенты ездят по расписанию — система будет создавать им рейсы автоматически каждый день.</div>';
-  html+='<table class="tbl"><thead><tr><th>Имя</th><th>Телефон</th><th>Маршрут</th><th>Расписание</th><th>Тип</th></tr></thead><tbody>';
+  var html='<div class="page-head"><span class="ttl">Клиенты</span><span class="spacer"></span><button class="btn-add" onclick="openClientModal()"><i class="ti ti-plus"></i> Клиент</button></div>';
+  html+='<div class="info-banner"><i class="ti ti-info-circle"></i> Постоянному клиенту задайте расписание и нажмите «Создать поездки» — система сама заведёт поездки на каждый нужный день за период.</div>';
+  if(!CLIENTS.length){
+    html+='<div class="empty-state"><i class="ti ti-users"></i>Клиентов пока нет.<br>Нажмите «Клиент», чтобы добавить первого.</div>';
+    document.getElementById('page-clients').innerHTML=html; return;
+  }
+  html+='<table class="tbl"><thead><tr><th>Имя</th><th>Телефон</th><th>Маршрут</th><th>Дни</th><th>Время</th><th>Период</th><th>Тип</th><th></th></tr></thead><tbody>';
   CLIENTS.forEach(function(c){
-    html+='<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.phone)+'</td><td>'+esc(c.from)+' → '+esc(c.to)+'</td><td>'+esc(c.schedule)+'</td><td>'+(c.regular?'<span style="color:var(--accent)">постоянный</span>':'<span style="color:var(--text3)">разовый</span>')+'</td></tr>';
+    var period = (c.period_from||c.period_to) ? (esc(c.period_from||'…')+' → '+esc(c.period_to||'…')) : '—';
+    var typeLbl = c.kind==='onetime' ? '<span style="color:var(--text3)">разовый</span>' : '<span style="color:var(--accent)">постоянный</span>';
+    html+='<tr>'+
+      '<td><b>'+esc(c.name)+'</b></td>'+
+      '<td>'+esc(c.phone)+'</td>'+
+      '<td>'+(c.from_loc?esc(c.from_loc)+' → '+esc(c.to_loc||''):'—')+'</td>'+
+      '<td>'+(c.kind==='onetime'?'—':daysLabel(c.days))+'</td>'+
+      '<td>'+(c.kind==='onetime'?'—':clientTimesLabel(c))+'</td>'+
+      '<td style="font-size:12px;color:var(--text2)">'+(c.kind==='onetime'?'—':period)+'</td>'+
+      '<td>'+typeLbl+'</td>'+
+      '<td style="white-space:nowrap;text-align:right">'+
+        (c.kind==='onetime'?'':'<button class="mini-btn primary" onclick="generateTrips(\''+c.id+'\')"><i class="ti ti-calendar-plus"></i> создать поездки</button> ')+
+        '<button class="mini-btn" onclick="openClientModal(\''+c.id+'\')">✎</button> '+
+        '<button class="mini-btn" onclick="delClient(\''+c.id+'\')">×</button>'+
+      '</td>'+
+    '</tr>';
   });
   html+='</tbody></table>';
   document.getElementById('page-clients').innerHTML=html;
+}
+
+function fillClientDriverSelects(){
+  var opts='<option value="">— не назначен —</option>'+
+    DRIVERS.map(function(d){ return '<option value="'+d.id+'">'+d.name+' ('+d.car+')</option>'; }).join('');
+  document.getElementById('cl_sdm').innerHTML=opts;
+  document.getElementById('cl_sdd').innerHTML=opts;
+  document.getElementById('cl_sde').innerHTML=opts;
+}
+function setDays(arr){
+  document.querySelectorAll('.cl-day').forEach(function(b){ b.checked = arr.indexOf(Number(b.value))>=0; });
+}
+function toggleClientSchedule(){
+  var onetime = document.getElementById('cl_kind').value==='onetime';
+  document.getElementById('cl_sched').style.display = onetime ? 'none' : '';
+}
+function openClientModal(id){
+  editingClientId = id||null;
+  fillClientDriverSelects();
+  document.getElementById('clientModalTitle').textContent = id ? 'Редактировать клиента' : 'Новый клиент';
+  var c = id ? CLIENTS.find(function(x){return x.id===id;}) : {};
+  document.getElementById('cl_name').value=c.name||'';
+  document.getElementById('cl_phone').value=c.phone||'';
+  document.getElementById('cl_kind').value=c.kind||'regular';
+  document.getElementById('cl_from').value=c.from_loc||'';
+  document.getElementById('cl_to').value=c.to_loc||'';
+  setDays((c.days||'').split(',').filter(Boolean).map(Number));
+  document.getElementById('cl_tm').value=c.t_morning||'';
+  document.getElementById('cl_td').value=c.t_day||'';
+  document.getElementById('cl_te').value=c.t_evening||'';
+  document.getElementById('cl_sdm').value=c.sd_morning||'';
+  document.getElementById('cl_sdd').value=c.sd_day||'';
+  document.getElementById('cl_sde').value=c.sd_evening||'';
+  document.getElementById('cl_pfrom').value=c.period_from||'';
+  document.getElementById('cl_pto').value=c.period_to||'';
+  toggleClientSchedule();
+  document.getElementById('clientModal').classList.add('show');
+}
+function closeClientModal(){ document.getElementById('clientModal').classList.remove('show'); }
+async function saveClient(){
+  var name=document.getElementById('cl_name').value.trim();
+  if(!name){ alert('Введите имя клиента'); return; }
+  var days=[]; document.querySelectorAll('.cl-day:checked').forEach(function(b){ days.push(b.value); });
+  var data={
+    name:name,
+    phone:document.getElementById('cl_phone').value.trim(),
+    kind:document.getElementById('cl_kind').value,
+    from_loc:document.getElementById('cl_from').value.trim(),
+    to_loc:document.getElementById('cl_to').value.trim(),
+    days:days.join(','),
+    t_morning:document.getElementById('cl_tm').value.trim(),
+    t_day:document.getElementById('cl_td').value.trim(),
+    t_evening:document.getElementById('cl_te').value.trim(),
+    sd_morning:document.getElementById('cl_sdm').value||null,
+    sd_day:document.getElementById('cl_sdd').value||null,
+    sd_evening:document.getElementById('cl_sde').value||null,
+    period_from:document.getElementById('cl_pfrom').value||null,
+    period_to:document.getElementById('cl_pto').value||null,
+    company_id:'mrride'
+  };
+  var res;
+  if(editingClientId){ res = await sb.from('tour_clients').update(data).eq('id', editingClientId); }
+  else { res = await sb.from('tour_clients').insert(data); }
+  if(res.error){ alert('Ошибка сохранения клиента: '+res.error.message); return; }
+  closeClientModal();
+  await loadClients(); renderClients();
+}
+async function delClient(id){
+  if(!confirm('Удалить клиента? Уже созданные поездки останутся.')) return;
+  var res = await sb.from('tour_clients').delete().eq('id', id);
+  if(res.error){ alert('Ошибка удаления: '+res.error.message); return; }
+  await loadClients(); renderClients();
+}
+
+function fmtDate(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+
+// Создать поездки на период по расписанию клиента
+async function generateTrips(id){
+  var c = CLIENTS.find(function(x){return x.id===id;});
+  if(!c){ return; }
+  if(!c.period_from || !c.period_to){ alert('Укажите период (с какого по какое число) в карточке клиента.'); return; }
+  var days=(c.days||'').split(',').filter(Boolean).map(Number);
+  if(!days.length){ alert('Выберите дни недели в расписании клиента.'); return; }
+  if(!(c.t_morning||c.t_day||c.t_evening)){ alert('Укажите хотя бы одно время (утро/день/вечер).'); return; }
+  // уже созданные дни этого клиента в периоде — чтобы не дублировать
+  var ex = await sb.from('tour_orders').select('trip_date').eq('client', c.name).gte('trip_date', c.period_from).lte('trip_date', c.period_to);
+  if(ex.error){ alert('Ошибка проверки: '+ex.error.message); return; }
+  var have={}; (ex.data||[]).forEach(function(r){ if(r.trip_date) have[r.trip_date]=true; });
+  var anyDrv = c.sd_morning||c.sd_day||c.sd_evening;
+  var rows=[];
+  var d=new Date(c.period_from+'T00:00:00'); var end=new Date(c.period_to+'T00:00:00');
+  while(d<=end){
+    var iso = d.getDay()===0?7:d.getDay();
+    var ds = fmtDate(d);
+    if(days.indexOf(iso)>=0 && !have[ds]){
+      rows.push({client:c.name, phone:c.phone, from_loc:c.from_loc, to_loc:c.to_loc,
+        morning:c.t_morning||null, day_time:c.t_day||null, evening:c.t_evening||null,
+        driver_morning:c.sd_morning||null, driver_day:c.sd_day||null, driver_evening:c.sd_evening||null,
+        trip_date:ds, status: anyDrv?'assigned':'new', type:'round', company_id:'mrride'});
+    }
+    d.setDate(d.getDate()+1);
+  }
+  if(!rows.length){ alert('Нечего создавать: подходящих дней нет или поездки на этот период уже созданы.'); return; }
+  var res = await sb.from('tour_orders').insert(rows);
+  if(res.error){ alert('Ошибка создания поездок: '+res.error.message); return; }
+  alert('Создано поездок: '+rows.length+'. Откройте «Доска заявок» и выберите дату.');
+  loadOrders();
 }
 
 // ─────────── DRIVERS ───────────
