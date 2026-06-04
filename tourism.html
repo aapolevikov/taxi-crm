@@ -108,6 +108,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .st.done{background:var(--bg3);color:var(--text3)}
 .trip .row-acts{display:flex;gap:5px}
 
+/* Time-of-day sections */
+.time-lane{margin-bottom:0}
+.time-hdr{border-radius:0}
+.trip-row{display:grid;grid-template-columns:12px 130px 60px 1fr 130px 150px 64px;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2)}
+.trip-row.unassigned{border-color:var(--danger)}
+.trip-row .tr-dot{width:10px;height:10px;border-radius:50%}
+.trip-row .tr-client{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trip-row .tr-time{font-weight:700;font-size:14px}
+.trip-row .tr-route{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trip-row .tr-phone{font-size:12px;color:var(--text3);white-space:nowrap;text-align:right}
+.trip-row .tr-driver{padding:6px 8px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;max-width:150px}
+.trip-row .tr-acts{display:flex;gap:4px;justify-content:flex-end}
+.slot-free{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 14px 12px}
+.slot-free-lbl{font-size:12px;color:var(--text3);font-weight:600}
+.slot-free-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--text2)}
+.slot-free-chip .dot{width:8px;height:8px;border-radius:50%}
+.slot-free-none{font-size:12px;color:var(--text3);font-style:italic}
+
 /* Status columns board */
 .cols{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}
 .col{flex:1;min-width:240px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rl)}
@@ -230,7 +248,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <!-- PAGE: BOARD -->
     <div class="page" id="page-board">
     <div class="board-tabs">
-      <button class="tab-btn active" id="tabLanes" onclick="switchBoard('lanes')"><i class="ti ti-steering-wheel"></i> По водителям</button>
+      <button class="tab-btn active" id="tabLanes" onclick="switchBoard('lanes')"><i class="ti ti-clock"></i> По времени</button>
       <button class="tab-btn" id="tabCols" onclick="switchBoard('cols')"><i class="ti ti-columns"></i> По статусам</button>
       <div style="flex:1"></div>
       <button class="btn-sec" onclick="seedDemo()"><i class="ti ti-flask"></i> Демо-данные</button>
@@ -358,25 +376,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="field-2">
       <div class="field-row">
-        <label>Утро</label>
+        <label>Утро — время</label>
         <input id="f_morning" placeholder="9:30">
       </div>
       <div class="field-row">
-        <label>День</label>
+        <label>День — время</label>
         <input id="f_day" placeholder="14:00">
       </div>
       <div class="field-row">
-        <label>Вечер</label>
+        <label>Вечер — время</label>
         <input id="f_evening" placeholder="18:00">
+      </div>
+    </div>
+    <div class="field-2">
+      <div class="field-row">
+        <label>Утро — водитель</label>
+        <select id="f_driver_m"></select>
+      </div>
+      <div class="field-row">
+        <label>День — водитель</label>
+        <select id="f_driver_d"></select>
+      </div>
+      <div class="field-row">
+        <label>Вечер — водитель</label>
+        <select id="f_driver_e"></select>
       </div>
     </div>
     <div class="field-row">
       <label>Дата поездки</label>
       <input id="f_orderdate" type="date">
-    </div>
-    <div class="field-row">
-      <label>Водитель</label>
-      <select id="f_driver"></select>
     </div>
     <div class="field-row">
       <label>Заметка</label>
@@ -415,6 +443,7 @@ var boardDate = 'all';
 function rowToOrder(r){
   return {id:r.id, client:r.client, phone:r.phone, from:r.from_loc, to:r.to_loc,
           morning:r.morning, evening:r.evening, driver:r.driver,
+          dM:r.driver_morning, dD:r.driver_day, dE:r.driver_evening,
           status:r.status, note:r.note, type:r.type,
           request:r.request, trip_date:r.trip_date, day:r.day_time};
 }
@@ -422,6 +451,7 @@ function rowToOrder(r){
 function orderToRow(o){
   return {client:o.client, phone:o.phone, from_loc:o.from, to_loc:o.to,
           morning:o.morning, evening:o.evening, driver:o.driver||null,
+          driver_morning:o.dM||null, driver_day:o.dD||null, driver_evening:o.dE||null,
           status:o.status, note:o.note, type:o.type, company_id:'mrride',
           request:o.request||null, trip_date:o.trip_date||null, day_time:o.day||null};
 }
@@ -483,16 +513,16 @@ function subscribeOrders(){
 // ─────────── DEMO SEED ───────────
 async function seedDemo(){
   var demo = [
-    {client:'Anton', phone:'+971 58 258 3346', from:'Marina', to:'School', morning:'9:30', evening:'18:00', driver:'d1', status:'confirmed', note:'', type:'round'},
-    {client:'Marina-Renat', phone:'+971 56 768 1750', from:'JBR', to:'Office', morning:'6:50', evening:'15:15', driver:'d1', status:'assigned', note:'', type:'round'},
-    {client:'Nour', phone:'+971 52 347 0147', from:'Downtown', to:'Mall', morning:'10:30', evening:'21:30', driver:'d1', status:'confirmed', note:'', type:'round'},
-    {client:'Gabriela', phone:'+373 691 05 252', from:'Hotel', to:'Beach', morning:'7:30', evening:'19:00', driver:'d2', status:'assigned', note:'', type:'round'},
-    {client:'Oksana', phone:'+971 52 826 6607', from:'Palm', to:'Airport', morning:'9:25', evening:'21:00', driver:'d3', status:'confirmed', note:'', type:'round'},
-    {client:'Ariella', phone:'+971 50 189 2920', from:'Marina', to:'Clinic', morning:'9:00', evening:'18:00', driver:'d3', status:'assigned', note:'', type:'round'},
-    {client:'Purim', phone:'+971 58 846 8102', from:'Hotel', to:'Tour', morning:'', evening:'', driver:'d4', status:'confirmed', note:'', type:'round'},
-    {client:'Bella', phone:'054 297 4864', from:'Deira', to:'Mall', morning:'11:00', evening:'19:30', driver:'', status:'new', note:'Новый клиент', type:'round'},
-    {client:'Dina', phone:'+971 50 249 7316', from:'Sharjah', to:'Dubai', morning:'7:30', evening:'18:30', driver:'', status:'new', note:'', type:'round'},
-    {client:'Lera', phone:'+48 608 277 268', from:'Hotel', to:'—', morning:'', evening:'', driver:'', status:'new', note:'Запрос на четверг', type:'round'},
+    {client:'Anton', phone:'+971 58 258 3346', from:'Marina', to:'School', morning:'9:30', evening:'18:00', dM:'d1', dE:'d1', status:'confirmed', note:'', type:'round'},
+    {client:'Marina-Renat', phone:'+971 56 768 1750', from:'JBR', to:'Office', morning:'6:50', evening:'15:15', dM:'d1', dE:'d2', status:'assigned', note:'', type:'round'},
+    {client:'Nour', phone:'+971 52 347 0147', from:'Downtown', to:'Mall', morning:'10:30', evening:'21:30', dM:'d1', dE:'d1', status:'confirmed', note:'', type:'round'},
+    {client:'Gabriela', phone:'+373 691 05 252', from:'Hotel', to:'Beach', morning:'7:30', evening:'19:00', dM:'d2', dE:'d2', status:'assigned', note:'', type:'round'},
+    {client:'Oksana', phone:'+971 52 826 6607', from:'Palm', to:'Airport', morning:'9:25', evening:'21:00', dM:'d3', dE:'d3', status:'confirmed', note:'', type:'round'},
+    {client:'Ariella', phone:'+971 50 189 2920', from:'Marina', to:'Clinic', morning:'9:00', day:'14:00', dM:'d3', dD:'d4', status:'assigned', note:'', type:'round'},
+    {client:'Purim', phone:'+971 58 846 8102', from:'Hotel', to:'Tour', day:'12:00', dD:'d4', status:'confirmed', note:'', type:'single'},
+    {client:'Bella', phone:'054 297 4864', from:'Deira', to:'Mall', morning:'11:00', evening:'19:30', status:'new', note:'Новый клиент', type:'round'},
+    {client:'Dina', phone:'+971 50 249 7316', from:'Sharjah', to:'Dubai', morning:'7:30', evening:'18:30', status:'new', note:'', type:'round'},
+    {client:'Lera', phone:'+48 608 277 268', from:'Hotel', to:'Mall', day:'13:00', status:'new', note:'Запрос на четверг', type:'single'},
   ];
   var rows = demo.map(orderToRow);
   var res = await sb.from('tour_orders').insert(rows);
@@ -502,15 +532,17 @@ async function seedDemo(){
 
 // ─────────── MODAL ───────────
 function fillDriverSelect(){
-  var sel=document.getElementById('f_driver');
-  sel.innerHTML='<option value="">— не назначен —</option>'+
+  var opts='<option value="">— не назначен —</option>'+
     DRIVERS.map(function(d){ return '<option value="'+d.id+'">'+d.name+' ('+d.car+')</option>'; }).join('');
+  document.getElementById('f_driver_m').innerHTML=opts;
+  document.getElementById('f_driver_d').innerHTML=opts;
+  document.getElementById('f_driver_e').innerHTML=opts;
 }
 function openOrderModal(id){
   editingId = id||null;
   fillDriverSelect();
   document.getElementById('orderModalTitle').textContent = id ? 'Редактировать заявку' : 'Новая заявка';
-  var o = id ? ORDERS.find(function(x){return x.id===id;}) : {client:'',phone:'',from:'',to:'',morning:'',day:'',evening:'',driver:'',note:'',type:'round',trip_date:''};
+  var o = id ? ORDERS.find(function(x){return x.id===id;}) : {client:'',phone:'',from:'',to:'',morning:'',day:'',evening:'',dM:'',dD:'',dE:'',note:'',type:'round',trip_date:''};
   document.getElementById('f_client').value=o.client||'';
   document.getElementById('f_phone').value=o.phone||'';
   document.getElementById('f_from').value=o.from||'';
@@ -519,7 +551,9 @@ function openOrderModal(id){
   document.getElementById('f_day').value=o.day||'';
   document.getElementById('f_evening').value=o.evening||'';
   document.getElementById('f_orderdate').value=o.trip_date||'';
-  document.getElementById('f_driver').value=o.driver||'';
+  document.getElementById('f_driver_m').value=o.dM||'';
+  document.getElementById('f_driver_d').value=o.dD||'';
+  document.getElementById('f_driver_e').value=o.dE||'';
   document.getElementById('f_note').value=o.note||'';
   document.getElementById('f_type').value=o.type||'round';
   document.getElementById('orderModal').classList.add('show');
@@ -528,7 +562,10 @@ function closeOrderModal(){ document.getElementById('orderModal').classList.remo
 async function saveOrder(){
   var client=document.getElementById('f_client').value.trim();
   if(!client){ alert('Введите имя клиента'); return; }
-  var driver=document.getElementById('f_driver').value;
+  var dM=document.getElementById('f_driver_m').value;
+  var dD=document.getElementById('f_driver_d').value;
+  var dE=document.getElementById('f_driver_e').value;
+  var anyDriver = dM||dD||dE;
   var data={
     client:client,
     phone:document.getElementById('f_phone').value.trim(),
@@ -538,16 +575,16 @@ async function saveOrder(){
     day:document.getElementById('f_day').value.trim(),
     evening:document.getElementById('f_evening').value.trim(),
     trip_date:document.getElementById('f_orderdate').value||null,
-    driver:driver,
+    dM:dM, dD:dD, dE:dE,
     note:document.getElementById('f_note').value.trim(),
     type:document.getElementById('f_type').value,
-    status: driver ? 'assigned' : 'new'
+    status: anyDriver ? 'assigned' : 'new'
   };
   var res;
   if(editingId){
     var o=ORDERS.find(function(x){return x.id===editingId;});
     var keep = o ? o.status : 'new';
-    if(driver && (keep==='confirmed'||keep==='done')) data.status=keep;
+    if(anyDriver && (keep==='confirmed'||keep==='done')) data.status=keep;
     res = await sb.from('tour_orders').update(orderToRow(data)).eq('id', editingId);
   } else {
     res = await sb.from('tour_orders').insert(orderToRow(data));
@@ -563,6 +600,20 @@ async function delOrder(id){
 }
 async function assignDriver(id, did){
   var res = await sb.from('tour_orders').update({driver: did||null, status: did ? 'assigned' : 'new'}).eq('id', id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  loadOrders();
+}
+// назначить водителя на конкретный слот (утро/день/вечер) прямо с доски
+async function setSlotDriver(id, dkey, driverId){
+  var o=ORDERS.find(function(x){return x.id===id;}); if(!o) return;
+  var colMap={dM:'driver_morning', dD:'driver_day', dE:'driver_evening'};
+  var patch={}; patch[colMap[dkey]] = driverId||null;
+  var dm = dkey==='dM'?driverId:o.dM;
+  var dd = dkey==='dD'?driverId:o.dD;
+  var de = dkey==='dE'?driverId:o.dE;
+  if(dm||dd||de){ if(o.status==='new'||!o.status) patch.status='assigned'; }
+  else { patch.status='new'; }
+  var res = await sb.from('tour_orders').update(patch).eq('id', id);
   if(res.error){ alert('Ошибка: '+res.error.message); return; }
   loadOrders();
 }
@@ -595,12 +646,14 @@ function render(){
   if(board==='lanes') renderLanes(); else renderCols();
 }
 
-// Водители без активного клиента (свободны)
+// Водители, не назначенные НИ на один слот (свободны весь день)
 function renderFreeDrivers(){
   var zone=document.getElementById('freeZone'); if(!zone) return;
   var busy={};
   dealOrders().filter(dateMatch).forEach(function(o){
-    if(o.driver && (o.status==='assigned'||o.status==='confirmed')) busy[o.driver]=true;
+    if(o.dM) busy[o.dM]=true;
+    if(o.dD) busy[o.dD]=true;
+    if(o.dE) busy[o.dE]=true;
   });
   var free=DRIVERS.filter(function(d){return !busy[d.id];});
   document.getElementById('freeBadge').textContent=free.length;
@@ -616,7 +669,7 @@ function renderFreeDrivers(){
 }
 
 function renderAlert(){
-  var news = dealOrders().filter(function(o){return (!o.driver || o.status==='new') && dateMatch(o);});
+  var news = dealOrders().filter(function(o){return !(o.dM||o.dD||o.dE) && dateMatch(o);});
   var zone=document.getElementById('alertZone'), hdr=document.getElementById('alertHdr'), badge=document.getElementById('alertBadge');
   badge.textContent=news.length;
   if(news.length===0){
@@ -641,23 +694,36 @@ function renderAlert(){
   }).join('');
 }
 
-function tripRow(o){
-  var stClass=o.status, drv=driverById(o.driver);
-  return '<div class="trip">'+
-    '<div class="client">'+esc(o.client)+'</div>'+
-    '<div class="times">'+
-      (o.morning?'<div class="tm"><span class="lbl">утро</span><span class="val morning">'+esc(o.morning)+'</span></div>':'')+
-      (o.day?'<div class="tm"><span class="lbl">день</span><span class="val day">'+esc(o.day)+'</span></div>':'')+
-      (o.evening?'<div class="tm"><span class="lbl">вечер</span><span class="val evening">'+esc(o.evening)+'</span></div>':'')+
-    '</div>'+
-    '<div class="addr">'+(o.from?esc(o.from)+(o.to?' → '+esc(o.to):''):'')+'</div>'+
-    '<div class="ph">'+esc(o.phone)+'</div>'+
-    '<div class="st '+stClass+'">'+statusLabel(o.status)+'</div>'+
-    '<div class="row-acts">'+
-      (o.status==='assigned'?'<button class="mini-btn primary" onclick="setStatus(\''+o.id+'\',\'confirmed\')">✓ подтв.</button>':'')+
-      (o.status==='confirmed'?'<button class="mini-btn" onclick="setStatus(\''+o.id+'\',\'done\')">выполнено</button>':'')+
-      '<button class="mini-btn" onclick="openOrderModal(\''+o.id+'\')">✎</button>'+
-    '</div>'+
+function timeToMin(t){
+  if(!t) return 9999;
+  var p=String(t).split(':'); var h=parseInt(p[0],10)||0; var m=parseInt(p[1],10)||0;
+  return h*60+m;
+}
+
+var SLOTS=[
+  {key:'morning', dkey:'dM', label:'Утро',  line:'#e8a33d', icon:'ti-sun'},
+  {key:'day',     dkey:'dD', label:'День',  line:'#0d9e75', icon:'ti-sun-high'},
+  {key:'evening', dkey:'dE', label:'Вечер', line:'#5b8fd6', icon:'ti-moon'},
+];
+
+// строка поездки в разделе слота
+function slotTripRow(o, s){
+  var did=o[s.dkey]||'';
+  var drv=driverById(did);
+  var opts='<option value="">— назначить —</option>'+DRIVERS.map(function(d){
+    return '<option value="'+d.id+'"'+(d.id===did?' selected':'')+'>'+esc(d.name)+' · '+esc(d.car)+'</option>';
+  }).join('');
+  return '<div class="trip-row'+(did?'':' unassigned')+'">'+
+    '<span class="tr-dot" style="background:'+(drv?drv.color:'#c9c7be')+'"></span>'+
+    '<span class="tr-client">'+esc(o.client)+'</span>'+
+    '<span class="tr-time" style="color:'+s.line+'">'+esc(o[s.key])+'</span>'+
+    '<span class="tr-route">'+(o.from?esc(o.from)+(o.to?' → '+esc(o.to):''):'')+'</span>'+
+    '<span class="tr-phone">'+esc(o.phone)+'</span>'+
+    '<select class="tr-driver" onchange="setSlotDriver(\''+o.id+'\',\''+s.dkey+'\',this.value)">'+opts+'</select>'+
+    '<span class="tr-acts">'+
+      '<button class="mini-btn" title="Редактировать" onclick="openOrderModal(\''+o.id+'\')">✎</button>'+
+      '<button class="mini-btn" title="Удалить" onclick="delOrder(\''+o.id+'\')">×</button>'+
+    '</span>'+
   '</div>';
 }
 
@@ -666,19 +732,25 @@ function renderLanes(){
   var deals=dealOrders().filter(dateMatch);
   if(deals.length===0){ box.innerHTML=emptyState(); return; }
   var html='';
-  DRIVERS.forEach(function(d){
-    var trips=deals.filter(function(o){return o.driver===d.id;});
-    html+='<div class="lane">'+
-      '<div class="lane-hdr">'+
-        '<span class="lane-color" style="background:'+d.color+'"></span>'+
-        '<span class="lane-driver">'+esc(d.name)+'</span>'+
-        '<span class="lane-car">'+esc(d.car)+'</span>'+
-        '<span class="lane-phone">'+esc(d.phone)+'</span>'+
+  SLOTS.forEach(function(s){
+    var trips=deals.filter(function(o){return o[s.key];});
+    trips.sort(function(a,b){ return timeToMin(a[s.key])-timeToMin(b[s.key]); });
+    // свободные водители в этом слоте
+    var busy={}; trips.forEach(function(o){ if(o[s.dkey]) busy[o[s.dkey]]=true; });
+    var free=DRIVERS.filter(function(d){return !busy[d.id];});
+    var freeHtml = free.length
+      ? free.map(function(d){return '<span class="slot-free-chip"><span class="dot" style="background:'+d.color+'"></span>'+esc(d.name)+' · '+esc(d.car)+'</span>';}).join('')
+      : '<span class="slot-free-none">все заняты</span>';
+    html+='<div class="lane time-lane">'+
+      '<div class="lane-hdr time-hdr" style="border-left:4px solid '+s.line+'">'+
+        '<i class="ti '+s.icon+'" style="color:'+s.line+';font-size:18px"></i>'+
+        '<span class="lane-driver">'+s.label+'</span>'+
         '<span class="lane-count">'+trips.length+'</span>'+
       '</div>'+
       '<div class="lane-body">'+
-        (trips.length?trips.map(tripRow).join(''):'<div class="lane-empty">Нет назначенных клиентов</div>')+
+        (trips.length?trips.map(function(o){return slotTripRow(o,s);}).join(''):'<div class="lane-empty">Нет поездок</div>')+
       '</div>'+
+      '<div class="slot-free"><span class="slot-free-lbl">Свободны:</span>'+freeHtml+'</div>'+
     '</div>';
   });
   box.innerHTML=html;
@@ -698,14 +770,17 @@ function renderCols(){
       '<div class="col-hdr"><span style="color:'+c.color+'">'+c.title+'</span><span class="lane-count">'+items.length+'</span></div>'+
       '<div class="col-body">'+
         (items.length?items.map(function(o){
-          var drv=driverById(o.driver);
+          var ds=[];
+          if(o.dM){var m=driverById(o.dM); if(m)ds.push('Утро: '+esc(m.name));}
+          if(o.dD){var dd=driverById(o.dD); if(dd)ds.push('День: '+esc(dd.name));}
+          if(o.dE){var e=driverById(o.dE); if(e)ds.push('Вечер: '+esc(e.name));}
           return '<div class="ocard" onclick="openOrderModal(\''+o.id+'\')">'+
             '<div class="nm">'+esc(o.client)+'</div>'+
             '<div class="meta">'+(o.phone?'📞 '+esc(o.phone)+'<br>':'')+
               (o.from?'📍 '+esc(o.from)+(o.to?' → '+esc(o.to):''):'')+
               ((o.morning||o.day||o.evening)?'<br>🕐 '+esc(o.morning||'—')+' / '+esc(o.day||'—')+' / '+esc(o.evening||'—'):'')+
             '</div>'+
-            (drv?'<div class="drv">🚗 '+esc(drv.name)+' · '+esc(drv.car)+'</div>':'')+
+            (ds.length?'<div class="drv">🚗 '+ds.join(' · ')+'</div>':'')+
           '</div>';
         }).join(''):'<div class="lane-empty">—</div>')+
       '</div>'+
@@ -937,7 +1012,7 @@ function goPage(p){
 function renderDashboard(){
   var deals=dealOrders();
   var total=deals.length;
-  var newN=deals.filter(function(o){return !o.driver||o.status==='new';}).length;
+  var newN=deals.filter(function(o){return !(o.dM||o.dD||o.dE);}).length;
   var assigned=deals.filter(function(o){return o.status==='assigned';}).length;
   var confirmed=deals.filter(function(o){return o.status==='confirmed';}).length;
   var done=deals.filter(function(o){return o.status==='done';}).length;
@@ -953,7 +1028,7 @@ function renderDashboard(){
   html+='<div class="page-head" style="margin-top:8px"><span class="ttl">Загрузка водителей</span></div>';
   html+='<table class="tbl"><thead><tr><th>Водитель</th><th>Машина</th><th>Клиентов сегодня</th><th>Статус</th></tr></thead><tbody>';
   DRIVERS.forEach(function(d){
-    var trips=ORDERS.filter(function(o){return o.driver===d.id;});
+    var trips=ORDERS.filter(function(o){return o.dM===d.id||o.dD===d.id||o.dE===d.id;});
     var pending=trips.filter(function(o){return o.status==='assigned';}).length;
     html+='<tr><td><span class="dotc" style="background:'+d.color+'"></span>'+esc(d.name)+'</td><td>'+esc(d.car)+'</td><td>'+trips.length+'</td><td>'+(pending>0?'<span style="color:var(--warn)">'+pending+' ждут подтв.</span>':'<span style="color:var(--accent)">всё ок</span>')+'</td></tr>';
   });
@@ -981,7 +1056,7 @@ function renderDrivers(){
   var html='<div class="page-head"><span class="ttl">Водители</span><span class="spacer"></span><button class="btn-add" onclick="alert(\'В прототипе: здесь будет форма добавления водителя\')"><i class="ti ti-plus"></i> Водитель</button></div>';
   html+='<div class="card-grid">';
   DRIVERS.forEach(function(d){
-    var trips=ORDERS.filter(function(o){return o.driver===d.id;}).length;
+    var trips=ORDERS.filter(function(o){return o.dM===d.id||o.dD===d.id||o.dE===d.id;}).length;
     html+='<div class="entity-card">'+
       '<div class="ec-top"><span class="dotc" style="background:'+d.color+';width:14px;height:14px"></span><span class="ec-name">'+esc(d.name)+'</span></div>'+
       '<div class="ec-meta">🚗 '+esc(d.car)+'<br>📞 '+esc(d.phone)+'<br>📋 клиентов сегодня: '+trips+'</div>'+
