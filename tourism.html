@@ -183,8 +183,41 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .empty-state i{font-size:40px;display:block;margin-bottom:10px;opacity:.5}
 
 @media(max-width:768px){
+  body{flex-direction:column}
+  /* нижняя панель навигации */
+  .sidebar{position:fixed;bottom:0;left:0;right:0;width:100%;height:58px;flex-direction:row;justify-content:space-around;align-items:center;padding:0;gap:0;border-right:none;border-top:1px solid var(--border);z-index:50}
+  .sidebar .logo{display:none}
+  .ni{width:auto;flex:1;height:100%;border-radius:0;font-size:21px}
+  .main{padding-bottom:58px}
+  .topbar{height:54px;padding:0 14px;gap:10px}
+  .topbar h1{font-size:16px}
+  .company-switch{display:none}
+  .topbar .avatar{margin-left:auto}
+  .content{padding:12px 12px 76px}
+
+  /* строки поездок — в столбик */
+  .trip-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px}
+  .trip-row .tr-client{flex:1 1 auto;font-size:15px}
+  .trip-row .tr-time{order:2}
+  .trip-row .tr-phone{display:none}
+  .trip-row .tr-route{flex-basis:100%;order:5}
+  .trip-row .tr-driver{flex-basis:100%;order:6;max-width:none;height:38px}
+  .trip-row .tr-acts{order:7;margin-left:auto}
+
+  /* таблицы — горизонтальный скролл */
+  .tbl{display:block;overflow-x:auto;white-space:nowrap}
+
+  /* модалки и поля */
+  .modal{padding:18px}
+  .field-2{flex-direction:column;gap:0}
+
+  /* карточки/сетки */
+  .card-grid{grid-template-columns:1fr}
+  .stat{min-width:calc(50% - 6px)}
+  .cols{flex-direction:column}
+  .col{min-width:0}
+
   .trip{flex-wrap:wrap}
-  .content{padding:12px}
 }
 
 /* page title */
