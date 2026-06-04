@@ -243,6 +243,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tbl tr:hover td{background:var(--bg2)}
 .dotc{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:middle}
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.search-input{flex:1;min-width:200px;padding:9px 13px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px;outline:none}
+.search-input:focus{border-color:var(--accent)}
+.badge-st{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.badge-st.ok{background:var(--accent-l);color:var(--accent)}
+.badge-st.warn{background:var(--warn-l);color:var(--warn)}
+.badge-st.off{background:var(--danger-l);color:var(--danger)}
 .entity-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px}
 .entity-card .ec-top{display:flex;align-items:center;gap:8px}
 .entity-card .ec-name{font-weight:700;font-size:15px}
@@ -619,6 +626,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="field-row"><label>Телефон</label><input id="drv_phone" placeholder="+971 ..."></div>
     </div>
     <div class="field-2">
+      <div class="field-row"><label>Email</label><input id="drv_email" placeholder="name@mail.com"></div>
+      <div class="field-row"><label>Статус</label><select id="drv_status"><option value="working">Работает</option><option value="blocked">Заблокирован</option></select></div>
+    </div>
+    <div class="field-2">
       <div class="field-row"><label>Машина</label><select id="drv_car"></select></div>
       <div class="field-row"><label>Цвет на доске</label><input id="drv_color" type="color" style="height:40px;padding:4px"></div>
     </div>
@@ -638,6 +649,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="field-row"><label>Модель</label><input id="car_model" placeholder="Kia K5"></div>
       <div class="field-row"><label>Мест</label><input id="car_seats" type="number" min="1" step="1" placeholder="4"></div>
     </div>
+    <div class="field-row"><label>Статус</label><select id="car_status"><option value="use">В работе</option><option value="reserve">Резерв</option><option value="repair">Ремонт</option></select></div>
     <div class="modal-acts">
       <button class="btn-sec" onclick="closeCarModal()">Отмена</button>
       <button class="btn-add" onclick="saveCar()"><i class="ti ti-check"></i> Сохранить</button>
@@ -1315,7 +1327,7 @@ async function loadFleet(){
   var rd = await sb.from('drivers').select('*').order('created_at',{ascending:true});
   var rows = rd.error?[]:(rd.data||[]);
   // .car — подпись машины (для совместимости со всем кодом, где используется d.car)
-  DRIVERS = rows.map(function(d){ return {id:d.id, name:d.name, phone:d.phone, color:d.color||'#888', car_id:d.car_id||'', car:carLabel(d.car_id)}; });
+  DRIVERS = rows.map(function(d){ return {id:d.id, name:d.name, phone:d.phone, email:d.email||'', color:d.color||'#888', car_id:d.car_id||'', car:carLabel(d.car_id), status:d.status||'working'}; });
 }
 
 function loadAll(){}
@@ -1574,23 +1586,49 @@ async function generateTrips(id){
 }
 
 // ─────────── DRIVERS ───────────
+function driverStatusBadge(s){ s=s||'working'; return s==='blocked' ? '<span class="badge-st off">Заблокирован</span>' : '<span class="badge-st ok">Работает</span>'; }
 function renderDrivers(){
+  var todayIso=dateStr(0);
+  var busyToday={}; ORDERS.forEach(function(o){ if(o.trip_date===todayIso){ if(o.dM)busyToday[o.dM]=1; if(o.dD)busyToday[o.dD]=1; if(o.dE)busyToday[o.dE]=1; } });
+  window._drvBusy=busyToday;
+  var total=DRIVERS.length;
+  var working=DRIVERS.filter(function(d){return (d.status||'working')!=='blocked';}).length;
+  var freeNow=DRIVERS.filter(function(d){return !busyToday[d.id];}).length;
   var html='<div class="page-head"><span class="ttl">Водители</span><span class="spacer"></span><button class="btn-add" onclick="openDriverModal()"><i class="ti ti-plus"></i> Водитель</button></div>';
-  if(!DRIVERS.length){
-    html+='<div class="empty-state"><i class="ti ti-steering-wheel"></i>Водителей пока нет.<br>Нажмите «Водитель», чтобы добавить.</div>';
-    document.getElementById('page-drivers').innerHTML=html; return;
-  }
-  html+='<div class="card-grid">';
-  DRIVERS.forEach(function(d){
-    var trips=ORDERS.filter(function(o){return o.dM===d.id||o.dD===d.id||o.dE===d.id;}).length;
-    html+='<div class="entity-card">'+
-      '<div class="ec-top"><span class="dotc" style="background:'+(d.color||'#888')+';width:14px;height:14px"></span><span class="ec-name">'+esc(d.name)+'</span></div>'+
-      '<div class="ec-meta">🚗 '+(d.car?esc(d.car):'<span style="color:var(--text3)">машина не выбрана</span>')+'<br>📞 '+esc(d.phone)+'<br>📋 поездок сегодня: '+trips+'</div>'+
-      '<div class="ec-acts"><button class="mini-btn" onclick="openDriverModal(\''+d.id+'\')">✎ изменить</button> <button class="mini-btn" onclick="delDriver(\''+d.id+'\')">× удалить</button></div>'+
-    '</div>';
-  });
-  html+='</div>';
+  html+='<div class="stats">'+
+    statCard('Всего водителей',total,'','')+
+    statCard('Работают',working,'ok','')+
+    statCard('Свободны сейчас',freeNow,freeNow>0?'ok':'warn','на сегодня')+
+  '</div>';
+  html+='<div class="toolbar"><input id="drvSearch" class="search-input" placeholder="Поиск по имени или телефону..." oninput="filterDrivers()">'+
+    '<select id="drvFilter" class="df-pick" onchange="filterDrivers()"><option value="all">Все статусы</option><option value="working">Работают</option><option value="blocked">Заблокированы</option></select></div>';
+  html+='<table class="tbl"><thead><tr><th>№</th><th>Водитель</th><th>Телефон</th><th>Машина</th><th>Статус</th><th>Поездок сегодня</th><th></th></tr></thead><tbody id="drvRows"></tbody></table>';
   document.getElementById('page-drivers').innerHTML=html;
+  filterDrivers();
+}
+function filterDrivers(){
+  var box=document.getElementById('drvRows'); if(!box) return;
+  var q=(document.getElementById('drvSearch').value||'').toLowerCase();
+  var f=document.getElementById('drvFilter').value||'all';
+  var busyToday=window._drvBusy||{};
+  var list=DRIVERS.filter(function(d){
+    if(f!=='all' && (d.status||'working')!==f) return false;
+    if(q && (d.name||'').toLowerCase().indexOf(q)<0 && (d.phone||'').toLowerCase().indexOf(q)<0) return false;
+    return true;
+  });
+  if(!list.length){ box.innerHTML='<tr><td colspan="7" style="color:var(--text3);padding:18px">Ничего не найдено</td></tr>'; return; }
+  box.innerHTML=list.map(function(d,i){
+    var trips=ORDERS.filter(function(o){return o.dM===d.id||o.dD===d.id||o.dE===d.id;}).length;
+    return '<tr>'+
+      '<td>'+(i+1)+'</td>'+
+      '<td><span class="dotc" style="background:'+(d.color||'#888')+'"></span><b>'+esc(d.name)+'</b></td>'+
+      '<td>'+esc(d.phone)+'</td>'+
+      '<td>'+(d.car?esc(d.car):'<span style="color:var(--text3)">—</span>')+'</td>'+
+      '<td>'+driverStatusBadge(d.status)+'</td>'+
+      '<td>'+trips+'</td>'+
+      '<td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openDriverModal(\''+d.id+'\')">✎</button> <button class="mini-btn" onclick="delDriver(\''+d.id+'\')">×</button></td>'+
+    '</tr>';
+  }).join('');
 }
 
 function fillCarSelect(){
@@ -1601,9 +1639,11 @@ function openDriverModal(id){
   editingDriverId=id||null;
   fillCarSelect();
   document.getElementById('driverModalTitle').textContent = id?'Редактировать водителя':'Новый водитель';
-  var d = id ? DRIVERS.find(function(x){return x.id===id;}) : {color:'#3aa981'};
+  var d = id ? DRIVERS.find(function(x){return x.id===id;}) : {color:'#3aa981',status:'working'};
   document.getElementById('drv_name').value=d.name||'';
   document.getElementById('drv_phone').value=d.phone||'';
+  document.getElementById('drv_email').value=d.email||'';
+  document.getElementById('drv_status').value=d.status||'working';
   document.getElementById('drv_color').value=d.color||'#3aa981';
   document.getElementById('drv_car').value=d.car_id||'';
   document.getElementById('driverModal').classList.add('show');
@@ -1613,6 +1653,8 @@ async function saveDriver(){
   var name=document.getElementById('drv_name').value.trim();
   if(!name){ alert('Введите имя водителя'); return; }
   var data={ name:name, phone:document.getElementById('drv_phone').value.trim(),
+    email:document.getElementById('drv_email').value.trim(),
+    status:document.getElementById('drv_status').value,
     color:document.getElementById('drv_color').value, car_id:document.getElementById('drv_car').value||null, company_id:'mrride' };
   var res;
   if(editingDriverId){ res = await sb.from('drivers').update(data).eq('id', editingDriverId); }
@@ -1629,30 +1671,49 @@ async function delDriver(id){
 }
 
 // ─────────── CARS ───────────
+function carStatusBadge(s){ s=s||'use'; var m={use:['ok','В работе'],reserve:['warn','Резерв'],repair:['off','Ремонт']}[s]||['ok','В работе']; return '<span class="badge-st '+m[0]+'">'+m[1]+'</span>'; }
 function renderCars(){
+  var total=CARS.length;
+  var inUse=CARS.filter(function(c){return (c.status||'use')==='use';}).length;
+  var withDriver={}; DRIVERS.forEach(function(d){ if(d.car_id) withDriver[d.car_id]=1; });
+  var freeCars=CARS.filter(function(c){return !withDriver[c.id];}).length;
   var html='<div class="page-head"><span class="ttl">Машины</span><span class="spacer"></span><button class="btn-add" onclick="openCarModal()"><i class="ti ti-plus"></i> Машина</button></div>';
-  if(!CARS.length){
-    html+='<div class="empty-state"><i class="ti ti-car"></i>Машин пока нет.<br>Нажмите «Машина», чтобы добавить.</div>';
-    document.getElementById('page-cars').innerHTML=html; return;
-  }
-  html+='<table class="tbl"><thead><tr><th>Название</th><th>Модель</th><th>Мест</th><th>Закреплена за</th><th></th></tr></thead><tbody>';
-  CARS.forEach(function(c){
-    var drv=DRIVERS.filter(function(d){return d.car_id===c.id;}).map(function(d){return esc(d.name);}).join(', ')||'—';
-    html+='<tr>'+
-      '<td><b>'+esc(c.plate||c.model)+'</b></td><td>'+esc(c.model||'')+'</td><td>'+(c.seats||'—')+'</td><td>'+drv+'</td>'+
+  html+='<div class="stats">'+
+    statCard('Всего машин',total,'','')+
+    statCard('В работе',inUse,'ok','')+
+    statCard('Без водителя',freeCars,freeCars>0?'warn':'ok','')+
+  '</div>';
+  html+='<div class="toolbar"><input id="carSearch" class="search-input" placeholder="Поиск по названию или модели..." oninput="filterCars()"></div>';
+  html+='<table class="tbl"><thead><tr><th>№</th><th>Название</th><th>Модель</th><th>Мест</th><th>Статус</th><th>Закреплена за</th><th></th></tr></thead><tbody id="carRows"></tbody></table>';
+  document.getElementById('page-cars').innerHTML=html;
+  filterCars();
+}
+function filterCars(){
+  var box=document.getElementById('carRows'); if(!box) return;
+  var q=(document.getElementById('carSearch').value||'').toLowerCase();
+  var list=CARS.filter(function(c){
+    if(!q) return true;
+    return (c.plate||'').toLowerCase().indexOf(q)>=0 || (c.model||'').toLowerCase().indexOf(q)>=0;
+  });
+  if(!list.length){ box.innerHTML='<tr><td colspan="7" style="color:var(--text3);padding:18px">Ничего не найдено</td></tr>'; return; }
+  box.innerHTML=list.map(function(c,i){
+    var drv=DRIVERS.filter(function(d){return d.car_id===c.id;}).map(function(d){return esc(d.name);}).join(', ')||'<span style="color:var(--text3)">—</span>';
+    return '<tr>'+
+      '<td>'+(i+1)+'</td>'+
+      '<td><b>'+esc(c.plate||c.model)+'</b></td><td>'+esc(c.model||'')+'</td><td>'+(c.seats||'—')+'</td>'+
+      '<td>'+carStatusBadge(c.status)+'</td><td>'+drv+'</td>'+
       '<td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openCarModal(\''+c.id+'\')">✎</button> <button class="mini-btn" onclick="delCar(\''+c.id+'\')">×</button></td>'+
     '</tr>';
-  });
-  html+='</tbody></table>';
-  document.getElementById('page-cars').innerHTML=html;
+  }).join('');
 }
 function openCarModal(id){
   editingCarId=id||null;
   document.getElementById('carModalTitle').textContent = id?'Редактировать машину':'Новая машина';
-  var c = id ? CARS.find(function(x){return x.id===id;}) : {};
+  var c = id ? CARS.find(function(x){return x.id===id;}) : {status:'use'};
   document.getElementById('car_plate').value=c.plate||'';
   document.getElementById('car_model').value=c.model||'';
   document.getElementById('car_seats').value=(c.seats!=null?c.seats:'');
+  document.getElementById('car_status').value=c.status||'use';
   document.getElementById('carModal').classList.add('show');
 }
 function closeCarModal(){ document.getElementById('carModal').classList.remove('show'); }
@@ -1661,7 +1722,8 @@ async function saveCar(){
   var model=document.getElementById('car_model').value.trim();
   if(!plate && !model){ alert('Введите название или модель машины'); return; }
   var data={ plate:plate||model, model:model||plate,
-    seats: document.getElementById('car_seats').value!==''?Number(document.getElementById('car_seats').value):null, company_id:'mrride' };
+    seats: document.getElementById('car_seats').value!==''?Number(document.getElementById('car_seats').value):null,
+    status:document.getElementById('car_status').value, company_id:'mrride' };
   var res;
   if(editingCarId){ res = await sb.from('cars').update(data).eq('id', editingCarId); }
   else { data.id='car_'+Date.now(); res = await sb.from('cars').insert(data); }
