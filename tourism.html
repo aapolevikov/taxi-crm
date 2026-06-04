@@ -139,6 +139,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .slot-free-lbl{font-size:12px;color:var(--text3);font-weight:600}
 .slot-free-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--text2)}
 .slot-free-chip .dot{width:8px;height:8px;border-radius:50%}
+.slot-free-chip.busy{background:var(--warn-l);color:var(--warn);border-color:transparent}
 .slot-free-none{font-size:12px;color:var(--text3);font-style:italic}
 /* Лента дня */
 .tl-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);margin-bottom:10px;flex-wrap:wrap}
@@ -949,12 +950,19 @@ function renderLanes(){
   SLOTS.forEach(function(s){
     var trips=deals.filter(function(o){return o[s.key];});
     trips.sort(function(a,b){ var d=timeToMin(a[s.key])-timeToMin(b[s.key]); return sortDir==='asc'?d:-d; });
-    // свободные водители в этом слоте
-    var busy={}; trips.forEach(function(o){ if(o[s.dkey]) busy[o[s.dkey]]=true; });
-    var free=DRIVERS.filter(function(d){return !busy[d.id];});
-    var freeHtml = free.length
-      ? free.map(function(d){return '<span class="slot-free-chip"><span class="dot" style="background:'+d.color+'"></span>'+esc(d.name)+' · '+esc(d.car)+'</span>';}).join('')
-      : '<span class="slot-free-none">все заняты</span>';
+    // доступность водителей в этом слоте: свободен / свободен с HH:MM
+    var endByDriver={};
+    trips.forEach(function(o){
+      var did=o[s.dkey]; if(!did) return;
+      var e=tripEndMin(o,s);
+      if(endByDriver[did]==null || e>endByDriver[did]) endByDriver[did]=e;
+    });
+    var availHtml = DRIVERS.map(function(d){
+      if(endByDriver[d.id]!=null){
+        return '<span class="slot-free-chip busy"><span class="dot" style="background:'+d.color+'"></span>'+esc(d.name)+' · свободен с '+minToTime(endByDriver[d.id])+'</span>';
+      }
+      return '<span class="slot-free-chip"><span class="dot" style="background:'+d.color+'"></span>'+esc(d.name)+' · свободен</span>';
+    }).join('');
     html+='<div class="lane time-lane">'+
       '<div class="lane-hdr time-hdr" style="border-left:4px solid '+s.line+'">'+
         '<i class="ti '+s.icon+'" style="color:'+s.line+';font-size:18px"></i>'+
@@ -964,7 +972,7 @@ function renderLanes(){
       '<div class="lane-body">'+
         (trips.length?trips.map(function(o){return slotTripRow(o,s);}).join(''):'<div class="lane-empty">Нет поездок</div>')+
       '</div>'+
-      '<div class="slot-free"><span class="slot-free-lbl">Свободны:</span>'+freeHtml+'</div>'+
+      '<div class="slot-free"><span class="slot-free-lbl">Водители:</span>'+availHtml+'</div>'+
     '</div>';
   });
   box.innerHTML=html;
