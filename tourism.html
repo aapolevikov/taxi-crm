@@ -197,6 +197,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card-action-btn.del:hover{background:var(--danger);color:#fff}
 .board-add-card{padding:8px 12px;background:transparent;border:1px dashed var(--border2);border-radius:var(--r);cursor:pointer;font-size:12px;color:var(--text3);text-align:center;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px;width:100%}
 .board-add-card:hover{background:var(--bg);color:var(--accent);border-color:var(--accent)}
+.board-card.unassigned{border-color:var(--danger)}
+.slot-time{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
+.slot-driver{width:100%;margin-top:8px;padding:6px 8px;font-size:12px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;cursor:pointer}
+.slot-driver:focus{border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -230,7 +234,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <!-- PAGE: BOARD -->
     <div class="page" id="page-board">
     <div class="board-tabs">
-      <button class="tab-btn active" id="tabLanes" onclick="switchBoard('lanes')"><i class="ti ti-steering-wheel"></i> По водителям</button>
+      <button class="tab-btn active" id="tabLanes" onclick="switchBoard('lanes')"><i class="ti ti-clock"></i> По времени</button>
       <button class="tab-btn" id="tabCols" onclick="switchBoard('cols')"><i class="ti ti-columns"></i> По статусам</button>
       <div style="flex:1"></div>
       <button class="btn-sec" onclick="seedDemo()"><i class="ti ti-flask"></i> Демо-данные</button>
@@ -375,10 +379,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <input id="f_orderdate" type="date">
     </div>
     <div class="field-row">
-      <label>Водитель</label>
-      <select id="f_driver"></select>
-    </div>
-    <div class="field-row">
       <label>Заметка</label>
       <textarea id="f_note" rows="2" placeholder="Комментарий менеджера"></textarea>
     </div>
@@ -416,14 +416,16 @@ function rowToOrder(r){
   return {id:r.id, client:r.client, phone:r.phone, from:r.from_loc, to:r.to_loc,
           morning:r.morning, evening:r.evening, driver:r.driver,
           status:r.status, note:r.note, type:r.type,
-          request:r.request, trip_date:r.trip_date, day:r.day_time};
+          request:r.request, trip_date:r.trip_date, day:r.day_time,
+          dM:r.driver_morning, dD:r.driver_day, dE:r.driver_evening};
 }
 // объект доски -> поля для DB
 function orderToRow(o){
   return {client:o.client, phone:o.phone, from_loc:o.from, to_loc:o.to,
           morning:o.morning, evening:o.evening, driver:o.driver||null,
           status:o.status, note:o.note, type:o.type, company_id:'mrride',
-          request:o.request||null, trip_date:o.trip_date||null, day_time:o.day||null};
+          request:o.request||null, trip_date:o.trip_date||null, day_time:o.day||null,
+          driver_morning:o.dM||null, driver_day:o.dD||null, driver_evening:o.dE||null};
 }
 
 // ─────────── ВОРОНКА: стадии ───────────
@@ -501,16 +503,10 @@ async function seedDemo(){
 }
 
 // ─────────── MODAL ───────────
-function fillDriverSelect(){
-  var sel=document.getElementById('f_driver');
-  sel.innerHTML='<option value="">— не назначен —</option>'+
-    DRIVERS.map(function(d){ return '<option value="'+d.id+'">'+d.name+' ('+d.car+')</option>'; }).join('');
-}
 function openOrderModal(id){
   editingId = id||null;
-  fillDriverSelect();
   document.getElementById('orderModalTitle').textContent = id ? 'Редактировать заявку' : 'Новая заявка';
-  var o = id ? ORDERS.find(function(x){return x.id===id;}) : {client:'',phone:'',from:'',to:'',morning:'',day:'',evening:'',driver:'',note:'',type:'round',trip_date:''};
+  var o = id ? ORDERS.find(function(x){return x.id===id;}) : {client:'',phone:'',from:'',to:'',morning:'',day:'',evening:'',note:'',type:'round',trip_date:''};
   document.getElementById('f_client').value=o.client||'';
   document.getElementById('f_phone').value=o.phone||'';
   document.getElementById('f_from').value=o.from||'';
@@ -519,7 +515,6 @@ function openOrderModal(id){
   document.getElementById('f_day').value=o.day||'';
   document.getElementById('f_evening').value=o.evening||'';
   document.getElementById('f_orderdate').value=o.trip_date||'';
-  document.getElementById('f_driver').value=o.driver||'';
   document.getElementById('f_note').value=o.note||'';
   document.getElementById('f_type').value=o.type||'round';
   document.getElementById('orderModal').classList.add('show');
@@ -528,7 +523,6 @@ function closeOrderModal(){ document.getElementById('orderModal').classList.remo
 async function saveOrder(){
   var client=document.getElementById('f_client').value.trim();
   if(!client){ alert('Введите имя клиента'); return; }
-  var driver=document.getElementById('f_driver').value;
   var data={
     client:client,
     phone:document.getElementById('f_phone').value.trim(),
@@ -538,18 +532,18 @@ async function saveOrder(){
     day:document.getElementById('f_day').value.trim(),
     evening:document.getElementById('f_evening').value.trim(),
     trip_date:document.getElementById('f_orderdate').value||null,
-    driver:driver,
     note:document.getElementById('f_note').value.trim(),
-    type:document.getElementById('f_type').value,
-    status: driver ? 'assigned' : 'new'
+    type:document.getElementById('f_type').value
   };
   var res;
   if(editingId){
     var o=ORDERS.find(function(x){return x.id===editingId;});
-    var keep = o ? o.status : 'new';
-    if(driver && (keep==='confirmed'||keep==='done')) data.status=keep;
+    // сохранить назначенных по слотам водителей и статус
+    data.dM=o?o.dM:null; data.dD=o?o.dD:null; data.dE=o?o.dE:null;
+    data.status=o?o.status:'new';
     res = await sb.from('tour_orders').update(orderToRow(data)).eq('id', editingId);
   } else {
+    data.status='new';
     res = await sb.from('tour_orders').insert(orderToRow(data));
   }
   if(res.error){ alert('Ошибка сохранения: '+res.error.message); return; }
@@ -600,7 +594,9 @@ function renderFreeDrivers(){
   var zone=document.getElementById('freeZone'); if(!zone) return;
   var busy={};
   dealOrders().filter(dateMatch).forEach(function(o){
-    if(o.driver && (o.status==='assigned'||o.status==='confirmed')) busy[o.driver]=true;
+    if(o.dM) busy[o.dM]=true;
+    if(o.dD) busy[o.dD]=true;
+    if(o.dE) busy[o.dE]=true;
   });
   var free=DRIVERS.filter(function(d){return !busy[d.id];});
   document.getElementById('freeBadge').textContent=free.length;
@@ -616,26 +612,32 @@ function renderFreeDrivers(){
 }
 
 function renderAlert(){
-  var news = dealOrders().filter(function(o){return (!o.driver || o.status==='new') && dateMatch(o);});
+  var deals = dealOrders().filter(dateMatch);
+  var pending=[];   // незакрытые слоты (есть время, нет водителя)
+  deals.forEach(function(o){
+    if(o.morning && !o.dM) pending.push({o:o,slot:'Утро',time:o.morning});
+    if(o.day && !o.dD)     pending.push({o:o,slot:'День',time:o.day});
+    if(o.evening && !o.dE) pending.push({o:o,slot:'Вечер',time:o.evening});
+  });
   var zone=document.getElementById('alertZone'), hdr=document.getElementById('alertHdr'), badge=document.getElementById('alertBadge');
-  badge.textContent=news.length;
-  if(news.length===0){
+  badge.textContent=pending.length;
+  document.querySelector('#alertHdr span').textContent='Слоты без водителя';
+  if(pending.length===0){
     zone.classList.add('empty'); hdr.classList.add('ok');
-    document.getElementById('newCards').innerHTML='<div style="font-size:13px;color:var(--text2)">Все заявки назначены 👍</div>';
+    document.getElementById('newCards').innerHTML='<div style="font-size:13px;color:var(--text2)">Все слоты назначены 👍</div>';
     return;
   }
   zone.classList.remove('empty'); hdr.classList.remove('ok');
-  document.getElementById('newCards').innerHTML = news.map(function(o){
+  document.getElementById('newCards').innerHTML = pending.map(function(p){
     return '<div class="new-card">'+
-      '<div class="nm">'+esc(o.client)+'</div>'+
-      '<div class="meta">'+(o.phone?'📞 '+esc(o.phone)+'<br>':'')+
-        (o.from?'📍 '+esc(o.from)+(o.to?' → '+esc(o.to):'')+'<br>':'')+
-        (o.morning||o.day||o.evening?'🕐 '+esc(o.morning||'—')+' / '+esc(o.day||'—')+' / '+esc(o.evening||'—'):'')+
-        (o.note?'<br>📝 '+esc(o.note):'')+
+      '<div class="nm">'+esc(p.o.client)+'</div>'+
+      '<div class="meta">'+
+        '<b>'+p.slot+' '+esc(p.time)+'</b><br>'+
+        (p.o.from?'📍 '+esc(p.o.from)+(p.o.to?' → '+esc(p.o.to):'')+'<br>':'')+
+        (p.o.phone?'📞 '+esc(p.o.phone):'')+
       '</div>'+
       '<div class="acts">'+
-        '<button class="mini-btn primary" onclick="openOrderModal(\''+o.id+'\')">Назначить</button>'+
-        '<button class="mini-btn" onclick="delOrder(\''+o.id+'\')">Удалить</button>'+
+        '<button class="mini-btn" onclick="openOrderModal(\''+p.o.id+'\')">✎ Открыть</button>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -661,27 +663,72 @@ function tripRow(o){
   '</div>';
 }
 
-function renderLanes(){
+function renderLanes(){  // теперь «По времени»: три колонки Утро/День/Вечер
   var box=document.getElementById('boardLanes');
   var deals=dealOrders().filter(dateMatch);
-  if(deals.length===0){ box.innerHTML=emptyState(); return; }
-  var html='';
-  DRIVERS.forEach(function(d){
-    var trips=deals.filter(function(o){return o.driver===d.id;});
-    html+='<div class="lane">'+
-      '<div class="lane-hdr">'+
-        '<span class="lane-color" style="background:'+d.color+'"></span>'+
-        '<span class="lane-driver">'+esc(d.name)+'</span>'+
-        '<span class="lane-car">'+esc(d.car)+'</span>'+
-        '<span class="lane-phone">'+esc(d.phone)+'</span>'+
-        '<span class="lane-count">'+trips.length+'</span>'+
+  var slots=[
+    {key:'morning', dkey:'dM', title:'Утро',  line:'#e8a33d'},
+    {key:'day',     dkey:'dD', title:'День',  line:'#0d9e75'},
+    {key:'evening', dkey:'dE', title:'Вечер', line:'#5b8fd6'},
+  ];
+  var html=slots.map(function(s){
+    // собрать поездки этого слота (у кого есть время в этом слоте)
+    var trips=deals.filter(function(o){return o[s.key];});
+    trips.sort(function(a,b){ return timeToMin(a[s.key])-timeToMin(b[s.key]); });
+    var cards=trips.map(function(o){return slotCard(o,s);}).join('');
+    return '<div class="board-col">'+
+      '<div class="board-col-hdr">'+
+        '<span class="board-col-title">'+s.title+'</span>'+
+        '<span class="board-col-count">'+trips.length+'</span>'+
       '</div>'+
-      '<div class="lane-body">'+
-        (trips.length?trips.map(tripRow).join(''):'<div class="lane-empty">Нет назначенных клиентов</div>')+
+      '<div class="board-col-body">'+
+        (cards||'<div class="lane-empty">Нет поездок</div>')+
       '</div>'+
     '</div>';
-  });
-  box.innerHTML=html;
+  }).join('');
+  box.innerHTML='<div class="board-wrap">'+html+'</div>';
+}
+
+function timeToMin(t){
+  if(!t) return 9999;
+  var p=String(t).split(':'); var h=parseInt(p[0],10)||0; var m=parseInt(p[1],10)||0;
+  return h*60+m;
+}
+
+function slotCard(o,s){
+  var did=o[s.dkey]||'';
+  var opts='<option value="">— водитель —</option>'+DRIVERS.map(function(d){
+    return '<option value="'+d.id+'"'+(d.id===did?' selected':'')+'>'+esc(d.name)+' ('+esc(d.car)+')</option>';
+  }).join('');
+  var unassigned = did?'':' unassigned';
+  return '<div class="board-card'+unassigned+'" style="cursor:default">'+
+    '<div class="board-card-line" style="background:'+s.line+'"></div>'+
+    '<div class="board-card-actions">'+
+      '<button class="card-action-btn" title="Редактировать" onclick="openOrderModal(\''+o.id+'\')"><i class="ti ti-pencil"></i></button>'+
+      '<button class="card-action-btn del" title="Удалить" onclick="delOrder(\''+o.id+'\')"><i class="ti ti-x"></i></button>'+
+    '</div>'+
+    '<div class="slot-time">'+esc(o[s.key])+'</div>'+
+    '<div class="board-card-title">'+esc(o.client)+'</div>'+
+    '<div class="board-card-meta">'+
+      (o.from?'📍 '+esc(o.from)+(o.to?' → '+esc(o.to):''):'')+
+      (o.phone?(o.from?'<br>':'')+'📞 '+esc(o.phone):'')+
+    '</div>'+
+    '<select class="slot-driver" onchange="setSlotDriver(\''+o.id+'\',\''+s.dkey+'\',this.value)">'+opts+'</select>'+
+  '</div>';
+}
+
+// назначить водителя на конкретный слот
+async function setSlotDriver(id, dkey, driverId){
+  var patch={}; patch[dkey==='dM'?'driver_morning':dkey==='dD'?'driver_day':'driver_evening']=driverId||null;
+  // если назначили хоть кого-то — статус «назначена»
+  var o=ORDERS.find(function(x){return x.id===id;});
+  if(o){
+    var anyDriver = (dkey==='dM'?driverId:o.dM) || (dkey==='dD'?driverId:o.dD) || (dkey==='dE'?driverId:o.dE);
+    if(o.status==='new' && anyDriver) patch.status='assigned';
+  }
+  var res = await sb.from('tour_orders').update(patch).eq('id', id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  loadOrders();
 }
 
 function renderCols(){
