@@ -261,6 +261,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="df-btn" data-df="today" onclick="setBoardDate('today')">Сегодня</button>
       <button class="df-btn" data-df="tomorrow" onclick="setBoardDate('tomorrow')">Завтра</button>
       <input type="date" id="dfPick" class="df-pick" onchange="setBoardDate(this.value)">
+      <div style="flex:1"></div>
+      <button class="df-btn" id="sortBtn" onclick="toggleSort()"><i class="ti ti-arrow-up"></i> По времени</button>
     </div>
 
     <!-- Alert zone: new unassigned orders -->
@@ -438,6 +440,7 @@ var editingLead = null;
 var leadPreset = 'inbox';
 var currentPage = 'board';
 var boardDate = 'all';
+var sortDir = 'asc';   // направление сортировки по времени внутри слотов
 
 // DB-строка -> объект доски
 function rowToOrder(r){
@@ -635,8 +638,14 @@ function resolveBoardDate(){ if(boardDate==='all')return null; if(boardDate==='t
 function dateMatch(o){ var t=resolveBoardDate(); if(!t)return true; return (o.trip_date||'')===t; }
 function setBoardDate(v){
   boardDate=v;
-  document.querySelectorAll('#dateFilter .df-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-df')===v); });
+  document.querySelectorAll('#dateFilter .df-btn[data-df]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-df')===v); });
   if(v==='all'||v==='today'||v==='tomorrow'){ var p=document.getElementById('dfPick'); if(p)p.value=''; }
+  render();
+}
+function toggleSort(){
+  sortDir = sortDir==='asc' ? 'desc' : 'asc';
+  var btn=document.getElementById('sortBtn');
+  if(btn) btn.innerHTML='<i class="ti ti-arrow-'+(sortDir==='asc'?'up':'down')+'"></i> По времени';
   render();
 }
 
@@ -734,7 +743,7 @@ function renderLanes(){
   var html='';
   SLOTS.forEach(function(s){
     var trips=deals.filter(function(o){return o[s.key];});
-    trips.sort(function(a,b){ return timeToMin(a[s.key])-timeToMin(b[s.key]); });
+    trips.sort(function(a,b){ var d=timeToMin(a[s.key])-timeToMin(b[s.key]); return sortDir==='asc'?d:-d; });
     // свободные водители в этом слоте
     var busy={}; trips.forEach(function(o){ if(o[s.dkey]) busy[o[s.dkey]]=true; });
     var free=DRIVERS.filter(function(d){return !busy[d.id];});
