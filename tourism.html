@@ -43,6 +43,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* Tabs */
 .board-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.date-filter{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.df-btn{padding:6px 14px;font-size:13px;background:var(--bg);border:1px solid var(--border2);border-radius:20px;cursor:pointer;color:var(--text2)}
+.df-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.df-pick{padding:5px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none}
+.df-pick:focus{border-color:var(--accent)}
 .tab-btn{padding:8px 14px;font-size:13px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:6px;font-weight:500}
 .tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .btn-add{padding:8px 14px;font-size:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:5px;font-weight:500}
@@ -232,6 +237,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="btn-add" onclick="openOrderModal()"><i class="ti ti-plus"></i> Новая заявка</button>
     </div>
 
+    <!-- Date filter -->
+    <div class="date-filter" id="dateFilter">
+      <button class="df-btn active" data-df="all" onclick="setBoardDate('all')">Все</button>
+      <button class="df-btn" data-df="today" onclick="setBoardDate('today')">Сегодня</button>
+      <button class="df-btn" data-df="tomorrow" onclick="setBoardDate('tomorrow')">Завтра</button>
+      <input type="date" id="dfPick" class="df-pick" onchange="setBoardDate(this.value)">
+    </div>
+
     <!-- Alert zone: new unassigned orders -->
     <div class="alert-zone" id="alertZone">
       <div class="alert-hdr" id="alertHdr">
@@ -358,6 +371,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
     <div class="field-row">
+      <label>Дата поездки</label>
+      <input id="f_orderdate" type="date">
+    </div>
+    <div class="field-row">
       <label>Водитель</label>
       <select id="f_driver"></select>
     </div>
@@ -392,6 +409,7 @@ var editingId = null;
 var editingLead = null;
 var leadPreset = 'inbox';
 var currentPage = 'board';
+var boardDate = 'all';
 
 // DB-строка -> объект доски
 function rowToOrder(r){
@@ -492,7 +510,7 @@ function openOrderModal(id){
   editingId = id||null;
   fillDriverSelect();
   document.getElementById('orderModalTitle').textContent = id ? 'Редактировать заявку' : 'Новая заявка';
-  var o = id ? ORDERS.find(function(x){return x.id===id;}) : {client:'',phone:'',from:'',to:'',morning:'',day:'',evening:'',driver:'',note:'',type:'round'};
+  var o = id ? ORDERS.find(function(x){return x.id===id;}) : {client:'',phone:'',from:'',to:'',morning:'',day:'',evening:'',driver:'',note:'',type:'round',trip_date:''};
   document.getElementById('f_client').value=o.client||'';
   document.getElementById('f_phone').value=o.phone||'';
   document.getElementById('f_from').value=o.from||'';
@@ -500,6 +518,7 @@ function openOrderModal(id){
   document.getElementById('f_morning').value=o.morning||'';
   document.getElementById('f_day').value=o.day||'';
   document.getElementById('f_evening').value=o.evening||'';
+  document.getElementById('f_orderdate').value=o.trip_date||'';
   document.getElementById('f_driver').value=o.driver||'';
   document.getElementById('f_note').value=o.note||'';
   document.getElementById('f_type').value=o.type||'round';
@@ -518,6 +537,7 @@ async function saveOrder(){
     morning:document.getElementById('f_morning').value.trim(),
     day:document.getElementById('f_day').value.trim(),
     evening:document.getElementById('f_evening').value.trim(),
+    trip_date:document.getElementById('f_orderdate').value||null,
     driver:driver,
     note:document.getElementById('f_note').value.trim(),
     type:document.getElementById('f_type').value,
@@ -558,6 +578,17 @@ function esc(s){ return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;
 
 function statusLabel(st){ return {new:'Новая',assigned:'Назначена',confirmed:'Водитель подтвердил',done:'Выполнена'}[st]||st; }
 
+// ─────────── ФИЛЬТР ПО ДАТЕ (доска заявок) ───────────
+function dateStr(off){ var d=new Date(); d.setDate(d.getDate()+(off||0)); var m=('0'+(d.getMonth()+1)).slice(-2); var dd=('0'+d.getDate()).slice(-2); return d.getFullYear()+'-'+m+'-'+dd; }
+function resolveBoardDate(){ if(boardDate==='all')return null; if(boardDate==='today')return dateStr(0); if(boardDate==='tomorrow')return dateStr(1); return boardDate; }
+function dateMatch(o){ var t=resolveBoardDate(); if(!t)return true; return (o.trip_date||'')===t; }
+function setBoardDate(v){
+  boardDate=v;
+  document.querySelectorAll('#dateFilter .df-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-df')===v); });
+  if(v==='all'||v==='today'||v==='tomorrow'){ var p=document.getElementById('dfPick'); if(p)p.value=''; }
+  render();
+}
+
 function render(){
   renderAlert();
   renderFreeDrivers();
@@ -568,7 +599,7 @@ function render(){
 function renderFreeDrivers(){
   var zone=document.getElementById('freeZone'); if(!zone) return;
   var busy={};
-  dealOrders().forEach(function(o){
+  dealOrders().filter(dateMatch).forEach(function(o){
     if(o.driver && (o.status==='assigned'||o.status==='confirmed')) busy[o.driver]=true;
   });
   var free=DRIVERS.filter(function(d){return !busy[d.id];});
@@ -585,7 +616,7 @@ function renderFreeDrivers(){
 }
 
 function renderAlert(){
-  var news = dealOrders().filter(function(o){return !o.driver || o.status==='new';});
+  var news = dealOrders().filter(function(o){return (!o.driver || o.status==='new') && dateMatch(o);});
   var zone=document.getElementById('alertZone'), hdr=document.getElementById('alertHdr'), badge=document.getElementById('alertBadge');
   badge.textContent=news.length;
   if(news.length===0){
@@ -632,7 +663,7 @@ function tripRow(o){
 
 function renderLanes(){
   var box=document.getElementById('boardLanes');
-  var deals=dealOrders();
+  var deals=dealOrders().filter(dateMatch);
   if(deals.length===0){ box.innerHTML=emptyState(); return; }
   var html='';
   DRIVERS.forEach(function(d){
@@ -662,7 +693,7 @@ function renderCols(){
     {key:'done',title:'Выполнены',color:'var(--text3)'},
   ];
   box.innerHTML=cols.map(function(c){
-    var items=ORDERS.filter(function(o){return o.status===c.key;});
+    var items=ORDERS.filter(function(o){return o.status===c.key && dateMatch(o);});
     return '<div class="col">'+
       '<div class="col-hdr"><span style="color:'+c.color+'">'+c.title+'</span><span class="lane-count">'+items.length+'</span></div>'+
       '<div class="col-body">'+
