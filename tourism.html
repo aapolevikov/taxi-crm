@@ -409,10 +409,31 @@ function orderToRow(o){
 }
 
 // ─────────── ВОРОНКА: стадии ───────────
-var FUNNEL = ['inbox','thinking','dead'];           // лиды (воронка)
-function isFunnel(o){ return FUNNEL.indexOf(o.status)>=0; }
-function dealOrders(){ return ORDERS.filter(function(o){return !isFunnel(o);}); }   // сделки (доска по водителям)
+var DEAL_ST = ['new','assigned','confirmed','done'];      // статусы сделки (доска по водителям)
+function isFunnel(o){ return DEAL_ST.indexOf(o.status)<0; }   // всё остальное — воронка
+function dealOrders(){ return ORDERS.filter(function(o){return !isFunnel(o);}); }
 function funnelOrders(){ return ORDERS.filter(isFunnel); }
+
+// колонки воронки (настраиваемые, хранятся в базе)
+var FUNNEL_COLS = [];
+async function loadFunnelCols(){
+  var res = await sb.from('tour_funnel_cols').select('*').order('position',{ascending:true});
+  if(res.error){
+    FUNNEL_COLS=[{id:'inbox',title:'Входящие',color:'#e74c3c'},{id:'thinking',title:'Думает',color:'#f5a623'},{id:'dead',title:'Неактуальные',color:'#999999'}];
+    return;
+  }
+  if(!res.data || res.data.length===0){
+    var defs=[
+      {id:'inbox',   title:'Входящие',     color:'#e74c3c', position:0, company_id:'mrride'},
+      {id:'thinking',title:'Думает',        color:'#f5a623', position:1, company_id:'mrride'},
+      {id:'dead',    title:'Неактуальные', color:'#999999', position:2, company_id:'mrride'},
+    ];
+    await sb.from('tour_funnel_cols').insert(defs);
+    FUNNEL_COLS=defs;
+  } else {
+    FUNNEL_COLS=res.data;
+  }
+}
 
 // Загрузка всех заявок из Supabase
 async function loadOrders(){
@@ -434,6 +455,9 @@ function subscribeOrders(){
   sb.channel('tour_orders_rt')
     .on('postgres_changes', {event:'*', schema:'public', table:'tour_orders'}, function(){
       loadOrders();
+    })
+    .on('postgres_changes', {event:'*', schema:'public', table:'tour_funnel_cols'}, function(){
+      loadFunnelCols().then(function(){ if(currentPage==='funnel') renderFunnel(); });
     })
     .subscribe();
 }
@@ -677,27 +701,48 @@ var dragId = null;
 function renderFunnel(){
   var box=document.getElementById('funnelCols');
   if(!box) return;
-  var cols=[
-    {key:'inbox',   title:'Входящие',     line:'#e74c3c'},
-    {key:'thinking',title:'Думает',        line:'#f5a623'},
-    {key:'dead',    title:'Неактуальные', line:'#999999'},
-  ];
-  box.innerHTML=cols.map(function(c){
-    var items=ORDERS.filter(function(o){return o.status===c.key;});
-    var cards=items.map(function(o){return leadCard(o,c.line);}).join('');
+  var html=FUNNEL_COLS.map(function(c){
+    var line=c.color||'#999999';
+    var items=ORDERS.filter(function(o){return o.status===c.id;});
+    var cards=items.map(function(o){return leadCard(o,line);}).join('');
     return '<div class="board-col">'+
       '<div class="board-col-hdr">'+
-        '<span class="board-col-title">'+c.title+'</span>'+
+        '<span class="board-col-title">'+esc(c.title)+'</span>'+
         '<span class="board-col-count">'+items.length+'</span>'+
-        '<button style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:0 2px;line-height:1" onclick="openLeadModal(null,\''+c.key+'\')">+</button>'+
+        '<button title="Добавить заявку" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:0 2px;line-height:1" onclick="openLeadModal(null,\''+c.id+'\')">+</button>'+
+        '<button title="Удалить колонку" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 2px;line-height:1" onclick="deleteFunnelCol(\''+c.id+'\')">✕</button>'+
       '</div>'+
-      '<div class="board-col-body" id="fcol-'+c.key+'" '+
-        'ondragover="funnelDragOver(event,\''+c.key+'\')" ondragleave="funnelDragLeave(event)" ondrop="funnelDrop(event,\''+c.key+'\')">'+
+      '<div class="board-col-body" id="fcol-'+c.id+'" '+
+        'ondragover="funnelDragOver(event,\''+c.id+'\')" ondragleave="funnelDragLeave(event)" ondrop="funnelDrop(event,\''+c.id+'\')">'+
         cards+
-        '<button class="board-add-card" onclick="openLeadModal(null,\''+c.key+'\')"><i class="ti ti-plus" style="font-size:14px"></i> Добавить заявку</button>'+
+        '<button class="board-add-card" onclick="openLeadModal(null,\''+c.id+'\')"><i class="ti ti-plus" style="font-size:14px"></i> Добавить заявку</button>'+
       '</div>'+
     '</div>';
   }).join('');
+  // кнопка добавления колонки
+  html+='<div class="board-col" style="width:200px">'+
+    '<button class="board-add-card" style="padding:12px" onclick="addFunnelCol()"><i class="ti ti-plus"></i> Добавить колонку</button>'+
+  '</div>';
+  box.innerHTML=html;
+}
+
+// добавить колонку
+async function addFunnelCol(){
+  var title=prompt('Название новой колонки:');
+  if(!title || !title.trim()) return;
+  var id='c'+Date.now();
+  var res=await sb.from('tour_funnel_cols').insert({id:id,title:title.trim(),color:'#0d9e75',position:FUNNEL_COLS.length,company_id:'mrride'});
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  await loadFunnelCols(); renderFunnel();
+}
+// удалить колонку (только пустую)
+async function deleteFunnelCol(id){
+  var has=ORDERS.some(function(o){return o.status===id;});
+  if(has){ alert('В колонке есть заявки — сначала перетащите их в другую колонку.'); return; }
+  if(!confirm('Удалить колонку?')) return;
+  var res=await sb.from('tour_funnel_cols').delete().eq('id',id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  await loadFunnelCols(); renderFunnel();
 }
 
 function leadCard(o,line){
@@ -966,6 +1011,7 @@ function renderSettings(){
 async function boot(){
   loadAll();                 // клиенты/водители (локально, общими сделаем позже)
   subscribeOrders();         // реалтайм для 3 менеджеров
+  await loadFunnelCols();    // колонки воронки
   var res = await sb.from('tour_orders').select('id').limit(1);
   if(res.error){ alert('Нет связи с базой: '+res.error.message); render(); return; }
   if((res.data||[]).length===0){ await seedDemo(); }  // первый запуск — заполнить демо
