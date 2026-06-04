@@ -164,6 +164,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="sidebar">
   <div class="logo"><i class="ti ti-plane-tilt"></i></div>
   <button class="ni active" id="nav-board" title="Доска заявок" onclick="goPage('board')"><i class="ti ti-layout-board"></i></button>
+  <button class="ni" id="nav-funnel" title="Воронка заявок" onclick="goPage('funnel')"><i class="ti ti-inbox"></i></button>
   <button class="ni" id="nav-dashboard" title="Дашборд" onclick="goPage('dashboard')"><i class="ti ti-layout-dashboard"></i></button>
   <button class="ni" id="nav-clients" title="Клиенты" onclick="goPage('clients')"><i class="ti ti-users"></i></button>
   <button class="ni" id="nav-drivers" title="Водители" onclick="goPage('drivers')"><i class="ti ti-steering-wheel"></i></button>
@@ -213,6 +214,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div id="boardCols" class="cols" style="display:none"></div>
     </div><!-- /page-board -->
 
+    <!-- PAGE: FUNNEL (воронка заявок) -->
+    <div class="page" id="page-funnel" style="display:none">
+      <div class="board-tabs">
+        <div class="info-banner" style="margin:0;flex:1"><i class="ti ti-info-circle"></i> Входящие заявки. Когда сделка — нажмите «В работу» и заявка уйдёт на доску по водителям.</div>
+        <button class="btn-sec" onclick="seedFunnelDemo()"><i class="ti ti-flask"></i> Демо-лиды</button>
+        <button class="btn-add" onclick="openLeadModal()"><i class="ti ti-plus"></i> Новая заявка</button>
+      </div>
+      <div id="funnelCols" class="cols"></div>
+    </div><!-- /page-funnel -->
+
     <!-- PAGE: DASHBOARD -->
     <div class="page" id="page-dashboard" style="display:none"></div>
 
@@ -233,7 +244,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
-<!-- Order modal -->
+<!-- Lead modal (воронка) -->
+<div class="modal-bg" id="leadModal">
+  <div class="modal">
+    <h2 id="leadModalTitle">Новая заявка</h2>
+    <div class="field-row">
+      <label>Имя клиента</label>
+      <input id="l_client" placeholder="Например: Anton">
+    </div>
+    <div class="field-row">
+      <label>Телефон</label>
+      <input id="l_phone" placeholder="+971 ...">
+    </div>
+    <div class="field-row">
+      <label>Запрос клиента</label>
+      <textarea id="l_request" rows="3" placeholder="Что просил клиент (текст заявки)"></textarea>
+    </div>
+    <div class="field-row">
+      <label>Дата поездки</label>
+      <input id="l_date" type="date">
+    </div>
+    <div class="modal-acts">
+      <button class="btn-sec" onclick="closeLeadModal()">Отмена</button>
+      <button class="btn-add" onclick="saveLead()"><i class="ti ti-check"></i> Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="orderModal">
   <div class="modal">
     <h2 id="orderModalTitle">Новая заявка</h2>
@@ -304,26 +341,43 @@ var DRIVERS = [
 var ORDERS = [];
 var board = 'lanes';
 var editingId = null;
+var editingLead = null;
+var currentPage = 'board';
 
 // DB-строка -> объект доски
 function rowToOrder(r){
   return {id:r.id, client:r.client, phone:r.phone, from:r.from_loc, to:r.to_loc,
           morning:r.morning, evening:r.evening, driver:r.driver,
-          status:r.status, note:r.note, type:r.type};
+          status:r.status, note:r.note, type:r.type,
+          request:r.request, trip_date:r.trip_date};
 }
 // объект доски -> поля для DB
 function orderToRow(o){
   return {client:o.client, phone:o.phone, from_loc:o.from, to_loc:o.to,
           morning:o.morning, evening:o.evening, driver:o.driver||null,
-          status:o.status, note:o.note, type:o.type, company_id:'mrride'};
+          status:o.status, note:o.note, type:o.type, company_id:'mrride',
+          request:o.request||null, trip_date:o.trip_date||null};
 }
+
+// ─────────── ВОРОНКА: стадии ───────────
+var FUNNEL = ['inbox','thinking','dead'];           // лиды (воронка)
+function isFunnel(o){ return FUNNEL.indexOf(o.status)>=0; }
+function dealOrders(){ return ORDERS.filter(function(o){return !isFunnel(o);}); }   // сделки (доска по водителям)
+function funnelOrders(){ return ORDERS.filter(isFunnel); }
 
 // Загрузка всех заявок из Supabase
 async function loadOrders(){
   var res = await sb.from('tour_orders').select('*').order('created_at',{ascending:true});
   if(res.error){ console.error('loadOrders', res.error); return; }
   ORDERS = (res.data||[]).map(rowToOrder);
-  render();
+  refreshPage();
+}
+
+// Перерисовать активную страницу (после загрузки/реалтайма)
+function refreshPage(){
+  if(currentPage==='funnel'){ if(document.getElementById('funnelCols')) renderFunnel(); }
+  else if(currentPage==='dashboard'){ renderDashboard(); }
+  else { render(); }
 }
 
 // Реалтайм: любой менеджер меняет — у всех обновляется
@@ -435,7 +489,7 @@ function render(){
 }
 
 function renderAlert(){
-  var news = ORDERS.filter(function(o){return !o.driver || o.status==='new';});
+  var news = dealOrders().filter(function(o){return !o.driver || o.status==='new';});
   var zone=document.getElementById('alertZone'), hdr=document.getElementById('alertHdr'), badge=document.getElementById('alertBadge');
   badge.textContent=news.length;
   if(news.length===0){
@@ -481,10 +535,11 @@ function tripRow(o){
 
 function renderLanes(){
   var box=document.getElementById('boardLanes');
-  if(ORDERS.length===0){ box.innerHTML=emptyState(); return; }
+  var deals=dealOrders();
+  if(deals.length===0){ box.innerHTML=emptyState(); return; }
   var html='';
   DRIVERS.forEach(function(d){
-    var trips=ORDERS.filter(function(o){return o.driver===d.id;});
+    var trips=deals.filter(function(o){return o.driver===d.id;});
     html+='<div class="lane">'+
       '<div class="lane-hdr">'+
         '<span class="lane-color" style="background:'+d.color+'"></span>'+
@@ -543,6 +598,111 @@ function switchBoard(b){
   render();
 }
 
+// ─────────── ВОРОНКА ЗАЯВОК ───────────
+function renderFunnel(){
+  var box=document.getElementById('funnelCols');
+  if(!box) return;
+  var cols=[
+    {key:'inbox',   title:'Входящие',     color:'var(--danger)'},
+    {key:'thinking',title:'Думает',        color:'var(--warn)'},
+    {key:'dead',    title:'Неактуальные', color:'var(--text3)'},
+  ];
+  box.innerHTML=cols.map(function(c){
+    var items=ORDERS.filter(function(o){return o.status===c.key;});
+    return '<div class="col">'+
+      '<div class="col-hdr"><span style="color:'+c.color+'">'+c.title+'</span><span class="lane-count">'+items.length+'</span></div>'+
+      '<div class="col-body">'+
+        (items.length?items.map(leadCard).join(''):'<div class="lane-empty">—</div>')+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function leadCard(o){
+  var acts='';
+  if(o.status==='inbox'){
+    acts+='<button class="mini-btn" onclick="moveLead(\''+o.id+'\',\'thinking\')">Думает</button>';
+    acts+='<button class="mini-btn primary" onclick="convertLead(\''+o.id+'\')">В работу →</button>';
+    acts+='<button class="mini-btn" onclick="moveLead(\''+o.id+'\',\'dead\')">Неактуальна</button>';
+  } else if(o.status==='thinking'){
+    acts+='<button class="mini-btn primary" onclick="convertLead(\''+o.id+'\')">В работу →</button>';
+    acts+='<button class="mini-btn" onclick="moveLead(\''+o.id+'\',\'dead\')">Неактуальна</button>';
+  } else if(o.status==='dead'){
+    acts+='<button class="mini-btn" onclick="moveLead(\''+o.id+'\',\'inbox\')">Вернуть</button>';
+  }
+  return '<div class="ocard">'+
+    '<div class="nm">'+esc(o.client)+'</div>'+
+    '<div class="meta">'+
+      (o.phone?'📞 '+esc(o.phone)+'<br>':'')+
+      (o.trip_date?'📅 '+esc(o.trip_date)+'<br>':'')+
+      (o.request?'📝 '+esc(o.request):'')+
+    '</div>'+
+    '<div class="acts" style="margin-top:8px;flex-wrap:wrap">'+acts+
+      '<button class="mini-btn" onclick="openLeadModal(\''+o.id+'\')">✎</button>'+
+      '<button class="mini-btn" onclick="delOrder(\''+o.id+'\')">🗑</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function openLeadModal(id){
+  editingLead = id||null;
+  document.getElementById('leadModalTitle').textContent = id ? 'Редактировать заявку' : 'Новая заявка';
+  var o = id ? ORDERS.find(function(x){return x.id===id;}) : {client:'',phone:'',request:'',trip_date:''};
+  document.getElementById('l_client').value=o.client||'';
+  document.getElementById('l_phone').value=o.phone||'';
+  document.getElementById('l_request').value=o.request||'';
+  document.getElementById('l_date').value=o.trip_date||'';
+  document.getElementById('leadModal').classList.add('show');
+}
+function closeLeadModal(){ document.getElementById('leadModal').classList.remove('show'); }
+
+async function saveLead(){
+  var client=document.getElementById('l_client').value.trim();
+  if(!client){ alert('Введите имя клиента'); return; }
+  var data={
+    client:client,
+    phone:document.getElementById('l_phone').value.trim(),
+    request:document.getElementById('l_request').value.trim(),
+    trip_date:document.getElementById('l_date').value||null
+  };
+  var res;
+  if(editingLead){
+    res = await sb.from('tour_orders').update(data).eq('id', editingLead);
+  } else {
+    data.status='inbox'; data.company_id='mrride';
+    res = await sb.from('tour_orders').insert(data);
+  }
+  if(res.error){ alert('Ошибка сохранения: '+res.error.message); return; }
+  closeLeadModal(); loadOrders();
+}
+
+// сменить стадию в воронке
+async function moveLead(id, st){
+  var res = await sb.from('tour_orders').update({status: st}).eq('id', id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  loadOrders();
+}
+
+// сделка: лид -> на доску по водителям (статус new)
+async function convertLead(id){
+  var res = await sb.from('tour_orders').update({status:'new'}).eq('id', id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  alert('Заявка передана на доску по водителям (раздел «Доска заявок»). Там назначьте водителя и детали поездки.');
+  loadOrders();
+}
+
+// демо-лиды для воронки
+async function seedFunnelDemo(){
+  var leads=[
+    {client:'Виктория', phone:'+971 50 111 2233', request:'Нужна машина в аэропорт DXB, 2 чемодана, утром', trip_date:null, status:'inbox', company_id:'mrride'},
+    {client:'Sergey', phone:'+971 55 444 5566', request:'Трансфер из отеля в Abu Dhabi и обратно, семья 4 чел', trip_date:null, status:'inbox', company_id:'mrride'},
+    {client:'Amina', phone:'+971 52 777 8899', request:'Возить ребёнка в школу каждый день, район Marina', trip_date:null, status:'thinking', company_id:'mrride'},
+  ];
+  var res = await sb.from('tour_orders').insert(leads);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  loadOrders();
+}
+
 // ─────────── CLIENTS & CARS data ───────────
 var CLIENTS = [
   {id:'c1', name:'Anton', phone:'+971 58 258 3346', from:'Marina', to:'School', schedule:'Пн-Пт 9:30 / 18:00', regular:true},
@@ -566,8 +726,9 @@ function saveClients(){ localStorage.setItem('tourismClients', JSON.stringify(CL
 function saveDrivers(){ localStorage.setItem('tourismDrivers', JSON.stringify(DRIVERS)); }
 
 // ─────────── NAVIGATION ───────────
-var titles={board:['Доска заявок','трансферы'],dashboard:['Дашборд','сводка дня'],clients:['Клиенты','база клиентов'],drivers:['Водители','команда'],cars:['Машины','автопарк'],finance:['Финансы','доходы и расходы'],settings:['Настройки','параметры']};
+var titles={board:['Доска заявок','по водителям'],funnel:['Воронка заявок','входящие'],dashboard:['Дашборд','сводка дня'],clients:['Клиенты','база клиентов'],drivers:['Водители','команда'],cars:['Машины','автопарк'],finance:['Финансы','доходы и расходы'],settings:['Настройки','параметры']};
 function goPage(p){
+  currentPage=p;
   document.querySelectorAll('.page').forEach(function(el){el.style.display='none';});
   var pg=document.getElementById('page-'+p); if(pg) pg.style.display='';
   document.querySelectorAll('.sidebar .ni').forEach(function(b){b.classList.remove('active');});
@@ -576,6 +737,7 @@ function goPage(p){
   document.querySelector('.topbar h1').textContent=t[0];
   document.querySelector('.topbar .sub').textContent='Mr Ride Tourism · '+t[1];
   if(p==='board') render();
+  if(p==='funnel') renderFunnel();
   if(p==='dashboard') renderDashboard();
   if(p==='clients') renderClients();
   if(p==='drivers') renderDrivers();
@@ -586,11 +748,12 @@ function goPage(p){
 
 // ─────────── DASHBOARD ───────────
 function renderDashboard(){
-  var total=ORDERS.length;
-  var newN=ORDERS.filter(function(o){return !o.driver||o.status==='new';}).length;
-  var assigned=ORDERS.filter(function(o){return o.status==='assigned';}).length;
-  var confirmed=ORDERS.filter(function(o){return o.status==='confirmed';}).length;
-  var done=ORDERS.filter(function(o){return o.status==='done';}).length;
+  var deals=dealOrders();
+  var total=deals.length;
+  var newN=deals.filter(function(o){return !o.driver||o.status==='new';}).length;
+  var assigned=deals.filter(function(o){return o.status==='assigned';}).length;
+  var confirmed=deals.filter(function(o){return o.status==='confirmed';}).length;
+  var done=deals.filter(function(o){return o.status==='done';}).length;
   var html='<div class="page-head"><span class="ttl">Сводка на сегодня</span></div>';
   html+='<div class="stats">'+
     statCard('Всего заявок',total,'','')+
