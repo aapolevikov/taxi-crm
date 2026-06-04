@@ -175,6 +175,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .day-chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;user-select:none;background:var(--bg2)}
 .day-chip input{margin:0;cursor:pointer}
 .day-presets{display:flex;gap:6px;margin-top:8px}
+.field-hint{font-size:11px;color:var(--text3);margin-top:6px}
 .modal-acts{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 
 .empty-state{text-align:center;padding:50px 20px;color:var(--text3)}
@@ -504,20 +505,44 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <div id="cl_sched">
       <div class="field-row">
-        <label>Дни недели</label>
-        <div class="day-picker" id="cl_days">
-          <label class="day-chip"><input type="checkbox" class="cl-day" value="1">Пн</label>
-          <label class="day-chip"><input type="checkbox" class="cl-day" value="2">Вт</label>
-          <label class="day-chip"><input type="checkbox" class="cl-day" value="3">Ср</label>
-          <label class="day-chip"><input type="checkbox" class="cl-day" value="4">Чт</label>
-          <label class="day-chip"><input type="checkbox" class="cl-day" value="5">Пт</label>
-          <label class="day-chip"><input type="checkbox" class="cl-day" value="6">Сб</label>
-          <label class="day-chip"><input type="checkbox" class="cl-day" value="7">Вс</label>
+        <label>Тип расписания</label>
+        <select id="cl_smode" onchange="toggleSchedMode()">
+          <option value="weekdays">По дням недели</option>
+          <option value="rotation">Сменный график (N через N)</option>
+        </select>
+      </div>
+      <div id="cl_weekdays">
+        <div class="field-row">
+          <label>Дни недели</label>
+          <div class="day-picker" id="cl_days">
+            <label class="day-chip"><input type="checkbox" class="cl-day" value="1">Пн</label>
+            <label class="day-chip"><input type="checkbox" class="cl-day" value="2">Вт</label>
+            <label class="day-chip"><input type="checkbox" class="cl-day" value="3">Ср</label>
+            <label class="day-chip"><input type="checkbox" class="cl-day" value="4">Чт</label>
+            <label class="day-chip"><input type="checkbox" class="cl-day" value="5">Пт</label>
+            <label class="day-chip"><input type="checkbox" class="cl-day" value="6">Сб</label>
+            <label class="day-chip"><input type="checkbox" class="cl-day" value="7">Вс</label>
+          </div>
+          <div class="day-presets">
+            <button class="mini-btn" type="button" onclick="setDays([1,2,3,4,5])">Будни</button>
+            <button class="mini-btn" type="button" onclick="setDays([1,2,3,4,5,6,7])">Каждый день</button>
+            <button class="mini-btn" type="button" onclick="setDays([])">Очистить</button>
+          </div>
         </div>
-        <div class="day-presets">
-          <button class="mini-btn" type="button" onclick="setDays([1,2,3,4,5])">Будни</button>
-          <button class="mini-btn" type="button" onclick="setDays([1,2,3,4,5,6,7])">Каждый день</button>
-          <button class="mini-btn" type="button" onclick="setDays([])">Очистить</button>
+      </div>
+      <div id="cl_rotation" style="display:none">
+        <div class="field-row">
+          <label>График смен</label>
+          <select id="cl_rot">
+            <option value="1">1 / 1 — день через день</option>
+            <option value="2">2 / 2</option>
+            <option value="3">3 / 3</option>
+            <option value="4">4 / 4</option>
+            <option value="5">5 / 5</option>
+            <option value="6">6 / 6</option>
+            <option value="7">7 / 7</option>
+          </select>
+          <div class="field-hint">«Период с» = первый рабочий день. Далее: N дней работа, N дней выходной.</div>
         </div>
       </div>
       <div class="field-2">
@@ -1282,6 +1307,10 @@ function daysLabel(s){
   if(arr.join(',')==='1,2,3,4,5') return 'будни';
   return arr.map(function(n){return DOW[n];}).join(' ');
 }
+function scheduleLabel(c){
+  if((c.sched_mode||'weekdays')==='rotation'){ var n=c.rotation!=null?c.rotation:1; return n+'/'+n+' (смена)'; }
+  return daysLabel(c.days);
+}
 function clientTimesLabel(c){
   var t=[];
   if(c.t_morning) t.push('☀ '+c.t_morning);
@@ -1310,7 +1339,7 @@ function renderClients(){
       '<td><b>'+esc(c.name)+'</b></td>'+
       '<td>'+esc(c.phone)+'</td>'+
       '<td>'+(c.from_loc?esc(c.from_loc)+' → '+esc(c.to_loc||''):'—')+'</td>'+
-      '<td>'+(c.kind==='onetime'?'—':daysLabel(c.days))+'</td>'+
+      '<td>'+(c.kind==='onetime'?'—':scheduleLabel(c))+'</td>'+
       '<td>'+(c.kind==='onetime'?'—':clientTimesLabel(c))+'</td>'+
       '<td style="font-size:12px;white-space:nowrap">'+priceLabel(c)+'</td>'+
       '<td style="font-size:12px;color:var(--text2)">'+(c.kind==='onetime'?'—':period)+'</td>'+
@@ -1340,6 +1369,11 @@ function toggleClientSchedule(){
   var onetime = document.getElementById('cl_kind').value==='onetime';
   document.getElementById('cl_sched').style.display = onetime ? 'none' : '';
 }
+function toggleSchedMode(){
+  var rot = document.getElementById('cl_smode').value==='rotation';
+  document.getElementById('cl_weekdays').style.display = rot ? 'none' : '';
+  document.getElementById('cl_rotation').style.display = rot ? '' : 'none';
+}
 function openClientModal(id){
   editingClientId = id||null;
   fillClientDriverSelects();
@@ -1353,6 +1387,9 @@ function openClientModal(id){
   document.getElementById('cl_price').value=(c.price!=null?c.price:'');
   document.getElementById('cl_price_unit').value=c.price_unit||'month';
   setDays((c.days||'').split(',').filter(Boolean).map(Number));
+  document.getElementById('cl_smode').value=c.sched_mode||'weekdays';
+  document.getElementById('cl_rot').value=(c.rotation!=null?c.rotation:1);
+  toggleSchedMode();
   document.getElementById('cl_tm').value=c.t_morning||'';
   document.getElementById('cl_td').value=c.t_day||'';
   document.getElementById('cl_te').value=c.t_evening||'';
@@ -1380,6 +1417,8 @@ async function saveClient(){
     price: document.getElementById('cl_price').value!=='' ? Number(document.getElementById('cl_price').value) : null,
     price_unit: document.getElementById('cl_price_unit').value,
     days:days.join(','),
+    sched_mode:document.getElementById('cl_smode').value,
+    rotation:Number(document.getElementById('cl_rot').value)||1,
     t_morning:document.getElementById('cl_tm').value.trim(),
     t_day:document.getElementById('cl_td').value.trim(),
     t_evening:document.getElementById('cl_te').value.trim(),
@@ -1413,8 +1452,11 @@ async function generateTrips(id){
   var c = CLIENTS.find(function(x){return x.id===id;});
   if(!c){ return; }
   if(!c.period_from || !c.period_to){ alert('Укажите период (с какого по какое число) в карточке клиента.'); return; }
+  var mode = c.sched_mode||'weekdays';
   var days=(c.days||'').split(',').filter(Boolean).map(Number);
-  if(!days.length){ alert('Выберите дни недели в расписании клиента.'); return; }
+  var N = c.rotation!=null ? Number(c.rotation) : 1;
+  if(mode==='weekdays' && !days.length){ alert('Выберите дни недели в расписании клиента.'); return; }
+  if(mode==='rotation' && !(N>=1)){ alert('Выберите сменный график (N/N).'); return; }
   if(!(c.t_morning||c.t_day||c.t_evening)){ alert('Укажите хотя бы одно время (утро/день/вечер).'); return; }
   // уже созданные дни этого клиента в периоде — чтобы не дублировать
   var ex = await sb.from('tour_orders').select('trip_date').eq('client', c.name).gte('trip_date', c.period_from).lte('trip_date', c.period_to);
@@ -1422,18 +1464,26 @@ async function generateTrips(id){
   var have={}; (ex.data||[]).forEach(function(r){ if(r.trip_date) have[r.trip_date]=true; });
   var anyDrv = c.sd_morning||c.sd_day||c.sd_evening;
   var rows=[];
-  var d=new Date(c.period_from+'T00:00:00'); var end=new Date(c.period_to+'T00:00:00');
+  var start=new Date(c.period_from+'T00:00:00');
+  var d=new Date(start.getTime()); var end=new Date(c.period_to+'T00:00:00');
+  var idx=0;
   while(d<=end){
-    var iso = d.getDay()===0?7:d.getDay();
     var ds = fmtDate(d);
-    if(days.indexOf(iso)>=0 && !have[ds]){
+    var work;
+    if(mode==='rotation'){
+      work = (idx % (2*N)) < N;   // первые N дней — работа, следующие N — выходной
+    } else {
+      var iso = d.getDay()===0?7:d.getDay();
+      work = days.indexOf(iso)>=0;
+    }
+    if(work && !have[ds]){
       rows.push({client:c.name, phone:c.phone, from_loc:c.from_loc, to_loc:c.to_loc,
         morning:c.t_morning||null, day_time:c.t_day||null, evening:c.t_evening||null,
         driver_morning:c.sd_morning||null, driver_day:c.sd_day||null, driver_evening:c.sd_evening||null,
         duration:(c.duration!=null?c.duration:60), wait:(c.wait!=null?c.wait:0),
         trip_date:ds, status: anyDrv?'assigned':'new', type:'round', company_id:'mrride'});
     }
-    d.setDate(d.getDate()+1);
+    d.setDate(d.getDate()+1); idx++;
   }
   if(!rows.length){ alert('Нечего создавать: подходящих дней нет или поездки на этот период уже созданы.'); return; }
   var res = await sb.from('tour_orders').insert(rows);
