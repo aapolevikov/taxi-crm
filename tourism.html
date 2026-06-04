@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mr Ride Tourism — CRM (прототип)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#fff;--bg2:#f5f5f5;--bg3:#efefef;
+  --text:#111;--text2:#555;--text3:#999;
+  --border:#e0e0e0;--border2:#ccc;
+  --accent:#0d9e75;--accent-h:#0b8a65;--accent-l:#e6f9f3;--accent-t:#0b6e50;
+  --warn:#e8a33d;--warn-l:#3a2e16;--danger:#e25563;--danger-l:#3a1a1f;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1a1a1a;--bg2:#242424;--bg3:#161616;
+  --text:#f0f0f0;--text2:#aaa;--text3:#666;
+  --border:#2e2e2e;--border2:#3a3a3a;
+  --accent-l:#0d3d2c;--accent-t:#3dd9a4;
+}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:60px;background:var(--bg);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;flex-shrink:0;gap:4px}
+.logo{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:#fff;font-size:18px}
+.ni{width:40px;height:40px;border:none;background:none;color:var(--text3);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;transition:.15s}
+.ni:hover{background:var(--bg2);color:var(--text2)}
+.ni.active{background:var(--accent-l);color:var(--accent)}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{height:60px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0}
+.topbar h1{font-size:18px;font-weight:700}
+.topbar .sub{font-size:12px;color:var(--text3)}
+.company-switch{margin-left:auto;display:flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:13px}
+.company-switch:hover{background:var(--bg2)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff}
+
+.content{padding:20px;overflow-y:auto;flex:1}
+
+/* Tabs */
+.board-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.tab-btn{padding:8px 14px;font-size:13px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:6px;font-weight:500}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-add{padding:8px 14px;font-size:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:5px;font-weight:500}
+.btn-add:hover{background:var(--accent-h)}
+.btn-sec{padding:8px 14px;font-size:13px;background:var(--bg);color:var(--text2);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:5px;font-weight:500}
+
+/* New orders alert zone */
+.alert-zone{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:var(--r);padding:14px;margin-bottom:18px}
+.alert-zone.empty{border-left-color:var(--accent);opacity:.7}
+.alert-hdr{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;margin-bottom:10px}
+.alert-hdr .badge{background:var(--danger);color:#fff;border-radius:20px;padding:1px 8px;font-size:11px}
+.alert-hdr.ok .badge{background:var(--accent)}
+.new-cards{display:flex;gap:10px;flex-wrap:wrap}
+.new-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;min-width:200px;max-width:260px}
+.new-card .nm{font-weight:600;font-size:14px}
+.new-card .meta{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.5}
+.new-card .acts{display:flex;gap:6px;margin-top:8px}
+.mini-btn{font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer}
+.mini-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Driver lanes board */
+.lanes{display:flex;flex-direction:column;gap:14px}
+.lane{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.lane-hdr{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.lane-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.lane-driver{font-weight:700;font-size:14px}
+.lane-car{font-size:12px;color:var(--text3)}
+.lane-phone{font-size:12px;color:var(--text3);margin-left:auto}
+.lane-count{font-size:12px;color:var(--text2);background:var(--bg3);padding:2px 8px;border-radius:20px}
+.lane-body{padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+.lane-empty{color:var(--text3);font-size:12px;font-style:italic;padding:6px 0}
+
+/* Trip row */
+.trip{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2)}
+.trip .client{font-weight:600;font-size:14px;min-width:120px}
+.trip .times{display:flex;gap:14px;flex:1;flex-wrap:wrap}
+.trip .tm{font-size:13px}
+.trip .tm .lbl{font-size:10px;color:var(--text3);display:block}
+.trip .tm .val{font-weight:600}
+.trip .tm .val.morning{color:#e8a33d}
+.trip .tm .val.evening{color:#5b8fd6}
+.trip .addr{font-size:12px;color:var(--text2);flex:1;min-width:140px}
+.trip .ph{font-size:12px;color:var(--text3)}
+.trip .st{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
+.st.new{background:var(--danger-l);color:var(--danger)}
+.st.assigned{background:var(--warn-l);color:var(--warn)}
+.st.confirmed{background:var(--accent-l);color:var(--accent-t)}
+.st.done{background:var(--bg3);color:var(--text3)}
+.trip .row-acts{display:flex;gap:5px}
+
+/* Status columns board */
+.cols{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}
+.col{flex:1;min-width:240px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rl)}
+.col-hdr{padding:12px 14px;font-weight:700;font-size:13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.col-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:60px}
+.ocard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px}
+.ocard .nm{font-weight:600;font-size:14px}
+.ocard .meta{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6}
+.ocard .drv{font-size:11px;color:var(--accent-t);margin-top:5px}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:22px;width:480px;max-width:100%;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:17px;margin-bottom:16px}
+.field-row{margin-bottom:12px}
+.field-row label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.field-row input,.field-row select,.field-row textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit}
+.field-row input:focus,.field-row select:focus,.field-row textarea:focus{border-color:var(--accent);outline:none}
+.field-2{display:flex;gap:10px}
+.field-2>div{flex:1}
+.modal-acts{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+
+.empty-state{text-align:center;padding:50px 20px;color:var(--text3)}
+.empty-state i{font-size:40px;display:block;margin-bottom:10px;opacity:.5}
+
+@media(max-width:768px){
+  .trip{flex-wrap:wrap}
+  .content{padding:12px}
+}
+
+/* page title */
+.page-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.page-head .ttl{font-size:16px;font-weight:700}
+.page-head .spacer{flex:1}
+
+/* stat cards */
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.stat{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;flex:1;min-width:150px}
+.stat .lbl{font-size:12px;color:var(--text3)}
+.stat .num{font-size:28px;font-weight:700;margin-top:4px}
+.stat .num.warn{color:var(--warn)}
+.stat .num.danger{color:var(--danger)}
+.stat .num.ok{color:var(--accent)}
+.stat .sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* generic table */
+.tbl{width:100%;border-collapse:collapse;background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.tbl th{text-align:left;font-size:11px;color:var(--text3);font-weight:600;padding:11px 14px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.04em}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--bg2)}
+.dotc{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:middle}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.entity-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px}
+.entity-card .ec-top{display:flex;align-items:center;gap:8px}
+.entity-card .ec-name{font-weight:700;font-size:15px}
+.entity-card .ec-meta{font-size:12px;color:var(--text2);margin-top:8px;line-height:1.7}
+.entity-card .ec-acts{display:flex;gap:6px;margin-top:10px}
+.info-banner{background:var(--accent-l);color:var(--accent-t);border-radius:var(--r);padding:10px 14px;font-size:12px;margin-bottom:16px;display:flex;gap:8px;align-items:center}
+.set-row{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.set-row .si{font-size:20px;color:var(--accent)}
+.set-row .st-txt{flex:1}
+.set-row .st-txt .t{font-weight:600;font-size:13px}
+.set-row .st-txt .d{font-size:12px;color:var(--text3);margin-top:2px}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="logo"><i class="ti ti-plane-tilt"></i></div>
+  <button class="ni active" id="nav-board" title="Доска заявок" onclick="goPage('board')"><i class="ti ti-layout-board"></i></button>
+  <button class="ni" id="nav-dashboard" title="Дашборд" onclick="goPage('dashboard')"><i class="ti ti-layout-dashboard"></i></button>
+  <button class="ni" id="nav-clients" title="Клиенты" onclick="goPage('clients')"><i class="ti ti-users"></i></button>
+  <button class="ni" id="nav-drivers" title="Водители" onclick="goPage('drivers')"><i class="ti ti-steering-wheel"></i></button>
+  <button class="ni" id="nav-cars" title="Машины" onclick="goPage('cars')"><i class="ti ti-car"></i></button>
+  <button class="ni" id="nav-finance" title="Финансы" onclick="goPage('finance')"><i class="ti ti-cash"></i></button>
+  <button class="ni" id="nav-settings" title="Настройки" onclick="goPage('settings')"><i class="ti ti-settings"></i></button>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h1>Доска заявок</h1>
+      <div class="sub">Mr Ride Tourism · трансферы</div>
+    </div>
+    <div class="company-switch">
+      <i class="ti ti-plane-tilt" style="color:var(--accent)"></i>
+      <span>Mr Ride Tourism</span>
+      <i class="ti ti-chevron-down" style="font-size:14px;color:var(--text3)"></i>
+    </div>
+    <div class="avatar">MR</div>
+  </div>
+
+  <div class="content">
+    <!-- PAGE: BOARD -->
+    <div class="page" id="page-board">
+    <div class="board-tabs">
+      <button class="tab-btn active" id="tabLanes" onclick="switchBoard('lanes')"><i class="ti ti-steering-wheel"></i> По водителям</button>
+      <button class="tab-btn" id="tabCols" onclick="switchBoard('cols')"><i class="ti ti-columns"></i> По статусам</button>
+      <div style="flex:1"></div>
+      <button class="btn-sec" onclick="seedDemo()"><i class="ti ti-flask"></i> Демо-данные</button>
+      <button class="btn-add" onclick="openOrderModal()"><i class="ti ti-plus"></i> Новая заявка</button>
+    </div>
+
+    <!-- Alert zone: new unassigned orders -->
+    <div class="alert-zone" id="alertZone">
+      <div class="alert-hdr" id="alertHdr">
+        <i class="ti ti-alert-triangle"></i>
+        <span>Новые заявки без водителя</span>
+        <span class="badge" id="alertBadge">0</span>
+      </div>
+      <div class="new-cards" id="newCards"></div>
+    </div>
+
+    <!-- Board: driver lanes -->
+    <div id="boardLanes" class="lanes"></div>
+    <!-- Board: status columns -->
+    <div id="boardCols" class="cols" style="display:none"></div>
+    </div><!-- /page-board -->
+
+    <!-- PAGE: DASHBOARD -->
+    <div class="page" id="page-dashboard" style="display:none"></div>
+
+    <!-- PAGE: CLIENTS -->
+    <div class="page" id="page-clients" style="display:none"></div>
+
+    <!-- PAGE: DRIVERS -->
+    <div class="page" id="page-drivers" style="display:none"></div>
+
+    <!-- PAGE: CARS -->
+    <div class="page" id="page-cars" style="display:none"></div>
+
+    <!-- PAGE: FINANCE -->
+    <div class="page" id="page-finance" style="display:none"></div>
+
+    <!-- PAGE: SETTINGS -->
+    <div class="page" id="page-settings" style="display:none"></div>
+  </div>
+</div>
+
+<!-- Order modal -->
+<div class="modal-bg" id="orderModal">
+  <div class="modal">
+    <h2 id="orderModalTitle">Новая заявка</h2>
+    <div class="field-row">
+      <label>Имя клиента</label>
+      <input id="f_client" placeholder="Например: Anton">
+    </div>
+    <div class="field-2">
+      <div class="field-row">
+        <label>Телефон</label>
+        <input id="f_phone" placeholder="+971 ...">
+      </div>
+      <div class="field-row">
+        <label>Тип</label>
+        <select id="f_type">
+          <option value="round">Утро туда + вечер обратно</option>
+          <option value="single">Разовая поездка</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <label>Откуда забрать</label>
+      <input id="f_from" placeholder="Адрес подачи">
+    </div>
+    <div class="field-row">
+      <label>Куда привезти</label>
+      <input id="f_to" placeholder="Адрес назначения">
+    </div>
+    <div class="field-2">
+      <div class="field-row">
+        <label>Время утром</label>
+        <input id="f_morning" placeholder="9:30">
+      </div>
+      <div class="field-row">
+        <label>Время вечером / обратно</label>
+        <input id="f_evening" placeholder="18:00">
+      </div>
+    </div>
+    <div class="field-row">
+      <label>Водитель</label>
+      <select id="f_driver"></select>
+    </div>
+    <div class="field-row">
+      <label>Заметка</label>
+      <textarea id="f_note" rows="2" placeholder="Комментарий менеджера"></textarea>
+    </div>
+    <div class="modal-acts">
+      <button class="btn-sec" onclick="closeOrderModal()">Отмена</button>
+      <button class="btn-add" onclick="saveOrder()"><i class="ti ti-check"></i> Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ─────────── SUPABASE (общая база) ───────────
+var SB_URL = 'https://aruqepgvzzlzvwvvkkek.supabase.co';
+var SB_KEY = 'sb_publishable_aRSy6Kovd3yS-qRcfqaGJw_vWWC0ANA';
+var sb = supabase.createClient(SB_URL, SB_KEY);
+
+// ─────────── DATA ───────────
+var DRIVERS = [
+  {id:'d1', name:'Ahmed', car:'Kia K5', phone:'+971 50 599 4520', color:'#e08a5a'},
+  {id:'d2', name:'Alaaeldine', car:'Mazda CX5', phone:'+971 50 000 0000', color:'#6aa85a'},
+  {id:'d3', name:'Ali', car:'MG', phone:'+971 50 315 3341', color:'#e0c14a'},
+  {id:'d4', name:'Mohamed', car:'Kia K5', phone:'+971 50 890 8942', color:'#b5562e'},
+];
+var ORDERS = [];
+var board = 'lanes';
+var editingId = null;
+
+// DB-строка -> объект доски
+function rowToOrder(r){
+  return {id:r.id, client:r.client, phone:r.phone, from:r.from_loc, to:r.to_loc,
+          morning:r.morning, evening:r.evening, driver:r.driver,
+          status:r.status, note:r.note, type:r.type};
+}
+// объект доски -> поля для DB
+function orderToRow(o){
+  return {client:o.client, phone:o.phone, from_loc:o.from, to_loc:o.to,
+          morning:o.morning, evening:o.evening, driver:o.driver||null,
+          status:o.status, note:o.note, type:o.type, company_id:'mrride'};
+}
+
+// Загрузка всех заявок из Supabase
+async function loadOrders(){
+  var res = await sb.from('tour_orders').select('*').order('created_at',{ascending:true});
+  if(res.error){ console.error('loadOrders', res.error); return; }
+  ORDERS = (res.data||[]).map(rowToOrder);
+  render();
+}
+
+// Реалтайм: любой менеджер меняет — у всех обновляется
+function subscribeOrders(){
+  sb.channel('tour_orders_rt')
+    .on('postgres_changes', {event:'*', schema:'public', table:'tour_orders'}, function(){
+      loadOrders();
+    })
+    .subscribe();
+}
+
+// ─────────── DEMO SEED ───────────
+async function seedDemo(){
+  var demo = [
+    {client:'Anton', phone:'+971 58 258 3346', from:'Marina', to:'School', morning:'9:30', evening:'18:00', driver:'d1', status:'confirmed', note:'', type:'round'},
+    {client:'Marina-Renat', phone:'+971 56 768 1750', from:'JBR', to:'Office', morning:'6:50', evening:'15:15', driver:'d1', status:'assigned', note:'', type:'round'},
+    {client:'Nour', phone:'+971 52 347 0147', from:'Downtown', to:'Mall', morning:'10:30', evening:'21:30', driver:'d1', status:'confirmed', note:'', type:'round'},
+    {client:'Gabriela', phone:'+373 691 05 252', from:'Hotel', to:'Beach', morning:'7:30', evening:'19:00', driver:'d2', status:'assigned', note:'', type:'round'},
+    {client:'Oksana', phone:'+971 52 826 6607', from:'Palm', to:'Airport', morning:'9:25', evening:'21:00', driver:'d3', status:'confirmed', note:'', type:'round'},
+    {client:'Ariella', phone:'+971 50 189 2920', from:'Marina', to:'Clinic', morning:'9:00', evening:'18:00', driver:'d3', status:'assigned', note:'', type:'round'},
+    {client:'Purim', phone:'+971 58 846 8102', from:'Hotel', to:'Tour', morning:'', evening:'', driver:'d4', status:'confirmed', note:'', type:'round'},
+    {client:'Bella', phone:'054 297 4864', from:'Deira', to:'Mall', morning:'11:00', evening:'19:30', driver:'', status:'new', note:'Новый клиент', type:'round'},
+    {client:'Dina', phone:'+971 50 249 7316', from:'Sharjah', to:'Dubai', morning:'7:30', evening:'18:30', driver:'', status:'new', note:'', type:'round'},
+    {client:'Lera', phone:'+48 608 277 268', from:'Hotel', to:'—', morning:'', evening:'', driver:'', status:'new', note:'Запрос на четверг', type:'round'},
+  ];
+  var rows = demo.map(orderToRow);
+  var res = await sb.from('tour_orders').insert(rows);
+  if(res.error){ alert('Ошибка загрузки демо: '+res.error.message); return; }
+  loadOrders();
+}
+
+// ─────────── MODAL ───────────
+function fillDriverSelect(){
+  var sel=document.getElementById('f_driver');
+  sel.innerHTML='<option value="">— не назначен —</option>'+
+    DRIVERS.map(function(d){ return '<option value="'+d.id+'">'+d.name+' ('+d.car+')</option>'; }).join('');
+}
+function openOrderModal(id){
+  editingId = id||null;
+  fillDriverSelect();
+  document.getElementById('orderModalTitle').textContent = id ? 'Редактировать заявку' : 'Новая заявка';
+  var o = id ? ORDERS.find(function(x){return x.id===id;}) : {client:'',phone:'',from:'',to:'',morning:'',evening:'',driver:'',note:'',type:'round'};
+  document.getElementById('f_client').value=o.client||'';
+  document.getElementById('f_phone').value=o.phone||'';
+  document.getElementById('f_from').value=o.from||'';
+  document.getElementById('f_to').value=o.to||'';
+  document.getElementById('f_morning').value=o.morning||'';
+  document.getElementById('f_evening').value=o.evening||'';
+  document.getElementById('f_driver').value=o.driver||'';
+  document.getElementById('f_note').value=o.note||'';
+  document.getElementById('f_type').value=o.type||'round';
+  document.getElementById('orderModal').classList.add('show');
+}
+function closeOrderModal(){ document.getElementById('orderModal').classList.remove('show'); }
+async function saveOrder(){
+  var client=document.getElementById('f_client').value.trim();
+  if(!client){ alert('Введите имя клиента'); return; }
+  var driver=document.getElementById('f_driver').value;
+  var data={
+    client:client,
+    phone:document.getElementById('f_phone').value.trim(),
+    from:document.getElementById('f_from').value.trim(),
+    to:document.getElementById('f_to').value.trim(),
+    morning:document.getElementById('f_morning').value.trim(),
+    evening:document.getElementById('f_evening').value.trim(),
+    driver:driver,
+    note:document.getElementById('f_note').value.trim(),
+    type:document.getElementById('f_type').value,
+    status: driver ? 'assigned' : 'new'
+  };
+  var res;
+  if(editingId){
+    var o=ORDERS.find(function(x){return x.id===editingId;});
+    var keep = o ? o.status : 'new';
+    if(driver && (keep==='confirmed'||keep==='done')) data.status=keep;
+    res = await sb.from('tour_orders').update(orderToRow(data)).eq('id', editingId);
+  } else {
+    res = await sb.from('tour_orders').insert(orderToRow(data));
+  }
+  if(res.error){ alert('Ошибка сохранения: '+res.error.message); return; }
+  closeOrderModal(); loadOrders();
+}
+async function delOrder(id){
+  if(!confirm('Удалить заявку?')) return;
+  var res = await sb.from('tour_orders').delete().eq('id', id);
+  if(res.error){ alert('Ошибка удаления: '+res.error.message); return; }
+  loadOrders();
+}
+async function assignDriver(id, did){
+  var res = await sb.from('tour_orders').update({driver: did||null, status: did ? 'assigned' : 'new'}).eq('id', id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  loadOrders();
+}
+async function setStatus(id, st){
+  var res = await sb.from('tour_orders').update({status: st}).eq('id', id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  loadOrders();
+}
+
+// ─────────── RENDER ───────────
+function driverById(id){ return DRIVERS.find(function(d){return d.id===id;}); }
+function esc(s){ return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+function statusLabel(st){ return {new:'Новая',assigned:'Назначена',confirmed:'Водитель подтвердил',done:'Выполнена'}[st]||st; }
+
+function render(){
+  renderAlert();
+  if(board==='lanes') renderLanes(); else renderCols();
+}
+
+function renderAlert(){
+  var news = ORDERS.filter(function(o){return !o.driver || o.status==='new';});
+  var zone=document.getElementById('alertZone'), hdr=document.getElementById('alertHdr'), badge=document.getElementById('alertBadge');
+  badge.textContent=news.length;
+  if(news.length===0){
+    zone.classList.add('empty'); hdr.classList.add('ok');
+    document.getElementById('newCards').innerHTML='<div style="font-size:13px;color:var(--text2)">Все заявки назначены 👍</div>';
+    return;
+  }
+  zone.classList.remove('empty'); hdr.classList.remove('ok');
+  document.getElementById('newCards').innerHTML = news.map(function(o){
+    return '<div class="new-card">'+
+      '<div class="nm">'+esc(o.client)+'</div>'+
+      '<div class="meta">'+(o.phone?'📞 '+esc(o.phone)+'<br>':'')+
+        (o.from?'📍 '+esc(o.from)+(o.to?' → '+esc(o.to):'')+'<br>':'')+
+        (o.morning||o.evening?'🕐 '+esc(o.morning||'—')+' / '+esc(o.evening||'—'):'')+
+        (o.note?'<br>📝 '+esc(o.note):'')+
+      '</div>'+
+      '<div class="acts">'+
+        '<button class="mini-btn primary" onclick="openOrderModal(\''+o.id+'\')">Назначить</button>'+
+        '<button class="mini-btn" onclick="delOrder(\''+o.id+'\')">Удалить</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function tripRow(o){
+  var stClass=o.status, drv=driverById(o.driver);
+  return '<div class="trip">'+
+    '<div class="client">'+esc(o.client)+'</div>'+
+    '<div class="times">'+
+      (o.morning?'<div class="tm"><span class="lbl">утро</span><span class="val morning">'+esc(o.morning)+'</span></div>':'')+
+      (o.evening?'<div class="tm"><span class="lbl">вечер</span><span class="val evening">'+esc(o.evening)+'</span></div>':'')+
+    '</div>'+
+    '<div class="addr">'+(o.from?esc(o.from)+(o.to?' → '+esc(o.to):''):'')+'</div>'+
+    '<div class="ph">'+esc(o.phone)+'</div>'+
+    '<div class="st '+stClass+'">'+statusLabel(o.status)+'</div>'+
+    '<div class="row-acts">'+
+      (o.status==='assigned'?'<button class="mini-btn primary" onclick="setStatus(\''+o.id+'\',\'confirmed\')">✓ подтв.</button>':'')+
+      (o.status==='confirmed'?'<button class="mini-btn" onclick="setStatus(\''+o.id+'\',\'done\')">выполнено</button>':'')+
+      '<button class="mini-btn" onclick="openOrderModal(\''+o.id+'\')">✎</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function renderLanes(){
+  var box=document.getElementById('boardLanes');
+  if(ORDERS.length===0){ box.innerHTML=emptyState(); return; }
+  var html='';
+  DRIVERS.forEach(function(d){
+    var trips=ORDERS.filter(function(o){return o.driver===d.id;});
+    html+='<div class="lane">'+
+      '<div class="lane-hdr">'+
+        '<span class="lane-color" style="background:'+d.color+'"></span>'+
+        '<span class="lane-driver">'+esc(d.name)+'</span>'+
+        '<span class="lane-car">'+esc(d.car)+'</span>'+
+        '<span class="lane-phone">'+esc(d.phone)+'</span>'+
+        '<span class="lane-count">'+trips.length+'</span>'+
+      '</div>'+
+      '<div class="lane-body">'+
+        (trips.length?trips.map(tripRow).join(''):'<div class="lane-empty">Нет назначенных клиентов</div>')+
+      '</div>'+
+    '</div>';
+  });
+  box.innerHTML=html;
+}
+
+function renderCols(){
+  var box=document.getElementById('boardCols');
+  var cols=[
+    {key:'new',title:'Новые',color:'var(--danger)'},
+    {key:'assigned',title:'Назначены',color:'var(--warn)'},
+    {key:'confirmed',title:'Подтверждены',color:'var(--accent)'},
+    {key:'done',title:'Выполнены',color:'var(--text3)'},
+  ];
+  box.innerHTML=cols.map(function(c){
+    var items=ORDERS.filter(function(o){return o.status===c.key;});
+    return '<div class="col">'+
+      '<div class="col-hdr"><span style="color:'+c.color+'">'+c.title+'</span><span class="lane-count">'+items.length+'</span></div>'+
+      '<div class="col-body">'+
+        (items.length?items.map(function(o){
+          var drv=driverById(o.driver);
+          return '<div class="ocard" onclick="openOrderModal(\''+o.id+'\')">'+
+            '<div class="nm">'+esc(o.client)+'</div>'+
+            '<div class="meta">'+(o.phone?'📞 '+esc(o.phone)+'<br>':'')+
+              (o.from?'📍 '+esc(o.from)+(o.to?' → '+esc(o.to):''):'')+
+              ((o.morning||o.evening)?'<br>🕐 '+esc(o.morning||'—')+' / '+esc(o.evening||'—'):'')+
+            '</div>'+
+            (drv?'<div class="drv">🚗 '+esc(drv.name)+' · '+esc(drv.car)+'</div>':'')+
+          '</div>';
+        }).join(''):'<div class="lane-empty">—</div>')+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function emptyState(){
+  return '<div class="empty-state"><i class="ti ti-inbox"></i>Заявок пока нет.<br>Нажмите «Новая заявка» или «Демо-данные».</div>';
+}
+
+function switchBoard(b){
+  board=b;
+  document.getElementById('tabLanes').classList.toggle('active', b==='lanes');
+  document.getElementById('tabCols').classList.toggle('active', b==='cols');
+  document.getElementById('boardLanes').style.display = b==='lanes'?'':'none';
+  document.getElementById('boardCols').style.display = b==='cols'?'':'none';
+  render();
+}
+
+// ─────────── CLIENTS & CARS data ───────────
+var CLIENTS = [
+  {id:'c1', name:'Anton', phone:'+971 58 258 3346', from:'Marina', to:'School', schedule:'Пн-Пт 9:30 / 18:00', regular:true},
+  {id:'c2', name:'Marina-Renat', phone:'+971 56 768 1750', from:'JBR', to:'Office', schedule:'Пн-Пт 6:50 / 15:15', regular:true},
+  {id:'c3', name:'Gabriela', phone:'+373 691 05 252', from:'Hotel', to:'Beach', schedule:'разово', regular:false},
+  {id:'c4', name:'Oksana', phone:'+971 52 826 6607', from:'Palm', to:'Airport', schedule:'разово', regular:false},
+  {id:'c5', name:'Ariella', phone:'+971 50 189 2920', from:'Marina', to:'Clinic', schedule:'Пн-Пт 9:00 / 18:00', regular:true},
+];
+var CARS = [
+  {id:'car1', plate:'Kia K5', model:'Kia K5', seats:4, driver:'Ahmed'},
+  {id:'car2', plate:'Mazda CX5', model:'Mazda CX5', seats:5, driver:'Alaaeldine'},
+  {id:'car3', plate:'MG', model:'MG', seats:4, driver:'Ali'},
+  {id:'car4', plate:'Kia K5 (2)', model:'Kia K5', seats:4, driver:'Mohamed'},
+];
+
+function loadAll(){
+  try{ var s=localStorage.getItem('tourismClients'); if(s) CLIENTS=JSON.parse(s); }catch(e){}
+  try{ var d=localStorage.getItem('tourismDrivers'); if(d) DRIVERS=JSON.parse(d); }catch(e){}
+}
+function saveClients(){ localStorage.setItem('tourismClients', JSON.stringify(CLIENTS)); }
+function saveDrivers(){ localStorage.setItem('tourismDrivers', JSON.stringify(DRIVERS)); }
+
+// ─────────── NAVIGATION ───────────
+var titles={board:['Доска заявок','трансферы'],dashboard:['Дашборд','сводка дня'],clients:['Клиенты','база клиентов'],drivers:['Водители','команда'],cars:['Машины','автопарк'],finance:['Финансы','доходы и расходы'],settings:['Настройки','параметры']};
+function goPage(p){
+  document.querySelectorAll('.page').forEach(function(el){el.style.display='none';});
+  var pg=document.getElementById('page-'+p); if(pg) pg.style.display='';
+  document.querySelectorAll('.sidebar .ni').forEach(function(b){b.classList.remove('active');});
+  var nav=document.getElementById('nav-'+p); if(nav) nav.classList.add('active');
+  var t=titles[p]||[p,''];
+  document.querySelector('.topbar h1').textContent=t[0];
+  document.querySelector('.topbar .sub').textContent='Mr Ride Tourism · '+t[1];
+  if(p==='board') render();
+  if(p==='dashboard') renderDashboard();
+  if(p==='clients') renderClients();
+  if(p==='drivers') renderDrivers();
+  if(p==='cars') renderCars();
+  if(p==='finance') renderFinance();
+  if(p==='settings') renderSettings();
+}
+
+// ─────────── DASHBOARD ───────────
+function renderDashboard(){
+  var total=ORDERS.length;
+  var newN=ORDERS.filter(function(o){return !o.driver||o.status==='new';}).length;
+  var assigned=ORDERS.filter(function(o){return o.status==='assigned';}).length;
+  var confirmed=ORDERS.filter(function(o){return o.status==='confirmed';}).length;
+  var done=ORDERS.filter(function(o){return o.status==='done';}).length;
+  var html='<div class="page-head"><span class="ttl">Сводка на сегодня</span></div>';
+  html+='<div class="stats">'+
+    statCard('Всего заявок',total,'','')+
+    statCard('Без водителя',newN,newN>0?'danger':'ok',newN>0?'требуют назначения':'все назначены')+
+    statCard('Назначены',assigned,'warn','ждут подтверждения')+
+    statCard('Подтверждены',confirmed,'ok','водитель принял')+
+    statCard('Выполнены',done,'','завершено сегодня')+
+  '</div>';
+  // per-driver load
+  html+='<div class="page-head" style="margin-top:8px"><span class="ttl">Загрузка водителей</span></div>';
+  html+='<table class="tbl"><thead><tr><th>Водитель</th><th>Машина</th><th>Клиентов сегодня</th><th>Статус</th></tr></thead><tbody>';
+  DRIVERS.forEach(function(d){
+    var trips=ORDERS.filter(function(o){return o.driver===d.id;});
+    var pending=trips.filter(function(o){return o.status==='assigned';}).length;
+    html+='<tr><td><span class="dotc" style="background:'+d.color+'"></span>'+esc(d.name)+'</td><td>'+esc(d.car)+'</td><td>'+trips.length+'</td><td>'+(pending>0?'<span style="color:var(--warn)">'+pending+' ждут подтв.</span>':'<span style="color:var(--accent)">всё ок</span>')+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('page-dashboard').innerHTML=html;
+}
+function statCard(lbl,num,cls,sub){
+  return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="num '+(cls||'')+'">'+num+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>';
+}
+
+// ─────────── CLIENTS ───────────
+function renderClients(){
+  var html='<div class="page-head"><span class="ttl">Клиенты</span><span class="spacer"></span><button class="btn-add" onclick="alert(\'В прототипе: здесь будет форма добавления клиента\')"><i class="ti ti-plus"></i> Клиент</button></div>';
+  html+='<div class="info-banner"><i class="ti ti-info-circle"></i> Постоянные клиенты ездят по расписанию — система будет создавать им рейсы автоматически каждый день.</div>';
+  html+='<table class="tbl"><thead><tr><th>Имя</th><th>Телефон</th><th>Маршрут</th><th>Расписание</th><th>Тип</th></tr></thead><tbody>';
+  CLIENTS.forEach(function(c){
+    html+='<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.phone)+'</td><td>'+esc(c.from)+' → '+esc(c.to)+'</td><td>'+esc(c.schedule)+'</td><td>'+(c.regular?'<span style="color:var(--accent)">постоянный</span>':'<span style="color:var(--text3)">разовый</span>')+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('page-clients').innerHTML=html;
+}
+
+// ─────────── DRIVERS ───────────
+function renderDrivers(){
+  var html='<div class="page-head"><span class="ttl">Водители</span><span class="spacer"></span><button class="btn-add" onclick="alert(\'В прототипе: здесь будет форма добавления водителя\')"><i class="ti ti-plus"></i> Водитель</button></div>';
+  html+='<div class="card-grid">';
+  DRIVERS.forEach(function(d){
+    var trips=ORDERS.filter(function(o){return o.driver===d.id;}).length;
+    html+='<div class="entity-card">'+
+      '<div class="ec-top"><span class="dotc" style="background:'+d.color+';width:14px;height:14px"></span><span class="ec-name">'+esc(d.name)+'</span></div>'+
+      '<div class="ec-meta">🚗 '+esc(d.car)+'<br>📞 '+esc(d.phone)+'<br>📋 клиентов сегодня: '+trips+'</div>'+
+      '<div class="ec-acts"><button class="mini-btn">✎ изменить</button></div>'+
+    '</div>';
+  });
+  html+='</div>';
+  document.getElementById('page-drivers').innerHTML=html;
+}
+
+// ─────────── CARS ───────────
+function renderCars(){
+  var html='<div class="page-head"><span class="ttl">Машины</span><span class="spacer"></span><button class="btn-add" onclick="alert(\'В прототипе: здесь будет форма добавления машины\')"><i class="ti ti-plus"></i> Машина</button></div>';
+  html+='<table class="tbl"><thead><tr><th>Машина</th><th>Модель</th><th>Мест</th><th>Закреплена за</th></tr></thead><tbody>';
+  CARS.forEach(function(c){
+    html+='<tr><td><b>'+esc(c.plate)+'</b></td><td>'+esc(c.model)+'</td><td>'+c.seats+'</td><td>'+esc(c.driver)+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('page-cars').innerHTML=html;
+}
+
+// ─────────── FINANCE ───────────
+function renderFinance(){
+  var html='<div class="page-head"><span class="ttl">Финансы</span></div>';
+  html+='<div class="info-banner"><i class="ti ti-info-circle"></i> Прототип: цифры демонстрационные. Здесь будут реальные оплаты клиентов и расчёты с водителями.</div>';
+  html+='<div class="stats">'+
+    statCard('Доход за день','3 200 AED','ok','')+
+    statCard('Расходы (топливо/Salik)','480 AED','warn','')+
+    statCard('Прибыль','2 720 AED','ok','')+
+    statCard('К выплате водителям','1 100 AED','','')+
+  '</div>';
+  html+='<div class="page-head" style="margin-top:8px"><span class="ttl">Последние операции</span></div>';
+  html+='<table class="tbl"><thead><tr><th>Дата</th><th>Клиент</th><th>Водитель</th><th>Сумма</th><th>Тип</th></tr></thead><tbody>'+
+    '<tr><td>04.06</td><td>Anton</td><td>Ahmed</td><td>250 AED</td><td><span style="color:var(--accent)">оплата</span></td></tr>'+
+    '<tr><td>04.06</td><td>Oksana</td><td>Ali</td><td>400 AED</td><td><span style="color:var(--accent)">оплата</span></td></tr>'+
+    '<tr><td>04.06</td><td>—</td><td>Ahmed</td><td>120 AED</td><td><span style="color:var(--warn)">топливо</span></td></tr>'+
+  '</tbody></table>';
+  document.getElementById('page-finance').innerHTML=html;
+}
+
+// ─────────── SETTINGS ───────────
+function renderSettings(){
+  var html='<div class="page-head"><span class="ttl">Настройки</span></div>';
+  html+=[
+    ['ti-building','Компания','Mr Ride Tourism L.L.C'],
+    ['ti-clock','Часовой пояс','Asia/Dubai (UTC+4)'],
+    ['ti-users','Менеджеры','3 пользователя (появится с общей базой)'],
+    ['ti-brand-whatsapp','WhatsApp-заявки','не подключено (этап 2)'],
+    ['ti-map-2','GPS-трекинг','не подключено'],
+    ['ti-receipt','Загрузка Salik / топливо','не подключено'],
+  ].map(function(r){
+    return '<div class="set-row"><i class="ti '+r[0]+' si"></i><div class="st-txt"><div class="t">'+r[1]+'</div><div class="d">'+r[2]+'</div></div></div>';
+  }).join('');
+  document.getElementById('page-settings').innerHTML=html;
+}
+
+// init
+async function boot(){
+  loadAll();                 // клиенты/водители (локально, общими сделаем позже)
+  subscribeOrders();         // реалтайм для 3 менеджеров
+  var res = await sb.from('tour_orders').select('id').limit(1);
+  if(res.error){ alert('Нет связи с базой: '+res.error.message); render(); return; }
+  if((res.data||[]).length===0){ await seedDemo(); }  // первый запуск — заполнить демо
+  else { await loadOrders(); }
+}
+boot();
+</script>
+</body>
+</html>
