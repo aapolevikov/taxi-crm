@@ -44,6 +44,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* Tabs */
 .board-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
 .date-filter{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.date-nav{margin-bottom:16px}
+.date-nav-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.dn-month{font-weight:700;font-size:15px;min-width:140px;text-align:center}
+.dn-nav-btn{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);cursor:pointer;color:var(--text2)}
+.dn-days{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}
+.dn-day{flex:0 0 auto;min-width:48px;text-align:center;padding:6px 4px;border:1px solid var(--border2);border-radius:10px;background:var(--bg);cursor:pointer;position:relative}
+.dn-day .dow{font-size:10px;color:var(--text3);display:block;text-transform:uppercase}
+.dn-day .num{font-size:15px;font-weight:600}
+.dn-day.today{border-color:var(--accent)}
+.dn-day.active{background:var(--accent);border-color:var(--accent)}
+.dn-day.active .dow,.dn-day.active .num{color:#fff}
+.dn-day.weekend .num{color:var(--danger)}
+.dn-day.active.weekend .num{color:#fff}
+.dn-day .cnt{position:absolute;top:-7px;right:-7px;background:var(--warn);color:#fff;font-size:10px;min-width:17px;height:17px;line-height:17px;border-radius:9px;padding:0 4px;font-weight:600}
 .df-btn{padding:6px 14px;font-size:13px;background:var(--bg);border:1px solid var(--border2);border-radius:20px;cursor:pointer;color:var(--text2)}
 .df-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .df-pick{padding:5px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none}
@@ -259,14 +273,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="btn-add" onclick="openOrderModal()"><i class="ti ti-plus"></i> Новая заявка</button>
     </div>
 
-    <!-- Date filter -->
-    <div class="date-filter" id="dateFilter">
-      <button class="df-btn active" data-df="all" onclick="setBoardDate('all')">Все</button>
-      <button class="df-btn" data-df="today" onclick="setBoardDate('today')">Сегодня</button>
-      <button class="df-btn" data-df="tomorrow" onclick="setBoardDate('tomorrow')">Завтра</button>
-      <input type="date" id="dfPick" class="df-pick" onchange="setBoardDate(this.value)">
-      <div style="flex:1"></div>
-      <button class="df-btn" id="sortBtn" onclick="toggleSort()"><i class="ti ti-arrow-up"></i> По времени</button>
+    <!-- Date navigation -->
+    <div class="date-nav" id="dateNav">
+      <div class="date-nav-top" id="dateNavTop"></div>
+      <div class="dn-days" id="dateNavDays"></div>
     </div>
 
     <!-- Alert zone: new unassigned orders -->
@@ -516,7 +526,7 @@ var editingId = null;
 var editingLead = null;
 var leadPreset = 'inbox';
 var currentPage = 'board';
-var boardDate = 'all';
+var boardDate = 'today';
 var sortDir = 'asc';   // направление сортировки по времени внутри слотов
 
 // DB-строка -> объект доски
@@ -709,16 +719,56 @@ function esc(s){ return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;
 
 function statusLabel(st){ return {new:'Новая',assigned:'Назначена',confirmed:'Водитель подтвердил',done:'Выполнена'}[st]||st; }
 
-// ─────────── ФИЛЬТР ПО ДАТЕ (доска заявок) ───────────
-function dateStr(off){ var d=new Date(); d.setDate(d.getDate()+(off||0)); var m=('0'+(d.getMonth()+1)).slice(-2); var dd=('0'+d.getDate()).slice(-2); return d.getFullYear()+'-'+m+'-'+dd; }
-function resolveBoardDate(){ if(boardDate==='all')return null; if(boardDate==='today')return dateStr(0); if(boardDate==='tomorrow')return dateStr(1); return boardDate; }
+// ─────────── НАВИГАЦИЯ ПО ДАТАМ (доска заявок) ───────────
+var MONTHS=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+var navMonth=new Date(); navMonth.setDate(1);
+function pad2(n){ return ('0'+n).slice(-2); }
+function isoOf(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function dateStr(off){ var d=new Date(); d.setDate(d.getDate()+(off||0)); return isoOf(d); }
+function resolveBoardDate(){ if(boardDate==='all')return null; if(boardDate==='today')return dateStr(0); return boardDate; }
 function dateMatch(o){ var t=resolveBoardDate(); if(!t)return true; return (o.trip_date||'')===t; }
+function selectedIso(){ if(boardDate==='all')return null; if(boardDate==='today')return dateStr(0); return boardDate; }
+
 function setBoardDate(v){
   boardDate=v;
-  document.querySelectorAll('#dateFilter .df-btn[data-df]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-df')===v); });
-  if(v==='all'||v==='today'||v==='tomorrow'){ var p=document.getElementById('dfPick'); if(p)p.value=''; }
+  if(v!=='all'){ var iso=selectedIso(); if(iso){ var p=iso.split('-'); navMonth=new Date(+p[0], +p[1]-1, 1); } }
+  renderDateNav();
   render();
 }
+function navPrevMonth(){ navMonth=new Date(navMonth.getFullYear(), navMonth.getMonth()-1, 1); renderDateNav(); }
+function navNextMonth(){ navMonth=new Date(navMonth.getFullYear(), navMonth.getMonth()+1, 1); renderDateNav(); }
+
+function renderDateNav(){
+  var top=document.getElementById('dateNavTop'); if(!top) return;
+  var sortIcon = sortDir==='asc'?'up':'down';
+  top.innerHTML=
+    '<button class="dn-nav-btn" onclick="navPrevMonth()"><i class="ti ti-chevron-left"></i></button>'+
+    '<span class="dn-month">'+MONTHS[navMonth.getMonth()]+' '+navMonth.getFullYear()+'</span>'+
+    '<button class="dn-nav-btn" onclick="navNextMonth()"><i class="ti ti-chevron-right"></i></button>'+
+    '<button class="df-btn'+(boardDate==='today'||selectedIso()===dateStr(0)?' active':'')+'" onclick="setBoardDate(\'today\')">Сегодня</button>'+
+    '<button class="df-btn'+(boardDate==='all'?' active':'')+'" onclick="setBoardDate(\'all\')">Все дни</button>'+
+    '<input type="date" class="df-pick" value="'+(selectedIso()||'')+'" onchange="if(this.value)setBoardDate(this.value)">'+
+    '<div style="flex:1"></div>'+
+    '<button class="df-btn" id="sortBtn" onclick="toggleSort()"><i class="ti ti-arrow-'+sortIcon+'"></i> По времени</button>';
+
+  // счётчик поездок по датам
+  var counts={};
+  dealOrders().forEach(function(o){ if(o.trip_date){ counts[o.trip_date]=(counts[o.trip_date]||0)+1; } });
+  var y=navMonth.getFullYear(), m=navMonth.getMonth();
+  var dim=new Date(y, m+1, 0).getDate();
+  var sel=selectedIso(), todayIso=dateStr(0);
+  var DOWS=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  var days='';
+  for(var i=1;i<=dim;i++){
+    var d=new Date(y,m,i); var iso=isoOf(d); var dow=d.getDay();
+    var cls='dn-day'+(iso===sel?' active':'')+(iso===todayIso?' today':'')+((dow===0||dow===6)?' weekend':'');
+    var cnt=counts[iso]?'<span class="cnt">'+counts[iso]+'</span>':'';
+    days+='<div class="'+cls+'" onclick="setBoardDate(\''+iso+'\')">'+
+      '<span class="dow">'+DOWS[dow]+'</span><span class="num">'+i+'</span>'+cnt+'</div>';
+  }
+  document.getElementById('dateNavDays').innerHTML=days;
+}
+
 function toggleSort(){
   sortDir = sortDir==='asc' ? 'desc' : 'asc';
   var btn=document.getElementById('sortBtn');
@@ -727,6 +777,7 @@ function toggleSort(){
 }
 
 function render(){
+  renderDateNav();
   renderAlert();
   renderFreeDrivers();
   if(board==='lanes') renderLanes(); else renderCols();
