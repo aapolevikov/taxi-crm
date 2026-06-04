@@ -464,6 +464,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <input id="cl_to" placeholder="Адрес назначения">
       </div>
     </div>
+    <div class="field-2">
+      <div class="field-row">
+        <label>Стоимость договора (AED)</label>
+        <input id="cl_price" type="number" min="0" step="1" placeholder="0">
+      </div>
+      <div class="field-row">
+        <label>За период</label>
+        <select id="cl_price_unit">
+          <option value="month">в месяц</option>
+          <option value="week">в неделю</option>
+          <option value="day">в день</option>
+        </select>
+      </div>
+    </div>
 
     <div id="cl_sched">
       <div class="field-row">
@@ -1190,6 +1204,11 @@ function clientTimesLabel(c){
   if(c.t_evening) t.push('🌙 '+c.t_evening);
   return t.length?t.join(' / '):'—';
 }
+function priceLabel(c){
+  if(c.price==null||c.price==='') return '—';
+  var u={month:'мес',week:'нед',day:'день'}[c.price_unit||'month'];
+  return Number(c.price).toLocaleString('ru-RU')+' AED / '+u;
+}
 
 function renderClients(){
   var html='<div class="page-head"><span class="ttl">Клиенты</span><span class="spacer"></span><button class="btn-add" onclick="openClientModal()"><i class="ti ti-plus"></i> Клиент</button></div>';
@@ -1198,7 +1217,7 @@ function renderClients(){
     html+='<div class="empty-state"><i class="ti ti-users"></i>Клиентов пока нет.<br>Нажмите «Клиент», чтобы добавить первого.</div>';
     document.getElementById('page-clients').innerHTML=html; return;
   }
-  html+='<table class="tbl"><thead><tr><th>Имя</th><th>Телефон</th><th>Маршрут</th><th>Дни</th><th>Время</th><th>Период</th><th>Тип</th><th></th></tr></thead><tbody>';
+  html+='<table class="tbl"><thead><tr><th>Имя</th><th>Телефон</th><th>Маршрут</th><th>Дни</th><th>Время</th><th>Цена</th><th>Период</th><th>Тип</th><th></th></tr></thead><tbody>';
   CLIENTS.forEach(function(c){
     var period = (c.period_from||c.period_to) ? (esc(c.period_from||'…')+' → '+esc(c.period_to||'…')) : '—';
     var typeLbl = c.kind==='onetime' ? '<span style="color:var(--text3)">разовый</span>' : '<span style="color:var(--accent)">постоянный</span>';
@@ -1208,6 +1227,7 @@ function renderClients(){
       '<td>'+(c.from_loc?esc(c.from_loc)+' → '+esc(c.to_loc||''):'—')+'</td>'+
       '<td>'+(c.kind==='onetime'?'—':daysLabel(c.days))+'</td>'+
       '<td>'+(c.kind==='onetime'?'—':clientTimesLabel(c))+'</td>'+
+      '<td style="font-size:12px;white-space:nowrap">'+priceLabel(c)+'</td>'+
       '<td style="font-size:12px;color:var(--text2)">'+(c.kind==='onetime'?'—':period)+'</td>'+
       '<td>'+typeLbl+'</td>'+
       '<td style="white-space:nowrap;text-align:right">'+
@@ -1245,6 +1265,8 @@ function openClientModal(id){
   document.getElementById('cl_kind').value=c.kind||'regular';
   document.getElementById('cl_from').value=c.from_loc||'';
   document.getElementById('cl_to').value=c.to_loc||'';
+  document.getElementById('cl_price').value=(c.price!=null?c.price:'');
+  document.getElementById('cl_price_unit').value=c.price_unit||'month';
   setDays((c.days||'').split(',').filter(Boolean).map(Number));
   document.getElementById('cl_tm').value=c.t_morning||'';
   document.getElementById('cl_td').value=c.t_day||'';
@@ -1268,6 +1290,8 @@ async function saveClient(){
     kind:document.getElementById('cl_kind').value,
     from_loc:document.getElementById('cl_from').value.trim(),
     to_loc:document.getElementById('cl_to').value.trim(),
+    price: document.getElementById('cl_price').value!=='' ? Number(document.getElementById('cl_price').value) : null,
+    price_unit: document.getElementById('cl_price_unit').value,
     days:days.join(','),
     t_morning:document.getElementById('cl_tm').value.trim(),
     t_day:document.getElementById('cl_td').value.trim(),
