@@ -125,11 +125,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* Time-of-day sections */
 .time-lane{margin-bottom:0}
 .time-hdr{border-radius:0}
-.trip-row{display:grid;grid-template-columns:12px 130px 60px 1fr 130px 150px 64px;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2)}
+.trip-row{display:grid;grid-template-columns:12px 130px 100px 1fr 120px 150px 64px;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2)}
 .trip-row.unassigned{border-color:var(--danger)}
 .trip-row .tr-dot{width:10px;height:10px;border-radius:50%}
 .trip-row .tr-client{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.trip-row .tr-time{font-weight:700;font-size:14px}
+.trip-row .tr-time{font-weight:700;font-size:14px;white-space:nowrap}
+.trip-row .tr-time .tr-end{font-weight:500;font-size:12px;color:var(--text3)}
 .trip-row .tr-route{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trip-row .tr-phone{font-size:12px;color:var(--text3);white-space:nowrap;text-align:right}
 .trip-row .tr-driver{padding:6px 8px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;max-width:150px}
@@ -139,6 +140,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .slot-free-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--text2)}
 .slot-free-chip .dot{width:8px;height:8px;border-radius:50%}
 .slot-free-none{font-size:12px;color:var(--text3);font-style:italic}
+/* Лента дня */
+.tl-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);margin-bottom:10px;flex-wrap:wrap}
+.tl-driver{display:flex;align-items:center;gap:8px;min-width:170px;font-weight:600;font-size:14px}
+.tl-seq{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1}
+.tl-trip{border-radius:0 6px 6px 0;padding:5px 9px;font-size:12px;cursor:pointer;white-space:nowrap}
+.tl-gap{background:var(--accent-l);color:var(--accent-t);border-radius:20px;padding:4px 10px;font-size:11px;white-space:nowrap}
+.tl-overlap{background:var(--danger-l);color:var(--danger);border-radius:20px;padding:4px 10px;font-size:11px;white-space:nowrap}
+.tl-free{font-size:12px;color:var(--text2);white-space:nowrap}
+.tl-none{font-size:12px;color:var(--text3);font-style:italic}
 
 /* Status columns board */
 .cols{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}
@@ -267,6 +277,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="page" id="page-board">
     <div class="board-tabs">
       <button class="tab-btn active" id="tabLanes" onclick="switchBoard('lanes')"><i class="ti ti-clock"></i> По времени</button>
+      <button class="tab-btn" id="tabTimeline" onclick="switchBoard('timeline')"><i class="ti ti-timeline"></i> Лента дня</button>
       <button class="tab-btn" id="tabCols" onclick="switchBoard('cols')"><i class="ti ti-columns"></i> По статусам</button>
       <div style="flex:1"></div>
       <button class="btn-sec" onclick="seedDemo()"><i class="ti ti-flask"></i> Демо-данные</button>
@@ -301,6 +312,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <!-- Board: driver lanes -->
     <div id="boardLanes" class="lanes"></div>
+    <!-- Board: day timeline -->
+    <div id="boardTimeline" class="lanes" style="display:none"></div>
     <!-- Board: status columns -->
     <div id="boardCols" class="cols" style="display:none"></div>
     </div><!-- /page-board -->
@@ -422,6 +435,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <label>Дата поездки</label>
       <input id="f_orderdate" type="date">
     </div>
+    <div class="field-2">
+      <div class="field-row">
+        <label>Длительность поездки (мин)</label>
+        <input id="f_dur" type="number" min="0" step="5" placeholder="60">
+      </div>
+      <div class="field-row">
+        <label>Ожидание / запас (мин)</label>
+        <input id="f_wait" type="number" min="0" step="5" placeholder="0">
+      </div>
+    </div>
     <div class="field-row">
       <label>Заметка</label>
       <textarea id="f_note" rows="2" placeholder="Комментарий менеджера"></textarea>
@@ -511,6 +534,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="field-row"><label>Период с</label><input id="cl_pfrom" type="date"></div>
         <div class="field-row"><label>Период по</label><input id="cl_pto" type="date"></div>
       </div>
+      <div class="field-2">
+        <div class="field-row"><label>Длительность (мин)</label><input id="cl_dur" type="number" min="0" step="5" placeholder="60"></div>
+        <div class="field-row"><label>Ожидание (мин)</label><input id="cl_wait" type="number" min="0" step="5" placeholder="0"></div>
+      </div>
     </div>
 
     <div class="modal-acts">
@@ -548,6 +575,7 @@ function rowToOrder(r){
   return {id:r.id, client:r.client, phone:r.phone, from:r.from_loc, to:r.to_loc,
           morning:r.morning, evening:r.evening, driver:r.driver,
           dM:r.driver_morning, dD:r.driver_day, dE:r.driver_evening,
+          duration:r.duration, wait:r.wait,
           status:r.status, note:r.note, type:r.type,
           request:r.request, trip_date:r.trip_date, day:r.day_time};
 }
@@ -556,6 +584,7 @@ function orderToRow(o){
   return {client:o.client, phone:o.phone, from_loc:o.from, to_loc:o.to,
           morning:o.morning, evening:o.evening, driver:o.driver||null,
           driver_morning:o.dM||null, driver_day:o.dD||null, driver_evening:o.dE||null,
+          duration:(o.duration!=null?o.duration:null), wait:(o.wait!=null?o.wait:null),
           status:o.status, note:o.note, type:o.type, company_id:'mrride',
           request:o.request||null, trip_date:o.trip_date||null, day_time:o.day||null};
 }
@@ -655,6 +684,8 @@ function openOrderModal(id){
   document.getElementById('f_day').value=o.day||'';
   document.getElementById('f_evening').value=o.evening||'';
   document.getElementById('f_orderdate').value=o.trip_date||'';
+  document.getElementById('f_dur').value=(o.duration!=null?o.duration:60);
+  document.getElementById('f_wait').value=(o.wait!=null?o.wait:0);
   document.getElementById('f_driver_m').value=o.dM||'';
   document.getElementById('f_driver_d').value=o.dD||'';
   document.getElementById('f_driver_e').value=o.dE||'';
@@ -680,6 +711,8 @@ async function saveOrder(){
     evening:document.getElementById('f_evening').value.trim(),
     trip_date:document.getElementById('f_orderdate').value||null,
     dM:dM, dD:dD, dE:dE,
+    duration: document.getElementById('f_dur').value!=='' ? Number(document.getElementById('f_dur').value) : 60,
+    wait: document.getElementById('f_wait').value!=='' ? Number(document.getElementById('f_wait').value) : 0,
     note:document.getElementById('f_note').value.trim(),
     type:document.getElementById('f_type').value,
     status: anyDriver ? 'assigned' : 'new'
@@ -794,7 +827,9 @@ function render(){
   renderDateNav();
   renderAlert();
   renderFreeDrivers();
-  if(board==='lanes') renderLanes(); else renderCols();
+  if(board==='lanes') renderLanes();
+  else if(board==='timeline') renderTimeline();
+  else renderCols();
 }
 
 // Водители, не назначенные НИ на один слот (свободны весь день)
@@ -850,6 +885,9 @@ function timeToMin(t){
   var p=String(t).split(':'); var h=parseInt(p[0],10)||0; var m=parseInt(p[1],10)||0;
   return h*60+m;
 }
+function minToTime(m){ m=Math.max(0,Math.round(m)); var h=Math.floor(m/60)%24; var mm=m%60; return h+':'+('0'+mm).slice(-2); }
+function humanDur(m){ m=Math.round(m); if(m<=0) return '0м'; var h=Math.floor(m/60), mm=m%60; return (h?h+'ч':'')+(h&&mm?' ':'')+(mm?mm+'м':(h?'':'0м')); }
+function tripEndMin(o, s){ var dur=(o.duration!=null?o.duration:60); var wt=(o.wait!=null?o.wait:0); return timeToMin(o[s.key])+dur+wt; }
 
 var SLOTS=[
   {key:'morning', dkey:'dM', label:'Утро',  line:'#e8a33d', icon:'ti-sun'},
@@ -867,7 +905,7 @@ function slotTripRow(o, s){
   return '<div class="trip-row'+(did?'':' unassigned')+'">'+
     '<span class="tr-dot" style="background:'+(drv?drv.color:'#c9c7be')+'"></span>'+
     '<span class="tr-client">'+esc(o.client)+'</span>'+
-    '<span class="tr-time" style="color:'+s.line+'">'+esc(o[s.key])+'</span>'+
+    '<span class="tr-time" style="color:'+s.line+'">'+esc(o[s.key])+'<span class="tr-end">–'+minToTime(tripEndMin(o,s))+'</span></span>'+
     '<span class="tr-route">'+(o.from?esc(o.from)+(o.to?' → '+esc(o.to):''):'')+'</span>'+
     '<span class="tr-phone">'+esc(o.phone)+'</span>'+
     '<select class="tr-driver" onchange="setSlotDriver(\''+o.id+'\',\''+s.dkey+'\',this.value)">'+opts+'</select>'+
@@ -946,10 +984,57 @@ function emptyState(){
 function switchBoard(b){
   board=b;
   document.getElementById('tabLanes').classList.toggle('active', b==='lanes');
+  document.getElementById('tabTimeline').classList.toggle('active', b==='timeline');
   document.getElementById('tabCols').classList.toggle('active', b==='cols');
   document.getElementById('boardLanes').style.display = b==='lanes'?'':'none';
+  document.getElementById('boardTimeline').style.display = b==='timeline'?'':'none';
   document.getElementById('boardCols').style.display = b==='cols'?'':'none';
   render();
+}
+
+// ─────────── ЛЕНТА ДНЯ (таймлайн водителей) ───────────
+var SLOT_BG={morning:{bg:'#FAEEDA',fg:'#633806'}, day:{bg:'#E1F5EE',fg:'#085041'}, evening:{bg:'#E6F1FB',fg:'#0C447C'}};
+function renderTimeline(){
+  var box=document.getElementById('boardTimeline');
+  var deals=dealOrders().filter(dateMatch);
+  // собрать поездки по водителям
+  var byDriver={}; DRIVERS.forEach(function(d){ byDriver[d.id]=[]; });
+  deals.forEach(function(o){
+    SLOTS.forEach(function(s){
+      var did=o[s.dkey];
+      if(o[s.key] && did && byDriver[did]){
+        byDriver[did].push({o:o, s:s, startMin:timeToMin(o[s.key]), endMin:tripEndMin(o,s), startStr:o[s.key]});
+      }
+    });
+  });
+  var html='';
+  DRIVERS.forEach(function(d){
+    var trips=byDriver[d.id].sort(function(a,b){return a.startMin-b.startMin;});
+    var seq='';
+    if(!trips.length){
+      seq='<span class="tl-none">нет поездок — свободен весь день</span>';
+    } else {
+      var prevEnd=null;
+      trips.forEach(function(t){
+        if(prevEnd!=null){
+          var gap=t.startMin-prevEnd;
+          if(gap>0) seq+='<span class="tl-gap"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px"></i> окно '+humanDur(gap)+'</span>';
+          else if(gap<0) seq+='<span class="tl-overlap"><i class="ti ti-alert-triangle" style="font-size:12px;vertical-align:-1px"></i> пересечение '+humanDur(-gap)+'</span>';
+        }
+        var c=SLOT_BG[t.s.key];
+        seq+='<span class="tl-trip" style="background:'+c.bg+';color:'+c.fg+';border-left:3px solid '+t.s.line+'" onclick="openOrderModal(\''+t.o.id+'\')">'+
+          esc(t.o.client)+' · '+esc(t.startStr)+'–'+minToTime(t.endMin)+'</span>';
+        prevEnd=t.endMin;
+      });
+    }
+    var freeFrom = trips.length ? ('свободен с '+minToTime(trips[trips.length-1].endMin)) : 'свободен весь день';
+    html+='<div class="tl-row">'+
+      '<span class="tl-driver"><span class="dot" style="width:10px;height:10px;border-radius:50%;background:'+d.color+'"></span>'+esc(d.name)+' · '+esc(d.car)+'</span>'+
+      '<span class="tl-seq">'+seq+'</span>'+
+      '<span class="tl-free">'+freeFrom+'</span>'+
+    '</div>';
+  });
+  box.innerHTML=html;
 }
 
 // ─────────── ВОРОНКА ЗАЯВОК (kanban с перетаскиванием) ───────────
@@ -1276,6 +1361,8 @@ function openClientModal(id){
   document.getElementById('cl_sde').value=c.sd_evening||'';
   document.getElementById('cl_pfrom').value=c.period_from||'';
   document.getElementById('cl_pto').value=c.period_to||'';
+  document.getElementById('cl_dur').value=(c.duration!=null?c.duration:60);
+  document.getElementById('cl_wait').value=(c.wait!=null?c.wait:0);
   toggleClientSchedule();
   document.getElementById('clientModal').classList.add('show');
 }
@@ -1301,6 +1388,8 @@ async function saveClient(){
     sd_evening:document.getElementById('cl_sde').value||null,
     period_from:document.getElementById('cl_pfrom').value||null,
     period_to:document.getElementById('cl_pto').value||null,
+    duration: document.getElementById('cl_dur').value!=='' ? Number(document.getElementById('cl_dur').value) : 60,
+    wait: document.getElementById('cl_wait').value!=='' ? Number(document.getElementById('cl_wait').value) : 0,
     company_id:'mrride'
   };
   var res;
@@ -1341,6 +1430,7 @@ async function generateTrips(id){
       rows.push({client:c.name, phone:c.phone, from_loc:c.from_loc, to_loc:c.to_loc,
         morning:c.t_morning||null, day_time:c.t_day||null, evening:c.t_evening||null,
         driver_morning:c.sd_morning||null, driver_day:c.sd_day||null, driver_evening:c.sd_evening||null,
+        duration:(c.duration!=null?c.duration:60), wait:(c.wait!=null?c.wait:0),
         trip_date:ds, status: anyDrv?'assigned':'new', type:'round', company_id:'mrride'});
     }
     d.setDate(d.getDate()+1);
