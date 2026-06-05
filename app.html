@@ -1278,7 +1278,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 }
 
 </style>
-<style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style><style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style></head>
+<style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style><style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
 <body>
 
 <!-- SIDEBAR -->
@@ -6802,6 +6802,8 @@ function addDriver(){
   const nd={id:newId,name,type:document.getElementById('fdType').value,motivRule:'',motivType:'',status:document.getElementById('fdStatus').value,phone:document.getElementById('fdPhone').value,email:document.getElementById('fdEmail').value||'-',services,carBrand:'',carModel:'',vehicleId:''};
   if(_bid)nd.boltId=_bid; if(_uid)nd.uberId=_uid; if(_yid)nd.yandexId=_yid;
   drivers.push(nd);
+  try{ if(typeof saveDriversToStorage==='function') saveDriversToStorage(); }catch(e){}
+  try{ if(typeof _limoSaveDriverCloud==='function') _limoSaveDriverCloud(nd); }catch(e){}
   applyDriverFilters();closeModal('addDriverModal');
   ['fdName','fdPhone','fdEmail','fdBoltId','fdUberId','fdYandexId'].forEach(k=>{var el=document.getElementById(k); if(el)el.value='';});
   var _bm=document.getElementById('fdBoltMatch'); if(_bm)_bm.textContent='';
@@ -15966,6 +15968,62 @@ function deleteCategory(idx){
       if(tab==='categories')renderCategoryList();
     };
   }
+})();
+</script>
+<script>
+/* ─── Limo drivers — shared persistence via Supabase (phase 1) ───
+   New drivers added through the form are saved to the cloud and merged
+   into the in-memory list on every load, so they survive refresh and are
+   visible to all managers. The 10 hard-coded drivers stay as the base. */
+(function(){
+  var URL_='https://aruqepgvzzlzvwvvkkek.supabase.co';
+  var KEY_='sb_publishable_aRSy6Kovd3yS-qRcfqaGJw_vWWC0ANA';
+  var sb = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(URL_, KEY_) : null;
+  window._limoSB = sb;
+  function _norm(p){ var d=String(p||'').replace(/\D/g,''); return d.length>9?d.slice(-9):d; }
+  function rowToDriver(r){
+    return { id:'cloud_'+r.id, cloudId:r.id, name:r.name||'Unknown', type:r.type||'',
+      motivRule:'', motivType:'', status:r.status||'Working', phone:r.phone||'',
+      email:r.email||'-', services:Array.isArray(r.services)?r.services:[],
+      carBrand:'', carModel:'', vehicleId:r.vehicle_id||'',
+      yandexId:r.yandex_id||null, uberId:r.uber_id||null, boltId:r.bolt_id||null, careemId:null };
+  }
+  function existsAlready(d){
+    var list=window.drivers||[];
+    return list.some(function(x){
+      if(d.boltId && x.boltId===d.boltId) return true;
+      if(d.uberId && x.uberId===d.uberId) return true;
+      if(d.name && x.name===d.name && _norm(x.phone)===_norm(d.phone)) return true;
+      return false;
+    });
+  }
+  async function loadLimoDriversFromCloud(){
+    if(!sb) return;
+    try{
+      var res=await sb.from('limo_drivers').select('*').order('created_at',{ascending:true});
+      if(res.error){ console.warn('[limo cloud] load:', res.error.message); return; }
+      var rows=res.data||[], added=0; window.drivers=window.drivers||[];
+      rows.forEach(function(r){ var d=rowToDriver(r); if(!existsAlready(d)){ window.drivers.push(d); added++; } });
+      if(added>0){ try{ if(typeof applyDriverFilters==='function') applyDriverFilters(); }catch(e){}
+        console.log('[limo cloud] merged',added,'driver(s) from Supabase'); }
+    }catch(e){ console.warn('[limo cloud] load ex:', e); }
+  }
+  window.loadLimoDriversFromCloud=loadLimoDriversFromCloud;
+  window._limoSaveDriverCloud=async function(nd){
+    if(!sb){ console.warn('[limo cloud] no client — local only'); return; }
+    try{
+      var payload={ name:nd.name||'', phone:nd.phone||'', email:(nd.email&&nd.email!=='-')?nd.email:null,
+        type:nd.type||'', status:nd.status||'Working', services:Array.isArray(nd.services)?nd.services:[],
+        vehicle_id:nd.vehicleId||null, yandex_id:nd.yandexId||null, uber_id:nd.uberId||null, bolt_id:nd.boltId||null };
+      var res=await sb.from('limo_drivers').insert(payload).select().single();
+      if(res.error){ console.warn('[limo cloud] save:', res.error.message);
+        if(typeof showToast==='function') showToast('Облако: не сохранён ('+res.error.message+')'); return; }
+      if(res.data) nd.cloudId=res.data.id;
+      if(typeof showToast==='function') showToast('Сохранён в облако ✓');
+    }catch(e){ console.warn('[limo cloud] save ex:', e); }
+  };
+  if(document.readyState==='complete'||document.readyState==='interactive'){ setTimeout(loadLimoDriversFromCloud,600); }
+  else { window.addEventListener('DOMContentLoaded', function(){ setTimeout(loadLimoDriversFromCloud,600); }); }
 })();
 </script>
 
