@@ -1629,6 +1629,12 @@ body.no-icons .ti-external-link::before{content:"↗"}
         </div>
         <!-- Trips Tab -->
         <div class="tab-content" id="tab-trips">
+          <div class="action-row" style="gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+            <span style="font-size:12px;color:var(--text3)">Период:</span>
+            <input type="date" id="carTripsFrom" onchange="applyCarTripsPeriod()" style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:13px;background:var(--bg);color:var(--text)">
+            <span style="color:var(--text3)">—</span>
+            <input type="date" id="carTripsTo" onchange="applyCarTripsPeriod()" style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:13px;background:var(--bg);color:var(--text)">
+          </div>
           <div class="table-wrap"><div class="tscroll"><table>
             <thead><tr><th>№</th><th>Date</th><th>Service</th><th>From</th><th>To</th><th>Duration</th><th>Distance</th><th>Amount</th><th>Driver</th></tr></thead>
             <tbody id="tripsBody"></tbody>
@@ -4471,6 +4477,7 @@ function switchTab(name,btn){
   document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
+  if(name==='trips'){ try{ renderTrips(); }catch(e){ console.warn('[car trips]', e); } }
 }
 function renderCarDriverTags(){
   if(!currentCar)return;
@@ -4548,7 +4555,100 @@ function saveCar(){
 function renderTransactions(){document.getElementById('txBody').innerHTML=txSample.map((tx,i)=>`<tr><td>${i+1}</td><td style="font-size:11px;color:var(--text2)">${tx.id}</td><td>${tx.type}</td><td style="font-weight:500;color:var(--accent-t)">${tx.amount}</td><td style="font-size:11px;color:var(--text2);white-space:nowrap">${tx.date}</td><td style="font-size:11px;color:var(--text2)">${tx.comment}</td></tr>`).join('');}
 function renderRepairs(){document.getElementById('roBody').innerHTML=roSample.map((r,i)=>`<tr><td>${i+1}</td><td><button class="ro-action-btn"><i class="ti ti-edit" style="font-size:13px"></i></button></td><td style="white-space:nowrap">${r.date}</td><td>${r.num}</td><td><button class="vlink">${currentCar?currentCar.id:''}</button></td><td>${currentCar?currentCar.model.replace('Mercedes-Benz ',''):''}</td><td>${r.cp}</td><td>${r.tech}</td><td>${r.desc}</td><td style="font-weight:500">${r.cost}</td><td><span class="badge b-reserve" style="font-size:10px">${r.paid}</span></td></tr>`).join('');}
 function renderServices(){document.getElementById('svcBody').innerHTML=svcSample.map((s,i)=>`<tr><td>${i+1}</td><td style="font-weight:600"><span class="svc ${s.color}" style="margin-right:6px">${s.name[0]}</span>${s.name}</td><td>${s.status}</td><td>${s.id}</td><td>${s.car}</td><td><button class="fbtn" style="font-size:11px;padding:3px 8px">Disconnect</button></td></tr>`).join('');}
-function renderTrips(){document.getElementById('tripsBody').innerHTML=tripSample.map((tr,i)=>`<tr><td>${i+1}</td><td style="font-size:11px;color:var(--text2);white-space:nowrap">${tr.date}</td><td><span class="svc ${svcColors[tr.svc]||''}">${tr.svc}</span></td><td>${tr.from}</td><td>${tr.to}</td><td>${tr.dur}</td><td>${tr.dist}</td><td style="font-weight:500;color:var(--accent-t)">${tr.amount}</td><td>${tr.driver}</td></tr>`).join('');}
+async function renderTrips(){
+  const body=document.getElementById('tripsBody');
+  if(!body) return;
+  if(typeof currentCar==='undefined' || !currentCar){ body.innerHTML='<tr><td colspan="9"><div class="empty"><i class="ti ti-car-off"></i> Машина не выбрана</div></td></tr>'; return; }
+  // Период (по умолчанию — текущий месяц)
+  let from=window._carTripsFrom, to=window._carTripsTo;
+  if(!from||!to){ const now=new Date(); from=now.toISOString().slice(0,8)+'01'; to=_todayStr(); }
+  const fEl=document.getElementById('carTripsFrom'), tEl=document.getElementById('carTripsTo');
+  if(fEl && !fEl.value) fEl.value=from;
+  if(tEl && !tEl.value) tEl.value=to;
+  const fromMs=new Date(from+'T00:00:00').getTime();
+  const toMs  =new Date(to+'T23:59:59').getTime();
+  const carDrivers=(typeof getCarDrivers==='function')?getCarDrivers(currentCar):[];
+  if(!carDrivers.length){ body.innerHTML='<tr><td colspan="9"><div class="empty"><i class="ti ti-user-off"></i> У машины нет назначенного водителя</div></td></tr>'; return; }
+  // Bolt: подгрузить один раз за период
+  if(carDrivers.some(d=>d.boltId)){
+    const key=currentCar.id+':'+from+':'+to;
+    if(window._carTripsBoltKey!==key){
+      window._carTripsBoltKey=key;
+      body.innerHTML='<tr><td colspan="9"><div class="empty"><i class="ti ti-loader-2"></i> Загрузка…</div></td></tr>';
+      const cid=currentCar.id;
+      try{ await loadBoltOrders(from,to); }catch(e){}
+      if(currentCar && currentCar.id===cid) return renderTrips();
+      return;
+    }
+  }
+  const rows=[];
+  carDrivers.forEach(d=>{
+    if(d.yandexId && Array.isArray(window.yangoOrders)){
+      window.yangoOrders.forEach(o=>{
+        if(!o.driver_profile || o.driver_profile.id!==d.yandexId) return;
+        if(o.status!=='complete') return;
+        const endMs=o.ended_at?new Date(o.ended_at).getTime():0;
+        if(!endMs||endMs<fromMs||endMs>toMs) return;
+        const startMs=o.booked_at?new Date(o.booked_at).getTime():endMs;
+        const distM=parseFloat(o.mileage||0)||0; const distKm=distM>1000?distM/1000:distM;
+        const fromAddr=o.address_from && o.address_from.address;
+        const lastPt=(o.route_points && o.route_points.length)?o.route_points[o.route_points.length-1]:null;
+        const toAddr=lastPt && (lastPt.address||lastPt.short_text);
+        const price=(typeof o.price==='number')?o.price:parseFloat(o.price)||0;
+        rows.push({svc:'Y',driver:d.name,from:fromAddr,to:toAddr,startMs,endMs,durSec:(endMs-startMs)/1000,distKm,amount:price});
+      });
+    }
+    if(d.uberId && Array.isArray(window.uberOrders)){
+      const _up=(window.uberPayments&&typeof window.uberPayments==='object')?window.uberPayments:{};
+      window.uberOrders.forEach(o=>{
+        if(o.driver_uuid!==d.uberId) return;
+        const endMs=Number(o.end_ms)||0, startMs=Number(o.start_ms)||0;
+        if(!endMs||endMs<fromMs||endMs>toMs) return;
+        const distKm=Number(o.distance_km)||0;
+        const payRec=o.trip_uuid?_up[o.trip_uuid]:null;
+        rows.push({svc:'U',driver:d.name,from:o.from,to:o.to,startMs,endMs,durSec:(endMs-startMs)/1000,distKm,amount:payRec?Number(payRec.fare):null});
+      });
+    }
+    if(d.boltId && Array.isArray(window.boltOrders)){
+      window.boltOrders.forEach(o=>{
+        if(o.driver_uuid!==d.boltId) return;
+        const endMs=(o.finished_ts||o.dropoff_ts||0)*1000, startMs=(o.pickup_ts||0)*1000;
+        if(!endMs||endMs<fromMs||endMs>toMs) return;
+        const distKm=(Number(o.distance_m)||0)/1000;
+        rows.push({svc:'B',driver:d.name,from:o.from,to:o.to,startMs,endMs,durSec:(endMs-startMs)/1000,distKm,amount:Number(o.ride_price)||0});
+      });
+    }
+  });
+  rows.sort((a,b)=>(b.endMs||0)-(a.endMs||0));
+  if(!rows.length){ body.innerHTML='<tr><td colspan="9"><div class="empty"><i class="ti ti-car-off"></i> Нет поездок за период</div></td></tr>'; return; }
+  const svcFull={Y:'YANGO',U:'UBER',B:'BOLT'};
+  const fmtMoney=v=>(v==null)?'<span style="color:var(--text3)">—</span>':('AED '+Number(v).toFixed(2));
+  const esc=(typeof escHtml==='function')?escHtml:(x=>x);
+  body.innerHTML=rows.map((r,i)=>{
+    const sv=svcFull[r.svc]||r.svc;
+    return '<tr>'+
+      '<td>'+(i+1)+'</td>'+
+      '<td style="font-size:11px;color:var(--text2);white-space:nowrap">'+_trFmtDt(r.startMs)+'</td>'+
+      '<td><span class="svc '+(svcColors[sv]||'')+'">'+sv+'</span></td>'+
+      '<td style="font-size:12px;max-width:200px">'+_trShortAddr(r.from)+'</td>'+
+      '<td style="font-size:12px;max-width:200px">'+_trShortAddr(r.to)+'</td>'+
+      '<td style="white-space:nowrap">'+_trFmtDur(r.durSec)+'</td>'+
+      '<td>'+(r.distKm>0?r.distKm.toFixed(1)+' km':'—')+'</td>'+
+      '<td style="font-weight:600;color:var(--accent-t)">'+fmtMoney(r.amount)+'</td>'+
+      '<td style="font-size:12px">'+esc(r.driver)+'</td>'+
+    '</tr>';
+  }).join('');
+}
+window.renderTrips=renderTrips;
+function applyCarTripsPeriod(){
+  const f=document.getElementById('carTripsFrom'), t=document.getElementById('carTripsTo');
+  if(f&&f.value) window._carTripsFrom=f.value;
+  if(t&&t.value) window._carTripsTo=t.value;
+  window._carTripsBoltKey=null;
+  renderTrips();
+}
+window.applyCarTripsPeriod=applyCarTripsPeriod;
+
 
 // MODALS
 function openAddModal(){document.getElementById('addModal').classList.add('open');}
