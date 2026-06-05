@@ -11,7 +11,7 @@
   // 30-day TTL. We look in both localStorage (remember-me) and
   // sessionStorage (session-only) so either kind of login works.
   (function(){
-    var AUTH_KEY = 'mrride_auth';
+    var AUTH_KEY = 'mrride_auth2';
     try {
       var raw = localStorage.getItem(AUTH_KEY) || sessionStorage.getItem(AUTH_KEY);
       if(raw){
@@ -1385,8 +1385,8 @@ body.no-icons .ti-external-link::before{content:"↗"}
     function signOut(){
       // Wipe both storages so neither remember-me nor session cookies survive.
       try {
-        localStorage.removeItem('mrride_auth');
-        sessionStorage.removeItem('mrride_auth');
+        localStorage.removeItem('mrride_auth2');
+        sessionStorage.removeItem('mrride_auth2');
       } catch(e){}
       window.location.href = '/index.html';
     }

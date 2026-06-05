@@ -801,7 +801,7 @@
   // We use localStorage so the login persists across page reloads. The
   // checkbox controls TTL: 30 days if checked, session-only otherwise.
   //
-  // Storage key: 'mrride_auth' = JSON {expires: <ms timestamp>}
+  // Storage key: 'mrride_auth2' = JSON {expires: <ms timestamp>}
   // The credentials themselves are NEVER stored — only an "I logged in
   // successfully" marker. So even if someone reads localStorage, they
   // can't extract the password.
@@ -813,7 +813,7 @@
 
   var AUTH_USER = 'mrride';
   var AUTH_PASS  = '9099848';
-  var AUTH_KEY  = 'mrride_auth';
+  var AUTH_KEY  = 'mrride_auth2';
 
   function openLogin(ev){
     if(ev) ev.preventDefault();
