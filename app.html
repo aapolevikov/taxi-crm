@@ -16022,9 +16022,9 @@ function deleteCategory(idx){
       yandexId:r.yandex_id||null, uberId:r.uber_id||null, boltId:r.bolt_id||null, careemId:null,
       carFrom:r.car_from || (r.created_at? String(r.created_at).slice(0,10): null), carTo:r.car_to||null };
   }
-  function existsAlready(d){
+  function findExisting(d){
     var list=window.drivers||[];
-    return list.some(function(x){
+    return list.find(function(x){
       if(d.boltId && x.boltId===d.boltId) return true;
       if(d.uberId && x.uberId===d.uberId) return true;
       if(d.name && x.name===d.name && _norm(x.phone)===_norm(d.phone)) return true;
@@ -16036,10 +16036,25 @@ function deleteCategory(idx){
     try{
       var res=await sb.from('limo_drivers').select('*').order('created_at',{ascending:true});
       if(res.error){ console.warn('[limo cloud] load:', res.error.message); return; }
-      var rows=res.data||[], added=0; window.drivers=window.drivers||[];
-      rows.forEach(function(r){ var d=rowToDriver(r); if(!existsAlready(d)){ window.drivers.push(d); added++; } });
-      if(added>0){ try{ if(typeof applyDriverFilters==='function') applyDriverFilters(); }catch(e){}
-        console.log('[limo cloud] merged',added,'driver(s) from Supabase'); }
+      var rows=res.data||[], added=0, merged=0; window.drivers=window.drivers||[];
+      rows.forEach(function(r){
+        var d=rowToDriver(r);
+        var ex=findExisting(d);
+        if(ex){
+          // Уже есть локально (например, из localStorage) — доклеиваем облачные поля,
+          // чтобы дата пересменки и cloudId не терялись.
+          if(d.carFrom && !ex.carFrom) { ex.carFrom=d.carFrom; merged++; }
+          if(d.carTo && !ex.carTo) { ex.carTo=d.carTo; merged++; }
+          if(d.cloudId && !ex.cloudId) ex.cloudId=d.cloudId;
+          if(d.uberId && !ex.uberId) ex.uberId=d.uberId;
+          if(d.yandexId && !ex.yandexId) ex.yandexId=d.yandexId;
+        } else { window.drivers.push(d); added++; }
+      });
+      if(added>0 || merged>0){
+        try{ if(typeof saveDriversToStorage==='function') saveDriversToStorage(); }catch(e){}
+        try{ if(typeof applyDriverFilters==='function') applyDriverFilters(); }catch(e){}
+        console.log('[limo cloud] added',added,'merged',merged,'from Supabase');
+      }
     }catch(e){ console.warn('[limo cloud] load ex:', e); }
   }
   window.loadLimoDriversFromCloud=loadLimoDriversFromCloud;
