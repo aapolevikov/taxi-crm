@@ -35,3 +35,8 @@
 # Scheduled function: сбор GPS-позиций Cabman раз в минуту (история маршрутов).
 [functions."cabman-track"]
   schedule = "* * * * *"
+
+# Scheduled function: автосбор данных Bolt раз в час (минута 0).
+# Пишет дневные снапшоты в Netlify Blobs (store "bolt-history").
+[functions."bolt-cron"]
+  schedule = "0 * * * *"
