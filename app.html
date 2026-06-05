@@ -2163,6 +2163,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
               <th>№</th>
               <th onclick="sortDriverTrips('svc')" style="cursor:pointer;white-space:nowrap">Service <i class="ti ti-arrows-sort" style="font-size:10px;opacity:.5"></i></th>
               <th onclick="sortDriverTrips('plate')" style="cursor:pointer;white-space:nowrap">Plate <i class="ti ti-arrows-sort" style="font-size:10px;opacity:.5"></i></th>
+              <th style="white-space:nowrap">Car</th>
               <th onclick="sortDriverTrips('from')" style="cursor:pointer">From <i class="ti ti-arrows-sort" style="font-size:10px;opacity:.5"></i></th>
               <th onclick="sortDriverTrips('to')" style="cursor:pointer">To <i class="ti ti-arrows-sort" style="font-size:10px;opacity:.5"></i></th>
               <th onclick="sortDriverTrips('startMs')" style="cursor:pointer;white-space:nowrap">Started <i class="ti ti-arrows-sort" style="font-size:10px;opacity:.5"></i></th>
@@ -6055,6 +6056,13 @@ window['__drp_cb_drp_btn_6'] = function(from, to){
 };
 
 // Format helpers used by renderDriverTrips
+function _carModelByPlate(plate){
+  if(!plate) return '';
+  var list=(window.cars&&Array.isArray(window.cars))?window.cars:[];
+  var c=list.find(function(x){ return String(x.id||'').toUpperCase()===String(plate).toUpperCase(); });
+  if(!c) return '';
+  return [c.brand,c.model].filter(Boolean).join(' ');
+}
 function _trShortAddr(s){
   if(!s) return '—';
   const parts = String(s).split(',').map(x=>x.trim()).filter(Boolean);
@@ -6102,7 +6110,7 @@ async function renderDriverTrips(){
   if(!body) return;
   const d = (typeof currentDriver !== 'undefined') ? currentDriver : null;
   if(!d){
-    body.innerHTML = '<tr><td colspan="12"><div class="empty"><i class="ti ti-car-off"></i> No driver selected</div></td></tr>';
+    body.innerHTML = '<tr><td colspan="13"><div class="empty"><i class="ti ti-car-off"></i> No driver selected</div></td></tr>';
     if(summary) summary.innerHTML = '';
     return;
   }
@@ -6206,7 +6214,7 @@ async function renderDriverTrips(){
       // showing whole-month numbers while the table shows the single day.
       const summary = document.getElementById('dd-tripsSummary');
       if(summary) summary.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:8px">Loading…</div>';
-      body.innerHTML = '<tr><td colspan="12"><div class="empty"><i class="ti ti-loader-2"></i> Loading…</div></td></tr>';
+      body.innerHTML = '<tr><td colspan="13"><div class="empty"><i class="ti ti-loader-2"></i> Loading…</div></td></tr>';
       await loadBoltOrders(from, to);
       // Re-render with fresh data (only if user is still on this driver)
       if(currentDriver && currentDriver.id === d.id){
@@ -6296,7 +6304,7 @@ async function renderDriverTrips(){
 
   // ── Table body ──
   if(!filtered.length){
-    body.innerHTML = '<tr><td colspan="12"><div class="empty"><i class="ti ti-car-off"></i> No trips for this period</div></td></tr>';
+    body.innerHTML = '<tr><td colspan="13"><div class="empty"><i class="ti ti-car-off"></i> No trips for this period</div></td></tr>';
     return;
   }
   const svcBadge = (s) => {
@@ -6311,6 +6319,7 @@ async function renderDriverTrips(){
       <td>${i+1}</td>
       <td>${svcBadge(r.svc)}</td>
       <td style="color:var(--accent);font-weight:600">${r.plate}</td>
+      <td style="font-size:12px;color:var(--text2);white-space:nowrap">${_carModelByPlate(r.plate)||'—'}</td>
       <td style="font-size:12px;max-width:220px">${_trShortAddr(r.from)}</td>
       <td style="font-size:12px;max-width:220px">${_trShortAddr(r.to)}</td>
       <td style="font-size:11px;color:var(--text2);white-space:nowrap">${_trFmtDt(r.startMs)}</td>
