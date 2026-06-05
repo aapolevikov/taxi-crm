@@ -3995,6 +3995,16 @@ body.no-icons .ti-external-link::before{content:"↗"}
           <label class="svc-opt"><input type="checkbox" value="CAREEM"> CAREEM</label>
         </div>
       </div>
+      <div class="fr full">
+        <label>Bolt ID <span style="color:var(--text3);font-weight:400">— авто-поиск по телефону</span></label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="fdBoltId" placeholder="нажми «Найти Bolt»" style="flex:1">
+          <button type="button" class="btn-secondary" onclick="matchBoltByPhone()" style="white-space:nowrap"><i class="ti ti-search"></i> Найти Bolt</button>
+        </div>
+        <div id="fdBoltMatch" style="font-size:12px;margin-top:4px;color:var(--text3)"></div>
+      </div>
+      <div class="fr"><label>Uber ID <span style="color:var(--text3);font-weight:400">— вручную</span></label><input type="text" id="fdUberId" placeholder="UUID из Uber-портала"></div>
+      <div class="fr"><label>Yango ID <span style="color:var(--text3);font-weight:400">— вручную</span></label><input type="text" id="fdYandexId" placeholder="ID профиля Yango"></div>
     </div>
     <div class="mfooter">
       <button class="btn-cancel" onclick="closeModal(&#39;addDriverModal&#39;)" data-i18n="cancel">Cancel</button>
@@ -6751,14 +6761,50 @@ function deleteDriver(){
   showToast(t('deleted'));
 }
 function openAddDriverModal(){document.getElementById('addDriverModal').classList.add('open');}
+function _normPhone(p){ var d=String(p||'').replace(/\D/g,''); return d.length>9?d.slice(-9):d; }
+async function matchBoltByPhone(){
+  var box=document.getElementById('fdBoltMatch');
+  var phone=(document.getElementById('fdPhone').value||'').trim();
+  if(!phone){ box.style.color='#c0392b'; box.textContent='Сначала введите телефон'; return; }
+  var key=_normPhone(phone);
+  if(key.length<7){ box.style.color='#c0392b'; box.textContent='Телефон слишком короткий'; return; }
+  box.style.color='var(--text3)'; box.innerHTML='<i class="ti ti-loader-2"></i> Ищу в Bolt…';
+  try{
+    var today=new Date().toISOString().slice(0,10);
+    var resp=await fetch('/.netlify/functions/bolt-api?start='+today+'&end='+today);
+    var json=await resp.json();
+    var list=(json&&Array.isArray(json.drivers))?json.drivers:[];
+    if(!list.length){ box.style.color='#c0392b'; box.textContent='Bolt не вернул список водителей (ok:'+(json&&json.ok)+')'; return; }
+    var hit=list.find(function(d){ return _normPhone(d.phone)===key; });
+    if(hit){
+      document.getElementById('fdBoltId').value=hit.uuid||hit.driver_uuid||'';
+      box.style.color='#27ae60';
+      box.innerHTML='✓ Bolt: <b>'+(hit.name||'без имени')+'</b> · '+(hit.phone||'');
+      var cb=document.querySelector('#addDriverModal .svc-check input[value="BOLT"]'); if(cb) cb.checked=true;
+    } else {
+      document.getElementById('fdBoltId').value='';
+      box.style.color='#c0392b';
+      box.textContent='В Bolt не найден водитель с этим телефоном (проверено '+list.length+'). Проверь номер.';
+    }
+  }catch(e){
+    box.style.color='#c0392b'; box.textContent='Ошибка запроса Bolt: '+(e.message||e);
+  }
+}
+window.matchBoltByPhone=matchBoltByPhone;
 function addDriver(){
   const name=document.getElementById('fdName').value.trim();
   if(!name){alert('Enter driver name');return;}
   const services=[...document.querySelectorAll('#addDriverModal .svc-check input:checked')].map(i=>i.value);
   const newId=Math.max(...drivers.map(d=>d.id))+1;
-  drivers.push({id:newId,name,type:document.getElementById('fdType').value,motivRule:'',motivType:'',status:document.getElementById('fdStatus').value,phone:document.getElementById('fdPhone').value,email:document.getElementById('fdEmail').value||'-',services,carBrand:'',carModel:'',vehicleId:''});
+  const _bid=(document.getElementById('fdBoltId').value||'').trim();
+  const _uid=(document.getElementById('fdUberId').value||'').trim();
+  const _yid=(document.getElementById('fdYandexId').value||'').trim();
+  const nd={id:newId,name,type:document.getElementById('fdType').value,motivRule:'',motivType:'',status:document.getElementById('fdStatus').value,phone:document.getElementById('fdPhone').value,email:document.getElementById('fdEmail').value||'-',services,carBrand:'',carModel:'',vehicleId:''};
+  if(_bid)nd.boltId=_bid; if(_uid)nd.uberId=_uid; if(_yid)nd.yandexId=_yid;
+  drivers.push(nd);
   applyDriverFilters();closeModal('addDriverModal');
-  ['fdName','fdPhone','fdEmail'].forEach(k=>document.getElementById(k).value='');
+  ['fdName','fdPhone','fdEmail','fdBoltId','fdUberId','fdYandexId'].forEach(k=>{var el=document.getElementById(k); if(el)el.value='';});
+  var _bm=document.getElementById('fdBoltMatch'); if(_bm)_bm.textContent='';
   document.querySelectorAll('#addDriverModal .svc-check input').forEach(i=>i.checked=false);
   showToast('Driver '+name+' added!');
 }
