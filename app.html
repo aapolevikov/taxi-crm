@@ -4505,6 +4505,8 @@ function removeDriverFromCar(driverId){
   const dr=list.find(d=>String(d.id)===String(driverId));
   if(dr){
     dr.vehicleId='';
+    dr.carTo=new Date().toISOString().slice(0,10);
+    try{ if(typeof _limoUpdateDriverCloud==='function') _limoUpdateDriverCloud(dr); }catch(e){}
     // strip just this driver's name from the car's legacy driver string
     if(currentCar.driver){
       const kept=String(currentCar.driver).split(/[,/]+/).map(s=>s.trim())
@@ -4528,6 +4530,14 @@ function assignDriverToCar(driverId){
   // Assigning sets the driver's vehicleId to this car. Other drivers already on
   // the car stay → supports a 2nd shift. (A driver can only be on one car.)
   dr.vehicleId=currentCar.id;
+  // Дата пересменки: с какого числа водитель на этой машине. Ограничивает его
+  // Uber-поездки (Uber-аккаунт привязан к машине, не к человеку).
+  var _today=new Date().toISOString().slice(0,10);
+  var _hd=prompt('Дата пересменки — с какого числа водитель на этой машине (ГГГГ-ММ-ДД):', _today);
+  if(_hd===null) _hd=_today;
+  _hd=String(_hd).trim(); if(!/^\d{4}-\d{2}-\d{2}$/.test(_hd)) _hd=_today;
+  dr.carFrom=_hd; dr.carTo=null;
+  try{ if(typeof _limoUpdateDriverCloud==='function') _limoUpdateDriverCloud(dr); }catch(e){}
   if(dr.carBrand!==undefined)dr.carBrand=currentCar.brand||dr.carBrand||'';
   if(dr.carModel!==undefined)dr.carModel=currentCar.model||dr.carModel||'';
   // keep the legacy string in sync with the relational match
@@ -6158,6 +6168,11 @@ async function renderDriverTrips(){
       const endMs = Number(o.end_ms) || 0;
       const startMs = Number(o.start_ms) || 0;
       if(!endMs || endMs < fromMs || endMs > toMs) return;
+      // Uber — аккаунт на машину, поэтому показываем только за окно, когда этот
+      // водитель был на машине: [carFrom .. carTo]. Без даты — без ограничения.
+      const _cf = d.carFrom ? new Date(d.carFrom+'T00:00:00').getTime() : -Infinity;
+      const _ct = d.carTo   ? new Date(d.carTo  +'T23:59:59').getTime() :  Infinity;
+      if(endMs < _cf || endMs > _ct) return;
       const durSec = (startMs && endMs) ? Math.max(0, (endMs - startMs)/1000) : 0;
       const distKm = Number(o.distance_km) || 0;
       const payRec = o.trip_uuid ? _uberPay[o.trip_uuid] : null;
@@ -15986,7 +16001,8 @@ function deleteCategory(idx){
       motivRule:'', motivType:'', status:r.status||'Working', phone:r.phone||'',
       email:r.email||'-', services:Array.isArray(r.services)?r.services:[],
       carBrand:'', carModel:'', vehicleId:r.vehicle_id||'',
-      yandexId:r.yandex_id||null, uberId:r.uber_id||null, boltId:r.bolt_id||null, careemId:null };
+      yandexId:r.yandex_id||null, uberId:r.uber_id||null, boltId:r.bolt_id||null, careemId:null,
+      carFrom:r.car_from||null, carTo:r.car_to||null };
   }
   function existsAlready(d){
     var list=window.drivers||[];
@@ -16014,13 +16030,21 @@ function deleteCategory(idx){
     try{
       var payload={ name:nd.name||'', phone:nd.phone||'', email:(nd.email&&nd.email!=='-')?nd.email:null,
         type:nd.type||'', status:nd.status||'Working', services:Array.isArray(nd.services)?nd.services:[],
-        vehicle_id:nd.vehicleId||null, yandex_id:nd.yandexId||null, uber_id:nd.uberId||null, bolt_id:nd.boltId||null };
+        vehicle_id:nd.vehicleId||null, yandex_id:nd.yandexId||null, uber_id:nd.uberId||null, bolt_id:nd.boltId||null,
+        car_from:nd.carFrom||null, car_to:nd.carTo||null };
       var res=await sb.from('limo_drivers').insert(payload).select().single();
       if(res.error){ console.warn('[limo cloud] save:', res.error.message);
         if(typeof showToast==='function') showToast('Облако: не сохранён ('+res.error.message+')'); return; }
       if(res.data) nd.cloudId=res.data.id;
       if(typeof showToast==='function') showToast('Сохранён в облако ✓');
     }catch(e){ console.warn('[limo cloud] save ex:', e); }
+  };
+  window._limoUpdateDriverCloud=async function(dr){
+    if(!sb || !dr || !dr.cloudId) return;
+    try{
+      var res=await sb.from('limo_drivers').update({ vehicle_id:dr.vehicleId||null, car_from:dr.carFrom||null, car_to:dr.carTo||null }).eq('id', dr.cloudId);
+      if(res.error) console.warn('[limo cloud] update:', res.error.message);
+    }catch(e){ console.warn('[limo cloud] update ex:', e); }
   };
   if(document.readyState==='complete'||document.readyState==='interactive'){ setTimeout(loadLimoDriversFromCloud,600); }
   else { window.addEventListener('DOMContentLoaded', function(){ setTimeout(loadLimoDriversFromCloud,600); }); }
