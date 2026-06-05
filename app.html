@@ -4506,7 +4506,6 @@ function removeDriverFromCar(driverId){
   const dr=list.find(d=>String(d.id)===String(driverId));
   if(dr){
     dr.vehicleId='';
-    dr.carTo=new Date().toISOString().slice(0,10);
     try{ if(typeof _limoUpdateDriverCloud==='function') _limoUpdateDriverCloud(dr); }catch(e){}
     // strip just this driver's name from the car's legacy driver string
     if(currentCar.driver){
@@ -4531,13 +4530,6 @@ function assignDriverToCar(driverId){
   // Assigning sets the driver's vehicleId to this car. Other drivers already on
   // the car stay → supports a 2nd shift. (A driver can only be on one car.)
   dr.vehicleId=currentCar.id;
-  // Дата пересменки: с какого числа водитель на этой машине. Ограничивает его
-  // Uber-поездки (Uber-аккаунт привязан к машине, не к человеку).
-  var _today=new Date().toISOString().slice(0,10);
-  var _hd=prompt('Дата пересменки — с какого числа водитель на этой машине (ГГГГ-ММ-ДД):', _today);
-  if(_hd===null) _hd=_today;
-  _hd=String(_hd).trim(); if(!/^\d{4}-\d{2}-\d{2}$/.test(_hd)) _hd=_today;
-  dr.carFrom=_hd; dr.carTo=null;
   try{ if(typeof _limoUpdateDriverCloud==='function') _limoUpdateDriverCloud(dr); }catch(e){}
   if(dr.carBrand!==undefined)dr.carBrand=currentCar.brand||dr.carBrand||'';
   if(dr.carModel!==undefined)dr.carModel=currentCar.model||dr.carModel||'';
@@ -4828,28 +4820,28 @@ try{
 // Назначаем uberId водителю на этой машине и снимаем «чужой» uberId с фантомных
 // записей без машины — иначе Uber-поездки уходят не тому водителю (или в никуда),
 // и возникает конфликт «один uberId у нескольких».
+// ── Uber — модель «аккаунт = владелец» (как в Uber/DAE) ──
+// Каждый Uber earner-аккаунт принадлежит ОДНОМУ водителю-владельцу. Все поездки
+// этого аккаунта идут владельцу, на любой машине. Машина на привязку Uber НЕ влияет.
+// Закрепляем uberId за водителем по id и снимаем его у тех, кому он не принадлежит.
 try{
-  const plateToUber = {
-    'L20071':'ab39d93a-14be-4748-870a-192a33b9f42f', // Gallardo
-    'L29156':'2c74f652-573a-4471-b45f-90aa51589b10', // Zakaria
-    'L18309':'fbb86df6-9339-4ac4-88b6-9f73158d817e', // Mostafa Mahmoud
-    'L18341':'f239f642-ccdb-4437-9ebc-902909330f51', // Ahmed Elsayed
-    'L93211':'a04a1457-c849-4c06-8879-8c0589bedfe9', // Silvestre
-    'L35390':'85ab01a6-16a4-4e02-bae1-ca7a9b691d38', // Jason Callo
-    'L20096':'f496626b-f87b-4add-8d7a-e0a7c66f310b'  // Rusky
+  const UBER_OWNER = {
+    1:'2c74f652-573a-4471-b45f-90aa51589b10',  // Mustafa Mamdouh Zakaria
+    2:'a04a1457-c849-4c06-8879-8c0589bedfe9',  // Silvestre Absalon
+    4:'f496626b-f87b-4add-8d7a-e0a7c66f310b',  // Rusky Giren Rosa
+    5:'fbb86df6-9339-4ac4-88b6-9f73158d817e',  // Mostafa Mahmoud
+    7:'85ab01a6-16a4-4e02-bae1-ca7a9b691d38',  // Jason Callo
+    8:'ab39d93a-14be-4748-870a-192a33b9f42f',  // Gallardo Chrisstopher Renz
+    11:'f239f642-ccdb-4437-9ebc-902909330f51'  // Ahmed Elsayed
   };
-  const uberToPlate = {}; Object.keys(plateToUber).forEach(p=>{ uberToPlate[plateToUber[p]] = p; });
+  const _owned = {}; Object.keys(UBER_OWNER).forEach(k=>{ _owned[UBER_OWNER[k]] = String(k); });
   let _uFixed = false;
-  // 1) водителю на машине — её правильный uberId
   (drivers||[]).forEach(d=>{
-    if(d && d.vehicleId && plateToUber[d.vehicleId] && d.uberId !== plateToUber[d.vehicleId]){
-      d.uberId = plateToUber[d.vehicleId]; _uFixed = true;
-    }
-  });
-  // 2) снять управляемый uberId с тех, кто НЕ на соответствующей машине (фантомы/дубли)
-  (drivers||[]).forEach(d=>{
-    if(d && d.uberId && uberToPlate[d.uberId] && d.vehicleId !== uberToPlate[d.uberId]){
-      d.uberId = null; _uFixed = true;
+    if(!d) return;
+    if(UBER_OWNER[d.id]){
+      if(d.uberId !== UBER_OWNER[d.id]){ d.uberId = UBER_OWNER[d.id]; _uFixed = true; }
+    } else if(d.uberId && _owned[d.uberId]){
+      d.uberId = null; _uFixed = true;   // этот earner принадлежит другому водителю
     }
   });
   if(_uFixed){ try{ localStorage.setItem('mrride_drivers', JSON.stringify(drivers)); }catch(_){} }
@@ -6178,11 +6170,6 @@ async function renderDriverTrips(){
       const endMs = Number(o.end_ms) || 0;
       const startMs = Number(o.start_ms) || 0;
       if(!endMs || endMs < fromMs || endMs > toMs) return;
-      // Uber — аккаунт на машину, поэтому показываем только за окно, когда этот
-      // водитель был на машине: [carFrom .. carTo]. Без даты — без ограничения.
-      const _cf = d.carFrom ? new Date(d.carFrom+'T00:00:00').getTime() : -Infinity;
-      const _ct = d.carTo   ? new Date(d.carTo  +'T23:59:59').getTime() :  Infinity;
-      if(endMs < _cf || endMs > _ct) return;
       const durSec = (startMs && endMs) ? Math.max(0, (endMs - startMs)/1000) : 0;
       const distKm = Number(o.distance_km) || 0;
       const payRec = o.trip_uuid ? _uberPay[o.trip_uuid] : null;
@@ -9009,14 +8996,8 @@ function aggregateDriverData(driver,dateFrom,dateTo){
   }
 
   // ── Uber part (real data, from accumulated portal history by uberId) ──
-  // Uber-аккаунт привязан к машине → ограничиваем диапазон окном пересменки
-  // водителя [carFrom..carTo], чтобы не считать чужие дни.
-  let _uFrom = dateFrom, _uTo = dateTo;
-  if(driver.carFrom && (!_uFrom || driver.carFrom > _uFrom)) _uFrom = driver.carFrom;
-  if(driver.carTo  && (!_uTo   || driver.carTo  < _uTo))    _uTo   = driver.carTo;
-  const uber = (_uFrom && _uTo && _uFrom > _uTo)
-    ? { income:0, trips:0, hoursOnline:0 }
-    : _getUberHistoryForDriver(driver, _uFrom, _uTo);
+  // Модель «аккаунт = владелец»: все поездки earner-аккаунта идут владельцу.
+  const uber = _getUberHistoryForDriver(driver, dateFrom, dateTo);
 
   // ── Bolt part (real data, from accumulated portal history by boltId) ──
   const bolt = _getBoltHistoryForDriver(driver, dateFrom, dateTo);
