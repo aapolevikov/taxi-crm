@@ -6061,7 +6061,9 @@ function _carModelByPlate(plate){
   var list=(window.cars&&Array.isArray(window.cars))?window.cars:[];
   var c=list.find(function(x){ return String(x.id||'').toUpperCase()===String(plate).toUpperCase(); });
   if(!c) return '';
-  return [c.brand,c.model].filter(Boolean).join(' ');
+  var brand=c.brand||'', model=c.model||'';
+  if(model && brand && model.toUpperCase().indexOf(brand.toUpperCase())===0) return model;
+  return [brand,model].filter(Boolean).join(' ');
 }
 function _trShortAddr(s){
   if(!s) return '—';
@@ -9007,7 +9009,14 @@ function aggregateDriverData(driver,dateFrom,dateTo){
   }
 
   // ── Uber part (real data, from accumulated portal history by uberId) ──
-  const uber = _getUberHistoryForDriver(driver, dateFrom, dateTo);
+  // Uber-аккаунт привязан к машине → ограничиваем диапазон окном пересменки
+  // водителя [carFrom..carTo], чтобы не считать чужие дни.
+  let _uFrom = dateFrom, _uTo = dateTo;
+  if(driver.carFrom && (!_uFrom || driver.carFrom > _uFrom)) _uFrom = driver.carFrom;
+  if(driver.carTo  && (!_uTo   || driver.carTo  < _uTo))    _uTo   = driver.carTo;
+  const uber = (_uFrom && _uTo && _uFrom > _uTo)
+    ? { income:0, trips:0, hoursOnline:0 }
+    : _getUberHistoryForDriver(driver, _uFrom, _uTo);
 
   // ── Bolt part (real data, from accumulated portal history by boltId) ──
   const bolt = _getBoltHistoryForDriver(driver, dateFrom, dateTo);
@@ -16011,7 +16020,7 @@ function deleteCategory(idx){
       email:r.email||'-', services:Array.isArray(r.services)?r.services:[],
       carBrand:'', carModel:'', vehicleId:r.vehicle_id||'',
       yandexId:r.yandex_id||null, uberId:r.uber_id||null, boltId:r.bolt_id||null, careemId:null,
-      carFrom:r.car_from||null, carTo:r.car_to||null };
+      carFrom:r.car_from || (r.created_at? String(r.created_at).slice(0,10): null), carTo:r.car_to||null };
   }
   function existsAlready(d){
     var list=window.drivers||[];
