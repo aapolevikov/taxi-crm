@@ -2142,6 +2142,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
               <option value="Y">Yango</option>
               <option value="U">Uber</option>
               <option value="B">Bolt</option>
+              <option value="O">Office</option>
             </select>
             <select class="st-sel" id="dd-tripsPay" style="border-radius:var(--r)" onchange="renderDriverTrips()">
               <option value="all">All payment</option>
@@ -4067,7 +4068,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-02.6';
+window.APP_VERSION = '2026-06-06.1';
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
 try{ console.log('%c[Mr Ride CRM] версия '+window.APP_VERSION+' (build '+window.APP_BUILD+')','color:#0d9e75;font-weight:bold'); }catch(_){}
 
@@ -6098,6 +6099,18 @@ function sortDriverTrips(key){
 }
 window.sortDriverTrips = sortDriverTrips;
 
+// ══════════════ OFFICE ORDERS → привязка к водителю ══════════════
+// Ручные "Orders" (офисные поездки) привязываются к водителю по driverId
+// (новые заказы) или по нечёткому совпадению имени (старые: короткое имя ↔ полное в CRM).
+function _ordLev(a,b){a=String(a);b=String(b);var m=a.length,n=b.length;if(!m)return n;if(!n)return m;var prev=[],cur=[],i,j;for(j=0;j<=n;j++)prev[j]=j;for(i=1;i<=m;i++){cur[0]=i;for(j=1;j<=n;j++){var cost=a.charAt(i-1)===b.charAt(j-1)?0:1;cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+cost);}prev=cur.slice();}return prev[n];}
+function _ordNormName(s){return String(s||'').toLowerCase().replace(/[^a-zа-яё ]/gi,' ').replace(/\s+/g,' ').trim();}
+function _ordTokEq(t1,t2){if(t1===t2)return true;if(t1.length<4||t2.length<4)return false;return _ordLev(t1,t2)<=1;}
+function _ordNameEq(nameA,nameB){var ta=_ordNormName(nameA).split(' ').filter(Boolean);var tb=_ordNormName(nameB).split(' ').filter(Boolean);if(!ta.length||!tb.length)return false;var matched=0;ta.forEach(function(x){if(tb.some(function(y){return _ordTokEq(x,y);}))matched++;});return matched>=Math.min(2,ta.length);}
+function _orderBelongsToDriver(o,d){if(!o||!d)return false;if(o.driverId!=null&&d.id!=null&&String(o.driverId)===String(d.id))return true;return _ordNameEq(o.driver,d.name);}
+function _officeOrderMs(s){var m=String(s||'').match(/^(\d{2})\.(\d{2})\.(\d{4})(?:[ T](\d{2}):(\d{2}))?/);if(!m)return 0;return new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),Number(m[4]||0),Number(m[5]||0),0).getTime();}
+function _officeOrdersForDriver(driver,dateFrom,dateTo){var out={income:0,trips:0,rows:[]};var arr=[];try{arr=(typeof ordersData!=='undefined'&&Array.isArray(ordersData))?ordersData:[];}catch(_){arr=[];}var fromD=dateFrom||'0000-00-00',toD=dateTo||'9999-99-99';arr.forEach(function(o){if(!o||String(o.status)!=='Done')return;if(!_orderBelongsToDriver(o,driver))return;var od=(typeof parseOrderDate==='function')?parseOrderDate(o.orderTime):'';if(od){if(od<fromD||od>toD)return;}out.income+=Number(o.amount)||0;out.trips+=1;out.rows.push(o);});out.income=Math.round(out.income*100)/100;return out;}
+window._officeOrdersForDriver=_officeOrdersForDriver;
+
 async function renderDriverTrips(){
   const body = document.getElementById('dd-tripsBody');
   const summary = document.getElementById('dd-tripsSummary');
@@ -6237,6 +6250,21 @@ async function renderDriverTrips(){
     }
   }
 
+  // Office orders (ручные "Orders") — привязка по driverId / нечёткому имени.
+  try{
+    var _oArr=(typeof ordersData!=='undefined'&&Array.isArray(ordersData))?ordersData:[];
+    _oArr.forEach(function(o){
+      if(!o||String(o.status)!=='Done')return;
+      if(!_orderBelongsToDriver(o,d))return;
+      var sMs=_officeOrderMs(o.orderTime);
+      if(!sMs||sMs<fromMs||sMs>toMs)return;
+      var payRaw=String(o.payment||'').toLowerCase();
+      var pay=payRaw==='cash'?'cash':(payRaw==='card'?'card':(payRaw||'—'));
+      var amt=Number(o.amount)||0;
+      rows.push({svc:'O',plate:o.car||d.vehicleId||'—',from:o.clientAddress,to:o.destination,startMs:sMs,endMs:sMs,durSec:0,distKm:0,pay:pay,customerPaid:amt,driverEarned:amt,orderId:o.id||'',clickable:false});
+    });
+  }catch(_){}
+
   // ── Apply filters ──
   let filtered = rows;
   if(svcFilter !== 'all') filtered = filtered.filter(r => r.svc === svcFilter);
@@ -6258,10 +6286,12 @@ async function renderDriverTrips(){
     const yTr = filtered.filter(r=>r.svc==='Y').length;
     const uTr = filtered.filter(r=>r.svc==='U').length;
     const bTr = filtered.filter(r=>r.svc==='B').length;
+    const oTr = filtered.filter(r=>r.svc==='O').length;
     const tripBreakdown = [
       yTr>0?`<span style="color:#f5a623">●</span>Y ${yTr}`:'',
       uTr>0?`<span style="color:#1a1a1a">●</span>U ${uTr}`:'',
-      bTr>0?`<span style="color:#34c759">●</span>B ${bTr}`:''
+      bTr>0?`<span style="color:#34c759">●</span>B ${bTr}`:'',
+      oTr>0?`<span style="color:#6f42c1">●</span>O ${oTr}`:''
     ].filter(Boolean).join('&nbsp;&nbsp;');
     summary.innerHTML = `
       <div class="sc">
@@ -6299,6 +6329,7 @@ async function renderDriverTrips(){
   const svcBadge = (s) => {
     if(s === 'B') return '<span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#34c759;color:#fff;border-radius:50%;font-size:11px;font-weight:700">B</span>';
     if(s === 'U') return '<span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#1a1a1a;color:#fff;border-radius:50%;font-size:11px;font-weight:700">U</span>';
+    if(s === 'O') return '<span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#6f42c1;color:#fff;border-radius:50%;font-size:11px;font-weight:700">O</span>';
     return '<span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#f5a623;color:#fff;border-radius:50%;font-size:11px;font-weight:700">Y</span>';
   };
   const fmtMoney = v => (v==null) ? '<span style="color:var(--text3)">—</span>' : ('AED ' + v.toFixed(2));
@@ -9002,6 +9033,9 @@ function aggregateDriverData(driver,dateFrom,dateTo){
   // ── Bolt part (real data, from accumulated portal history by boltId) ──
   const bolt = _getBoltHistoryForDriver(driver, dateFrom, dateTo);
 
+  // ── Office orders (ручная страница Orders) ──
+  const office = (typeof _officeOrdersForDriver==='function') ? _officeOrdersForDriver(driver, dateFrom, dateTo) : {income:0,trips:0};
+
   // Base record: prefer the rich Yango fields when present (fee/mileage/salik/etc.),
   // otherwise zeros so non-Yango drivers stay clean.
   const baseFields = yangoFull ? {...driver, ...yangoFull} : {...driver,
@@ -9016,8 +9050,10 @@ function aggregateDriverData(driver,dateFrom,dateTo){
   const uberTrips   = uber.trips;
   const boltIncome  = bolt.income;
   const boltTrips   = bolt.trips;
-  const combinedIncome = Math.round((yangoIncome + uberIncome + boltIncome)*100)/100;
-  const combinedTrips  = yangoTrips + uberTrips + boltTrips;
+  const officeIncome = Number(office.income)||0;
+  const officeTrips  = Number(office.trips)||0;
+  const combinedIncome = Math.round((yangoIncome + uberIncome + boltIncome + officeIncome)*100)/100;
+  const combinedTrips  = yangoTrips + uberTrips + boltTrips + officeTrips;
 
   // ── Salik (toll) from imported Salik report, matched by car plate, by trip date ──
   // If we have imported Salik data for this car, it overrides Yango's salik field.
@@ -9037,6 +9073,7 @@ function aggregateDriverData(driver,dateFrom,dateTo){
     yangoIncome, yangoTrips,
     uberIncome,  uberTrips,
     boltIncome,  boltTrips,
+    officeIncome, officeTrips,
     uberHours: uber.hoursOnline,
     boltHours: bolt.hoursOnTrip,
     boltMileage: bolt.mileage,
@@ -9693,6 +9730,10 @@ let ordersData=[
   {id:12,status:'Cancelled',driver:'Ahmed Elsayed',car:'L18341',model:'BMW 7er',payment:'Card',paymentTaker:'',payerEmployee:'',amount:0,client:'',clientAddress:'Airport',destination:'Downtown',orderTime:'22.04.2026 09:00'},
   {id:13,status:'Waiting for acceptance',driver:'Silvestre Absalon',car:'L93211',model:'Mercedes-Benz E-Class',payment:'Card',paymentTaker:'',payerEmployee:'',amount:1,client:'',clientAddress:'Business Bay',destination:'Marina',orderTime:'21.05.2026 18:30'},
 ];
+// Restore office orders from localStorage (survive refresh); seed is default.
+try{ const _os=localStorage.getItem('mrride_orders'); if(_os){ const _arr=JSON.parse(_os); if(Array.isArray(_arr)) ordersData=_arr; } }catch(_){}
+function saveOrdersToStorage(){ try{ localStorage.setItem('mrride_orders', JSON.stringify(ordersData)); }catch(_){} }
+window.saveOrdersToStorage=saveOrdersToStorage;
 let ordFiltered=[...ordersData],ordSortKey='id',ordSortDir=-1,ordPage=1,ordPerPage=20;
 let ordDateFrom=null,ordDateTo=null;
 
@@ -9801,24 +9842,46 @@ function nextOrdPage(){if(ordPage<Math.ceil(ordFiltered.length/ordPerPage)){ordP
 function setOrdPerPage(v){ordPerPage=v;ordPage=1;renderOrdersRows();}
 
 function openAddOrderModal(){
+  // Populate driver + car selects from live data (so list is complete & matchable).
+  try{
+    var dsel=document.getElementById('foDriver');
+    var csel=document.getElementById('foCar');
+    if(csel){
+      var cl=(window.cars||[]).filter(function(c){return c&&c.id;});
+      csel.innerHTML='<option value="">Select car</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.id+' — '+escHtml(((c.brand?c.brand+' ':'')+(c.model||'')).trim())+'</option>';}).join('');
+    }
+    if(dsel){
+      var list=(window.drivers||[]).filter(function(d){return d&&d.name&&(d.status==='Working'||d.vehicleId);});
+      list.sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
+      dsel.innerHTML='<option value="">Select driver</option>'+list.map(function(d){return '<option value="'+d.id+'" data-car="'+(d.vehicleId||'')+'">'+escHtml(d.name)+'</option>';}).join('');
+      dsel.onchange=function(){var opt=dsel.options[dsel.selectedIndex];var car=opt?opt.getAttribute('data-car'):'';if(car&&csel)csel.value=car;};
+    }
+  }catch(_){}
   document.getElementById('foTime').value=new Date().toISOString().slice(0,16);
   document.getElementById('addOrderModal').classList.add('open');
 }
 
 function addOrder(){
-  const driver=document.getElementById('foDriver').value;
-  if(!driver){showToast(t('selectDriver')||'Select a driver');return;}
+  const driverSel=document.getElementById('foDriver').value;
+  if(!driverSel){showToast(t('selectDriver')||'Select a driver');return;}
+  let drvObj=null;
+  try{ const _all=(window.drivers||[]); drvObj=_all.find(x=>String(x.id)===String(driverSel))||_all.find(x=>x.name===driverSel)||null; }catch(_){}
+  const driverName=drvObj?drvObj.name:driverSel;
   const carVal=document.getElementById('foCar').value;
-  const carParts=carVal.split(' — ');
+  const plate=(carVal.split(' — ')[0]||'').trim();
+  let model='';
+  try{ const co=(window.cars||[]).find(c=>c.id===plate); if(co) model=((co.brand?co.brand+' ':'')+(co.model||'')).trim(); }catch(_){}
   const amount=parseFloat(document.getElementById('foAmount').value)||0;
-  const timeRaw=document.getElementById('foTime').value;
-  const timeFormatted=timeRaw?timeRaw.replace('T',' ').slice(0,16):'';
+  const timeRaw=document.getElementById('foTime').value; // YYYY-MM-DDTHH:MM
+  let timeFormatted='';
+  if(timeRaw){ const mm=timeRaw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); timeFormatted = mm ? (mm[3]+'.'+mm[2]+'.'+mm[1]+' '+mm[4]+':'+mm[5]) : timeRaw.replace('T',' ').slice(0,16); }
   const newOrder={
-    id:Math.max(...ordersData.map(o=>o.id))+1,
+    id:(ordersData.length?Math.max.apply(null,ordersData.map(o=>Number(o.id)||0)):0)+1,
     status:document.getElementById('foStatus').value,
-    driver,
-    car:carParts[0]||'',
-    model:carParts[1]||'',
+    driver:driverName,
+    driverId:drvObj?drvObj.id:null,
+    car:plate,
+    model,
     payment:document.getElementById('foPayment').value,
     paymentTaker:document.getElementById('foWhoPays').value||'',
     payerEmployee:'',
@@ -9829,6 +9892,7 @@ function addOrder(){
     orderTime:timeFormatted,
   };
   ordersData.unshift(newOrder);
+  saveOrdersToStorage();
   renderOrdersTable();
   closeModal('addOrderModal');
   ['foDriver','foCar','foAmount','foClient','foWhoPays','foAddress','foDestination'].forEach(id=>{
