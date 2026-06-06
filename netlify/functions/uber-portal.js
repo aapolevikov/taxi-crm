@@ -97,7 +97,10 @@ exports.handler = async (event) => {
     const end   = qs.end   || body.end   || defEnd;
 
     // Список водителей: из параметра, иначе из ENV, иначе пустой (портал вернёт всех)
-    let uuids = qs.uuids || body.uuids || process.env.UBER_PORTAL_DRIVERS || '';
+    // all=1 → игнорируем фиксированный список и просим у портала ВСЕХ водителей
+    // (нужно, чтобы найти UUID новых водителей, которых ещё нет в env).
+    const wantAll = (qs.all==='1' || qs.all==='true' || body.all===true);
+    let uuids = wantAll ? '' : (qs.uuids || body.uuids || process.env.UBER_PORTAL_DRIVERS || '');
     uuids = String(uuids).split(',').map(s => s.trim()).filter(Boolean);
 
     const variables = {
