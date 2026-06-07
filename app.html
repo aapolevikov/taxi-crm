@@ -3224,7 +3224,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
               <button class="fin-btn" onclick="openTxnModal('driver')"><i class="ti ti-user-plus"></i> <span data-i18n="finTxnDriver">Transaction with driver</span></button>
               <button class="fin-btn" onclick="openTxnModal('driverless')"><i class="ti ti-receipt"></i> <span data-i18n="finTxnDriverless">Driverless transaction</span></button>
               <button class="fin-btn" onclick="switchFinTab('import',document.querySelector('.fin-nav-item:nth-child(8)'))"><i class="ti ti-upload"></i> <span data-i18n="finImport">Import transactions</span></button>
-              <button class="fin-btn fin-btn-xlsx" onclick="exportTxnXLSX()" style="margin-left:auto"><i class="ti ti-download"></i> XLSX</button>
+              <button class="fin-btn fin-btn-xlsx" onclick="exportTxnPDF()" style="margin-left:auto"><i class="ti ti-file-text"></i> PDF</button><button class="fin-btn fin-btn-xlsx" onclick="exportTxnXLSX()"><i class="ti ti-download"></i> XLSX</button>
             </div>
 
             <!-- Filters -->
@@ -4173,7 +4173,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.17';
+window.APP_VERSION = '2026-06-07.18';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -12314,6 +12314,58 @@ function runImport(){
   record.comment=(record.comment||'')+' — парсер для типа "'+fileType+'" ещё не реализован';
   renderImportTable();
   showToast('Импорт для типа "'+fileType+'" пока не поддерживается. Для банковской выписки выберите тип "Bank statement".');
+}
+
+function exportTxnPDF(){
+  var g=function(id){var e=document.getElementById(id);return e?e.value:'';};
+  var q=(g('txnSearch')||'').toLowerCase();
+  var typeF=g('txnTypeFilter'), purposeF=g('txnPurposeFilter'), cashboxF=g('txnCashboxFilter');
+  var driverF=(g('txnDriverFilter')||'').toLowerCase(), carF=g('txnCarFilter');
+  var partyF=(g('txnPartyFilter')||'').toLowerCase(), labelF=g('txnLabelFilter');
+  var data=finTxns.filter(function(tx){
+    if(!finTxnShowCancelled&&tx.cancelled)return false;
+    if(!finTxnShowPlatform&&tx.platform)return false;
+    if(q&&!(tx.comment||'').toLowerCase().includes(q))return false;
+    if(typeF&&tx.type!==typeF)return false;
+    if(labelF&&tx.label!==labelF)return false;
+    if(purposeF&&tx.purpose!==purposeF)return false;
+    if(cashboxF&&String(tx.cashboxId)!==cashboxF)return false;
+    if(driverF&&!(tx.driver||'').toLowerCase().includes(driverF))return false;
+    if(carF&&tx.car!==carF)return false;
+    if(partyF&&!(tx.counterparty||'').toLowerCase().includes(partyF))return false;
+    if(finTxnDateFrom&&tx.date<finTxnDateFrom)return false;
+    if(finTxnDateTo&&tx.date>finTxnDateTo)return false;
+    return true;
+  });
+  data.sort(function(a,b){ var r=_txnCmp(a,b,finTxnSortField); return finTxnSortDir==='desc'?-r:r; });
+  if(!data.length){ showToast('\u041d\u0435\u0442 \u0442\u0440\u0430\u043d\u0437\u0430\u043a\u0446\u0438\u0439 \u0434\u043b\u044f \u044d\u043a\u0441\u043f\u043e\u0440\u0442\u0430'); return; }
+  var inc=data.filter(function(t){return t.type==='Income';}).reduce(function(s,t){return s+(+t.amount||0);},0);
+  var exp=data.filter(function(t){return t.type==='Expense';}).reduce(function(s,t){return s+(+t.amount||0);},0);
+  var esc=(typeof escHtml==='function')?escHtml:function(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+  var rows=data.map(function(tx,i){
+    var cb=finCashboxes.find(function(c){return c.id===tx.cashboxId;}); var cbName=cb?cb.name:'\u2014';
+    var sign=tx.type==='Income'?'+':'-'; var col=tx.type==='Income'?'#0d9e75':'#e74c3c';
+    var typeRu=tx.type==='Income'?'\u041f\u0440\u0438\u0445\u043e\u0434':'\u0420\u0430\u0441\u0445\u043e\u0434';
+    return '<tr><td>'+(i+1)+'</td><td style="white-space:nowrap">'+esc(tx.date||'')+'</td><td>'+esc(typeRu)+'</td><td>'+esc(tx.purpose||'')+'</td><td style="text-align:right;color:'+col+';font-weight:600;white-space:nowrap">'+sign+(+tx.amount||0).toFixed(2)+'</td><td>'+esc(cbName)+'</td><td>'+esc(tx.driver||'')+'</td><td>'+esc(tx.car||'')+'</td><td>'+esc(tx.counterparty||'')+'</td><td>'+esc(tx.comment||'')+'</td></tr>';
+  }).join('');
+  var today=new Date().toLocaleString('ru-RU');
+  var net=inc-exp;
+  var html='<!doctype html><html><head><meta charset="utf-8"><title>\u0422\u0440\u0430\u043d\u0437\u0430\u043a\u0446\u0438\u0438 Mr Ride</title>'+
+    '<style>body{font-family:-apple-system,Segoe UI,Arial,sans-serif;margin:24px;color:#1a1a1a}h1{font-size:18px;margin:0 0 4px}.meta{color:#666;font-size:12px;margin-bottom:10px}'+
+    '.tot{display:flex;gap:28px;margin:8px 0 16px;font-size:13px;flex-wrap:wrap}.tot b{font-size:15px}'+
+    'table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #ddd;padding:4px 6px;text-align:left;vertical-align:top}th{background:#f3f4f6}tbody tr:nth-child(even){background:#fafafa}'+
+    '.noprint{margin:14px 0}button{padding:9px 18px;font-size:14px;border:none;border-radius:6px;background:#0d9e75;color:#fff;cursor:pointer}'+
+    '@media print{.noprint{display:none}body{margin:0}}</style></head><body>'+
+    '<h1>\u0424\u0438\u043d\u0430\u043d\u0441\u043e\u0432\u044b\u0435 \u0442\u0440\u0430\u043d\u0437\u0430\u043a\u0446\u0438\u0438 \u2014 Mr Ride</h1>'+
+    '<div class="meta">\u0421\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d\u043e: '+esc(today)+' \u00b7 \u0412\u0441\u0435\u0433\u043e \u0437\u0430\u043f\u0438\u0441\u0435\u0439: '+data.length+'</div>'+
+    '<div class="tot"><span>\u041f\u0440\u0438\u0445\u043e\u0434: <b style="color:#0d9e75">+'+inc.toFixed(2)+' AED</b></span><span>\u0420\u0430\u0441\u0445\u043e\u0434: <b style="color:#e74c3c">-'+exp.toFixed(2)+' AED</b></span><span>\u0427\u0438\u0441\u0442\u044b\u0439: <b style="color:'+(net>=0?'#0d9e75':'#e74c3c')+'">'+(net>=0?'+':'')+net.toFixed(2)+' AED</b></span></div>'+
+    '<div class="noprint"><button onclick="window.print()">\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043a\u0430\u043a PDF / \u041f\u0435\u0447\u0430\u0442\u044c</button></div>'+
+    '<table><thead><tr><th>\u2116</th><th>\u0414\u0430\u0442\u0430</th><th>\u0422\u0438\u043f</th><th>\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435</th><th style="text-align:right">\u0421\u0443\u043c\u043c\u0430</th><th>\u041a\u0430\u0441\u0441\u0430</th><th>\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c</th><th>\u041c\u0430\u0448\u0438\u043d\u0430</th><th>\u041a\u043e\u043d\u0442\u0440\u0430\u0433\u0435\u043d\u0442</th><th>\u041a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0439</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<scr'+'ipt>setTimeout(function(){try{window.print();}catch(e){}},500);</scr'+'ipt>'+
+    '</body></html>';
+  var w=window.open('','_blank');
+  if(!w){ showToast('\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u0435 \u0432\u0441\u043f\u043b\u044b\u0432\u0430\u044e\u0449\u0438\u0435 \u043e\u043a\u043d\u0430 \u0434\u043b\u044f \u044d\u043a\u0441\u043f\u043e\u0440\u0442\u0430 PDF'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
 }
 
 function exportTxnXLSX(){
