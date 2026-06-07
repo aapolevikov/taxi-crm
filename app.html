@@ -4068,7 +4068,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-06.1';
+window.APP_VERSION = '2026-06-07.1';
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
 try{ console.log('%c[Mr Ride CRM] версия '+window.APP_VERSION+' (build '+window.APP_BUILD+')','color:#0d9e75;font-weight:bold'); }catch(_){}
 
@@ -7041,7 +7041,15 @@ function buildOnlineData(){
       uber:   d.uberId   ? (uberToday || stats.uber   || {hoursOnline:0,trips:0,income:0,lastSync:null}) : null,
       bolt:   d.boltId   ? (boltToday || stats.bolt   || {hoursOnline:0,trips:0,income:0,lastSync:null}) : null,
       careem: d.careemId ? (stats.careem || {hoursOnline:0,trips:0,income:0,lastSync:null}) : null,
-      office: (stats.office && (stats.office.income || stats.office.trips)) ? stats.office : null
+      office: (function(){
+        try{
+          if(typeof _officeOrdersForDriver==='function'){
+            var _of = _officeOrdersForDriver(d, __todayStr, __todayStr);
+            if(_of && (_of.income || _of.trips)) return {hoursOnline:0, trips:_of.trips, income:_of.income, lastSync:null};
+          }
+        }catch(_){}
+        return (stats.office && (stats.office.income || stats.office.trips)) ? stats.office : null;
+      })()
     };
 
     // If Uber has both live agg and today CSV, prefer the larger trip count
@@ -9276,16 +9284,17 @@ function updateReportsStats(){
     svc.uber.tr   += d.uberTrips   || 0;
     svc.bolt.inc  += d.boltIncome  || 0;
     svc.bolt.tr   += d.boltTrips   || 0;
+    svc.office.inc += d.officeIncome || 0;
+    svc.office.tr  += d.officeTrips  || 0;
 
     // Remaining income not attributed to Yango/Uber/Bolt → route by `services` array
     // (placeholder until Careem/Zed integrations land). Avoids double-counting.
-    const restInc = (d.income||0) - (d.yangoIncome||0) - (d.uberIncome||0) - (d.boltIncome||0);
-    const restTr  = (d.trips ||0) - (d.yangoTrips ||0) - (d.uberTrips ||0) - (d.boltTrips ||0);
+    const restInc = (d.income||0) - (d.yangoIncome||0) - (d.uberIncome||0) - (d.boltIncome||0) - (d.officeIncome||0);
+    const restTr  = (d.trips ||0) - (d.yangoTrips ||0) - (d.uberTrips ||0) - (d.boltTrips ||0) - (d.officeTrips||0);
     if(restInc > 0.001 || restTr > 0){
       const services = Array.isArray(d.services) ? d.services.map(s => String(s).toLowerCase()) : [];
       if(services.includes('careem'))   svc.careem.inc += restInc, svc.careem.tr += restTr;
       else if(services.includes('zed'))  svc.zed.inc    += restInc, svc.zed.tr    += restTr;
-      else if(!d.yandexId && !d.uberId && !d.boltId)  svc.office.inc += restInc, svc.office.tr += restTr;
     }
   });
 
