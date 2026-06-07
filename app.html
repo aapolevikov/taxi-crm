@@ -3415,7 +3415,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
             </div>
             <div class="table-wrap">
               <table class="data-table">
-                <thead><tr><th>№</th><th data-i18n="uUser">User</th><th data-i18n="uTime">Time</th><th data-i18n="uDuration">Duration</th><th data-i18n="uStatus">Status</th><th data-i18n="uFile">File</th><th data-i18n="uFileType">File type</th><th data-i18n="uCashbox">Cash box</th><th data-i18n="uPurpose">Purpose</th><th data-i18n="uComment">Comment</th><th data-i18n="uParsingResult">Parsing Result</th><th data-i18n="uResult">Result</th></tr></thead>
+                <thead><tr><th>№</th><th data-i18n="uUser">User</th><th data-i18n="uTime">Time</th><th data-i18n="uDuration">Duration</th><th data-i18n="uStatus">Status</th><th data-i18n="uFile">File</th><th data-i18n="uFileType">File type</th><th data-i18n="uCashbox">Cash box</th><th data-i18n="uPurpose">Purpose</th><th data-i18n="uComment">Comment</th><th data-i18n="uParsingResult">Parsing Result</th><th data-i18n="uResult">Result</th><th></th></tr></thead>
                 <tbody id="importBody"></tbody>
               </table>
             </div>
@@ -4173,7 +4173,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.16';
+window.APP_VERSION = '2026-06-07.17';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -11829,7 +11829,7 @@ function renderImportTable(){
     cbSel.innerHTML='<option value="">Select cash box</option>'+finCashboxes.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
   }
   if(!finImportHistory.length){
-    tbody.innerHTML=`<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--text3)">No imports yet. Upload an XLSX file above.</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--text3)">No imports yet. Upload an XLSX file above.</td></tr>`;
     return;
   }
   tbody.innerHTML=finImportHistory.map((r,i)=>{
@@ -11847,9 +11847,37 @@ function renderImportTable(){
       <td style="font-size:12px;color:var(--text2)">${escHtml(r.comment||'')}</td>
       <td style="font-size:12px">Count: <b style="color:var(--accent)">${r.count||0}</b> <span style="color:var(--text3)">items</span><br>Amount: <b>${(+r.amount||0).toFixed(2)} AED</b></td>
       <td style="font-size:12px">Applied/skipped/failed: <b>${r.applied||0} / ${r.skipped||0} / ${r.failed||0}</b><br>Amount: <b>${(+r.appliedAmount||0).toFixed(2)} AED</b></td>
+      <td style="text-align:center"><button onclick="deleteImport(${r.id})" title="Удалить загрузку" style="background:none;border:none;cursor:pointer;color:#e5484d;font-size:15px;padding:4px"><i class="ti ti-trash"></i></button></td>
     </tr>`;
   }).join('');
   if(typeof saveImportHistory==='function') saveImportHistory();
+}
+
+function deleteImport(id){
+  var rec=finImportHistory.find(function(r){return String(r.id)===String(id);});
+  if(!rec){ return; }
+  var matched=finTxns.filter(function(t){return t.importId!=null && String(t.importId)===String(id);});
+  if(!matched.length && /pdf|emirates|islamic/i.test((rec.fileType||'')+' '+(rec.comment||''))){
+    matched=finTxns.filter(function(t){return t.cashboxId===rec.cashboxId && t.importId==null && typeof t.bankRef==='string' && t.bankRef.indexOf('EI:')===0;});
+  }
+  var msg='Удалить эту загрузку'+(matched.length?(' и '+matched.length+' созданных ею транзакций'):'')+'?';
+  if(!window.confirm(msg)) return;
+  matched.forEach(function(t){
+    var cb=finCashboxes.find(function(c){return c.id===t.cashboxId;});
+    if(cb) cb.balance -= (t.type==='Income' ? (+t.amount||0) : -(+t.amount||0));
+  });
+  if(matched.length){
+    var ids={}; matched.forEach(function(t){ ids[t.id]=true; });
+    for(var i=finTxns.length-1;i>=0;i--){ if(ids[finTxns[i].id]) finTxns.splice(i,1); }
+  }
+  var ri=finImportHistory.findIndex(function(r){return String(r.id)===String(id);});
+  if(ri>=0) finImportHistory.splice(ri,1);
+  if(typeof saveFinanceToStorage==='function') saveFinanceToStorage();
+  if(typeof saveImportHistory==='function') saveImportHistory();
+  renderImportTable();
+  if(typeof renderTxnTable==='function') renderTxnTable();
+  if(typeof renderCashboxes==='function') renderCashboxes();
+  showToast('Загрузка удалена'+(matched.length?(', транзакций удалено: '+matched.length):''));
 }
 
 // ══════════════ SALIK IMPORT (toll roads) ══════════════
@@ -11966,7 +11994,7 @@ function _normBankDate(v){
   if(!isNaN(dt)){ return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2); }
   return '';
 }
-function _applyBankStatement(rows, cashboxId, baseComment){
+function _applyBankStatement(rows, cashboxId, baseComment, importId){
   var out={total:0,added:0,dup:0,failed:0,sumAbs:0,appliedAbs:0,curSkip:0};
   if(!rows||!rows.length) return out;
   var header=(rows[0]||[]).map(function(h){return String(h||'').trim().toLowerCase();});
@@ -12007,7 +12035,7 @@ function _applyBankStatement(rows, cashboxId, baseComment){
       amount: Math.abs(amt), cashboxId: cashboxId, date: date, created: date+' 00:00',
       driver:'', car:'', counterparty:'', comment: comment, user:'import',
       cancelled:false, platform:false, txnTypeKey:'', label: btype||(isIncome?'Приход':'Расход'),
-      bankRef: key,
+      bankRef: key, importId: importId,
     });
     if(cb) cb.balance += isIncome?Math.abs(amt):-Math.abs(amt);
     out.added++; out.appliedAbs+=Math.abs(amt);
@@ -12067,7 +12095,7 @@ function _eiPdfLinesToTxns(lines){
   }
   return uniq;
 }
-function _applyEIStatement(txns, cashboxId, baseComment, stmtCur){
+function _applyEIStatement(txns, cashboxId, baseComment, stmtCur, importId){
   var out={total:0,added:0,dup:0,failed:0,sumAbs:0,appliedAbs:0,curSkip:0};
   if(!txns||!txns.length) return out;
   var cb=finCashboxes.find(function(c){return c.id===cashboxId;});
@@ -12095,7 +12123,7 @@ function _applyEIStatement(txns, cashboxId, baseComment, stmtCur){
       amount: amt, cashboxId: cashboxId, date: tr.date, created: tr.date+' 00:00',
       driver:'', car:'', counterparty:'', comment: comment, user:'import',
       cancelled:false, platform:false, txnTypeKey:'', label: isIncome?'\u041f\u0440\u0438\u0445\u043e\u0434':'\u0420\u0430\u0441\u0445\u043e\u0434',
-      bankRef: key
+      bankRef: key, importId: importId
     });
     if(cb) cb.balance += isIncome?amt:-amt;
     out.added++; out.appliedAbs+=amt;
@@ -12167,7 +12195,7 @@ function runImport(){
               var cm=allText.match(/Currency\s+([A-Z]{3})\b/); var stmtCur=cm?cm[1]:'AED';
               var txns=_eiPdfLinesToTxns(lines);
               if(!txns.length) throw new Error('\u041d\u0435 \u043f\u043e\u0445\u043e\u0436\u0435 \u043d\u0430 \u0432\u044b\u043f\u0438\u0441\u043a\u0443 Emirates Islamic (0 \u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0439 \u0440\u0430\u0441\u043f\u043e\u0437\u043d\u0430\u043d\u043e)');
-              var res=_applyEIStatement(txns, cashboxId, comment, stmtCur);
+              var res=_applyEIStatement(txns, cashboxId, comment, stmtCur, record.id);
               record.parsingSec=Math.max(1,Math.round((Date.now()-pt0)/1000)); record.processSec=1;
               record.status='DONE'; record.finished=fmt(new Date());
               record.count=res.total; record.amount=res.sumAbs; record.applied=res.added;
@@ -12255,7 +12283,7 @@ function runImport(){
         var bwb=XLSX.read(bdata,{type:'array'});
         var bws=bwb.Sheets[bwb.SheetNames[0]];
         var brows=XLSX.utils.sheet_to_json(bws,{header:1,raw:false,defval:''});
-        var bres=_applyBankStatement(brows, cashboxId, comment);
+        var bres=_applyBankStatement(brows, cashboxId, comment, record.id);
         record.parsingSec=Math.max(1,Math.round((Date.now()-bt0)/1000));
         record.processSec=1; record.status='DONE'; record.finished=fmt(new Date());
         record.count=bres.total; record.amount=bres.sumAbs; record.applied=bres.added;
