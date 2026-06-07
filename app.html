@@ -4068,7 +4068,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.3';
+window.APP_VERSION = '2026-06-07.4';
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
 try{ console.log('%c[Mr Ride CRM] версия '+window.APP_VERSION+' (build '+window.APP_BUILD+')','color:#0d9e75;font-weight:bold'); }catch(_){}
 
@@ -9633,6 +9633,12 @@ let repairsData=[
 try{ const _rs=localStorage.getItem('mrride_repairs'); if(_rs){ const _ra=JSON.parse(_rs); if(Array.isArray(_ra)) repairsData=_ra; } }catch(_){}
 function saveRepairsToStorage(){ try{ localStorage.setItem('mrride_repairs', JSON.stringify(repairsData)); }catch(_){} }
 window.saveRepairsToStorage=saveRepairsToStorage;
+// "DD.MM.YYYY[ HH:MM]" -> sortable number (YYYYMMDDHHMM); null if not a date.
+function _dmyKey(v){
+  var m=String(v).match(/^(\d{2})\.(\d{2})\.(\d{4})(?:[ T](\d{2}):(\d{2}))?/);
+  if(!m) return null;
+  return Number(m[3]+m[2]+m[1]+(m[4]||'00')+(m[5]||'00'));
+}
 let roFiltered=[...repairsData],roSortKey='date',roSortDir=-1,roPage=1,roPerPage=20;
 let roDateFrom=null,roDateTo=null;
 
@@ -9667,6 +9673,8 @@ function renderRepairsTable(){
   });
   roFiltered.sort((a,b)=>{
     const va=a[roSortKey]??'',vb=b[roSortKey]??'';
+    const ka=_dmyKey(va), kb=_dmyKey(vb);
+    if(ka!=null && kb!=null) return (ka-kb)*roSortDir;
     return typeof va==='number'?(va-vb)*roSortDir:String(va).localeCompare(String(vb))*roSortDir;
   });
   roPage=1;renderRepairsRows();
@@ -9874,6 +9882,8 @@ function renderOrdersTable(){
   });
   ordFiltered.sort((a,b)=>{
     const va=a[ordSortKey]??'',vb=b[ordSortKey]??'';
+    const ka=_dmyKey(va), kb=_dmyKey(vb);
+    if(ka!=null && kb!=null) return (ka-kb)*ordSortDir;
     return typeof va==='number'?(va-vb)*ordSortDir:String(va).localeCompare(String(vb))*ordSortDir;
   });
   // Update summary
