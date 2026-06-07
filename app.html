@@ -3397,16 +3397,16 @@ body.no-icons .ti-external-link::before{content:"↗"}
             <div class="fin-section-header">
               <h2 data-i18n="finImport">Import transactions</h2>
             </div>
-            <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Upload XLSX files from aggregators (Salik, Fuel, ChargeGo etc.) — system will parse and create transactions automatically.</p>
+            <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Загрузите файл: XLSX/CSV от агрегаторов (Salik, Fuel, ChargeGo), банковскую выписку Wio (CSV/XLSX) или выписку Emirates Islamic (PDF) — система сама распознает и создаст транзакции.</p>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;margin-bottom:16px;align-items:end">
               <div class="field-row" style="margin:0"><label data-i18n="uFileType">File type</label>
-                <select id="impFType"><option value="" data-i18n="uSelectType">Select type</option><option data-i18n="catSalik">Salik</option><option data-i18n="catFuel">Fuel</option><option data-i18n="catElectric">Electric charge</option><option data-i18n="catParking">Parking</option><option data-i18n="catFines">Fines</option><option data-i18n="catToll">Toll</option><option data-i18n="catOther">Other</option><option value="Bank statement">Bank statement (CSV)</option></select>
+                <select id="impFType"><option value="" data-i18n="uSelectType">Select type</option><option data-i18n="catSalik">Salik</option><option data-i18n="catFuel">Fuel</option><option data-i18n="catElectric">Electric charge</option><option data-i18n="catParking">Parking</option><option data-i18n="catFines">Fines</option><option data-i18n="catToll">Toll</option><option data-i18n="catOther">Other</option><option value="Bank statement">Bank statement (CSV)</option><option value="Bank statement PDF">Bank statement (PDF · Emirates Islamic)</option></select>
               </div>
               <div class="field-row" style="margin:0"><label data-i18n="uCashbox">Cash box</label>
                 <select id="impFCashbox"><option value="" data-i18n="uSelectCashbox">Select cash box</option></select>
               </div>
               <div class="field-row" style="margin:0"><label data-i18n="uFile">File</label>
-                <label class="fin-btn" style="cursor:pointer;background:var(--bg2);color:var(--text);border:1px solid var(--border2);justify-content:center"><i class="ti ti-upload"></i> <span id="impFFileName" data-i18n="uClickToUpload">Click to Upload</span><input type="file" id="impFFile" accept=".xlsx,.csv,.xls" style="display:none" onchange="document.getElementById('impFFileName').textContent=this.files[0]?.name||'Click to Upload'"></label>
+                <label class="fin-btn" style="cursor:pointer;background:var(--bg2);color:var(--text);border:1px solid var(--border2);justify-content:center"><i class="ti ti-upload"></i> <span id="impFFileName" data-i18n="uClickToUpload">Click to Upload</span><input type="file" id="impFFile" accept=".xlsx,.csv,.xls,.pdf,application/pdf" style="display:none" onchange="document.getElementById('impFFileName').textContent=this.files[0]?.name||'Click to Upload'"></label>
               </div>
               <div class="field-row" style="margin:0"><label data-i18n="uComment">Comment</label>
                 <input type="text" id="impFComment" placeholder="Optional notes" data-i18n-ph="uOptionalNotes">
@@ -4173,7 +4173,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.14';
+window.APP_VERSION = '2026-06-07.15';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -12015,6 +12015,94 @@ function _applyBankStatement(rows, cashboxId, baseComment){
   return out;
 }
 
+// ===== Emirates Islamic bank statement (PDF) import =====
+function _ensurePdfJs(cb){
+  if(window.pdfjsLib){ cb(); return; }
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  s.onload=function(){ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }catch(_){ } cb(); };
+  s.onerror=function(){ cb(new Error('\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c pdf.js (\u043f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0438\u043d\u0442\u0435\u0440\u043d\u0435\u0442)')); };
+  document.head.appendChild(s);
+}
+function _pdfItemsToLines(items){
+  var arr=[];
+  for(var i=0;i<items.length;i++){
+    var it=items[i]; if(!it||!it.str||!it.str.trim()) continue;
+    arr.push({x:it.transform[4], y:it.transform[5], s:it.str});
+  }
+  arr.sort(function(a,b){ if(Math.abs(a.y-b.y)>2) return b.y-a.y; return a.x-b.x; });
+  var lines=[], cur=[], curY=null;
+  for(var k=0;k<arr.length;k++){
+    var t=arr[k];
+    if(curY===null || Math.abs(t.y-curY)<=2){ cur.push(t); if(curY===null) curY=t.y; }
+    else { lines.push(cur); cur=[t]; curY=t.y; }
+  }
+  if(cur.length) lines.push(cur);
+  return lines.map(function(L){ L.sort(function(a,b){return a.x-b.x;}); return L.map(function(t){return t.s;}).join(' ').replace(/\s+/g,' ').trim(); });
+}
+function _eiPdfLinesToTxns(lines){
+  var dataRe=/^(\d{2}-\d{2}-\d{4})\s+(\d{2}-\d{2}-\d{4})\s+(.*?)([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s*$/;
+  var junkRe=/^(Transaction|Value Date|Narration|Running|Balance|Debit|Credit|Page|Tel:|Email|Emirates Islamic|For (Business|Corporate)|Timings|Account Statement|From:|Islamic Account|Generated|Account |Currency|Country|BIC|Registered|Mailing|Current Balance|Effective|Uncleared|Tax Registration|IBAN|MISTER RIDE|UNITED ARAB|CURRENT ACCOUNT|MEBLA|BUSINESS CENTRE|Date Balance|Date$)/i;
+  var refEnd=/-\s*(?:S|EI)\w*\d+\s*$|^(?:S|EI)\w*\d+$/;
+  function d2iso(x){ var pp=x.split('-'); return pp[2]+'-'+pp[1]+'-'+pp[0]; }
+  var rows=[], pre=[];
+  for(var i=0;i<lines.length;i++){
+    var ln=lines[i];
+    if(junkRe.test(ln)){ pre=[]; continue; }
+    var m=dataRe.exec(ln);
+    if(m){
+      var lead=pre.join(' ').trim();
+      var desc=(lead+' '+(m[3]||'').trim()).replace(/\s+/g,' ').trim().slice(0,90);
+      rows.push({ date:d2iso(m[1]), valueDate:d2iso(m[2]), rawDate:m[1], rawValueDate:m[2], debit:m[4], credit:m[5], balance:m[6], desc:desc });
+      pre=[]; continue;
+    }
+    pre.push(ln); if(pre.length>6) pre=pre.slice(-6);
+    if(refEnd.test(ln)) pre=[];
+  }
+  // dedup page-split duplicates by composite key
+  var seen={}, uniq=[];
+  for(var j=0;j<rows.length;j++){
+    var k=rows[j].rawDate+'|'+rows[j].rawValueDate+'|'+rows[j].debit+'|'+rows[j].credit+'|'+rows[j].balance;
+    if(seen[k]) continue; seen[k]=true; uniq.push(rows[j]);
+  }
+  return uniq;
+}
+function _applyEIStatement(txns, cashboxId, baseComment, stmtCur){
+  var out={total:0,added:0,dup:0,failed:0,sumAbs:0,appliedAbs:0,curSkip:0};
+  if(!txns||!txns.length) return out;
+  var cb=finCashboxes.find(function(c){return c.id===cashboxId;});
+  var cbCur=(cb&&cb.currency)?String(cb.currency).trim().toUpperCase():'';
+  stmtCur=(stmtCur||'AED').toUpperCase();
+  var existing={};
+  finTxns.forEach(function(t){ if(t.bankRef&&String(t.cashboxId)===String(cashboxId)) existing[t.bankRef]=true; });
+  var seen={}, baseId=Date.now();
+  for(var i=0;i<txns.length;i++){
+    var tr=txns[i]; out.total++;
+    if(cbCur && stmtCur && cbCur!==stmtCur){ out.curSkip++; continue; }
+    var deb=parseFloat(String(tr.debit).replace(/,/g,''))||0;
+    var cr=parseFloat(String(tr.credit).replace(/,/g,''))||0;
+    var amt=cr>0?cr:deb;
+    if(!amt){ out.failed++; continue; }
+    var isIncome=cr>0;
+    out.sumAbs+=amt;
+    var key='EI:'+tr.date+'|'+tr.valueDate+'|'+tr.debit+'|'+tr.credit+'|'+tr.balance;
+    if(existing[key]||seen[key]){ out.dup++; continue; }
+    seen[key]=true;
+    var comment=tr.desc||'';
+    if(baseComment) comment=(comment?comment+' ':'')+'('+baseComment+')';
+    finTxns.unshift({
+      id: baseId++, type: isIncome?'Income':'Expense', purpose:'Other',
+      amount: amt, cashboxId: cashboxId, date: tr.date, created: tr.date+' 00:00',
+      driver:'', car:'', counterparty:'', comment: comment, user:'import',
+      cancelled:false, platform:false, txnTypeKey:'', label: isIncome?'\u041f\u0440\u0438\u0445\u043e\u0434':'\u0420\u0430\u0441\u0445\u043e\u0434',
+      bankRef: key
+    });
+    if(cb) cb.balance += isIncome?amt:-amt;
+    out.added++; out.appliedAbs+=amt;
+  }
+  return out;
+}
+
 function runImport(){
   const v=id=>document.getElementById(id)?.value||'';
   const fileType=v('impFType');
@@ -12057,6 +12145,52 @@ function runImport(){
   finImportHistory.unshift(record);
   renderImportTable();
   showToast('Parsing started…');
+
+  // === Emirates Islamic bank statement (PDF) — auto-detected by file ===
+  var _isPdf=/\.pdf$/i.test(file.name)||file.type==='application/pdf';
+  if(_isPdf){
+    var pt0=Date.now();
+    _ensurePdfJs(function(perr){
+      if(perr){ record.status='FAILED'; record.finished=fmt(new Date()); record.comment=(record.comment||'')+' \u2014 '+perr.message; renderImportTable(); showToast(perr.message); return; }
+      var pr=new FileReader();
+      pr.onload=function(ev){
+        try{
+          var data=new Uint8Array(ev.target.result);
+          window.pdfjsLib.getDocument({data:data}).promise.then(function(pdf){
+            var pageTexts=[]; var chain=Promise.resolve();
+            for(var pg=1; pg<=pdf.numPages; pg++){
+              (function(n){ chain=chain.then(function(){ return pdf.getPage(n); }).then(function(page){ return page.getTextContent(); }).then(function(tc){ pageTexts[n-1]=_pdfItemsToLines(tc.items); }); })(pg);
+            }
+            return chain.then(function(){
+              var lines=[]; pageTexts.forEach(function(pl){ if(pl) lines=lines.concat(pl); });
+              var allText=lines.join(' ');
+              var cm=allText.match(/Currency\s+([A-Z]{3})\b/); var stmtCur=cm?cm[1]:'AED';
+              var txns=_eiPdfLinesToTxns(lines);
+              if(!txns.length) throw new Error('\u041d\u0435 \u043f\u043e\u0445\u043e\u0436\u0435 \u043d\u0430 \u0432\u044b\u043f\u0438\u0441\u043a\u0443 Emirates Islamic (0 \u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0439 \u0440\u0430\u0441\u043f\u043e\u0437\u043d\u0430\u043d\u043e)');
+              var res=_applyEIStatement(txns, cashboxId, comment, stmtCur);
+              record.parsingSec=Math.max(1,Math.round((Date.now()-pt0)/1000)); record.processSec=1;
+              record.status='DONE'; record.finished=fmt(new Date());
+              record.count=res.total; record.amount=res.sumAbs; record.applied=res.added;
+              record.skipped=res.dup+res.curSkip; record.failed=res.failed; record.appliedAmount=res.appliedAbs;
+              if(res.curSkip>0){ record.comment=(record.comment||'')+' \u2014 \u0432\u0430\u043b\u044e\u0442\u0430 \u043a\u0430\u0441\u0441\u044b \u2260 '+stmtCur+', \u043f\u0440\u043e\u043f\u0443\u0449\u0435\u043d\u043e '+res.curSkip; }
+              renderImportTable();
+              if(typeof saveFinanceToStorage==='function') saveFinanceToStorage();
+              if(typeof renderTxnTable==='function') renderTxnTable();
+              if(typeof renderCashboxes==='function') renderCashboxes();
+              var ff=document.getElementById('impFFile'); if(ff) ff.value='';
+              var fn=document.getElementById('impFFileName'); if(fn) fn.textContent='Click to Upload';
+              var fc=document.getElementById('impFComment'); if(fc) fc.value='';
+              showToast('Emirates Islamic: \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u043e '+res.added+', \u0434\u0443\u0431\u043b\u0435\u0439 '+res.dup+(res.curSkip?(' , \u0434\u0440. \u0432\u0430\u043b\u044e\u0442\u0430 '+res.curSkip):'')+', \u0441\u0443\u043c\u043c\u0430 '+res.appliedAbs.toFixed(2)+' '+stmtCur);
+              if(typeof crmNotify==='function' && res.added>0){ try{ crmNotify({type:'success',title:'\u0418\u043c\u043f\u043e\u0440\u0442 Emirates Islamic',msg:'\u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u043e '+res.added+' \u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0439 \u043d\u0430 '+res.appliedAbs.toFixed(2)+' '+stmtCur+'.'}); }catch(_){ } }
+            });
+          }).catch(function(err){ record.status='FAILED'; record.finished=fmt(new Date()); record.comment=(record.comment||'')+' \u2014 '+(err&&err.message||'pdf parse error'); renderImportTable(); showToast('\u041e\u0448\u0438\u0431\u043a\u0430 \u0440\u0430\u0437\u0431\u043e\u0440\u0430 PDF: '+(err&&err.message||err)); });
+        }catch(err){ record.status='FAILED'; record.finished=fmt(new Date()); record.comment=(record.comment||'')+' \u2014 '+(err&&err.message||'pdf error'); renderImportTable(); showToast('\u041e\u0448\u0438\u0431\u043a\u0430: '+(err&&err.message||err)); }
+      };
+      pr.onerror=function(){ record.status='FAILED'; record.finished=fmt(new Date()); renderImportTable(); showToast('File read error'); };
+      pr.readAsArrayBuffer(file);
+    });
+    return;
+  }
 
   // ── Real parser for Salik (reads .xls/.xlsx via SheetJS) ──
   if(fileType==='Salik'){
