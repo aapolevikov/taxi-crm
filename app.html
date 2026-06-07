@@ -3871,6 +3871,31 @@ body.no-icons .ti-external-link::before{content:"↗"}
   </div>
 </div>
 
+<!-- MODAL: Add / Edit employee transaction -->
+<div class="overlay" id="empTxnModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-handle"></div>
+    <h2 id="empTxnTitle"><i class="ti ti-cash"></i> Добавить транзакцию</h2>
+    <div class="fgrid">
+      <div class="fr"><label>Дата</label><input type="date" id="tx-date"></div>
+      <div class="fr"><label>Тип</label><select id="tx-type">
+        <option value="salary">Выплата зарплаты</option>
+        <option value="advance">Аванс</option>
+        <option value="bonus">Премия</option>
+        <option value="deduction">Штраф / вычет</option>
+        <option value="debt">Долг</option>
+        <option value="other">Прочее</option>
+      </select></div>
+      <div class="fr"><label>Сумма (AED)</label><input type="number" id="tx-amount" inputmode="numeric"></div>
+      <div class="fr full"><label>Комментарий</label><input type="text" id="tx-note"></div>
+    </div>
+    <div class="mfooter">
+      <button class="btn-cancel" onclick="closeModal('empTxnModal')">Отмена</button>
+      <button class="btn-save" onclick="saveEmpTxn()"><i class="ti ti-check"></i> Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Add driver transaction (payments / fines / debt / bonus / deposit) -->
 <div class="overlay" id="addTxnModal">
   <div class="modal" style="max-width:460px">
@@ -4133,7 +4158,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.5';
+window.APP_VERSION = '2026-06-07.6';
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
 try{ console.log('%c[Mr Ride CRM] версия '+window.APP_VERSION+' (build '+window.APP_BUILD+')','color:#0d9e75;font-weight:bold'); }catch(_){}
 
@@ -16549,7 +16574,7 @@ function openEmpDetails(id){
   '<div class="tab-content active" id="etab-dashboard">'+buildEmpDashboard(e)+'</div>'+
   '<div class="tab-content" id="etab-details">'+buildEmpDetailsTab(e)+'</div>'+
   '<div class="tab-content" id="etab-salary">'+_empPlaceholder('Зарплата (оклад/мес + надбавки/вычеты) — добавлю на этапе 2.')+'</div>'+
-  '<div class="tab-content" id="etab-transactions">'+_empPlaceholder('Транзакции (выплаты, авансы, премии, штрафы) — этап 2.')+'</div>'+
+  '<div class="tab-content" id="etab-transactions"><div id="empTxnWrap"></div></div>'+
   '<div class="tab-content" id="etab-workdiagram">'+_empPlaceholder('Work diagram — месячный календарь смен — этап 3.')+'</div>';
   if(lv) lv.style.display='none';
   dv.style.display='';
@@ -16563,6 +16588,7 @@ function empSwitchTab(name,btn){
   dv.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active');});
   var el=document.getElementById('etab-'+name); if(el) el.classList.add('active');
   if(btn) btn.classList.add('active');
+  if(name==='transactions'){ renderEmpTransactions(); }
 }
 window.empSwitchTab=empSwitchTab;
 
@@ -16630,5 +16656,90 @@ async function deleteEmp(id){
   if(typeof showToast==='function') showToast('Сотрудник удалён');
 }
 window.deleteEmp=deleteEmp;
+
+/* ───── Employee Transactions (Supabase) ───── */
+var EMP_TXN_TYPES={salary:'Выплата зарплаты',advance:'Аванс',bonus:'Премия',deduction:'Штраф / вычет',debt:'Долг',other:'Прочее'};
+window._empTxns=[]; window._editingTxnId=null;
+async function _empTxnLoad(empId){var sb=_empSB();if(!sb)return [];try{var res=await sb.from('employee_transactions').select('*').eq('employee_id',empId).order('date',{ascending:false}).order('created_at',{ascending:false});if(res.error){console.warn('txn load',res.error);return [];}return res.data||[];}catch(e){console.warn('txn load',e);return [];}}
+async function _empTxnInsert(pl){var sb=_empSB();if(!sb)throw new Error('No DB');var res=await sb.from('employee_transactions').insert(pl).select().single();if(res.error)throw res.error;return res.data;}
+async function _empTxnUpdate(id,patch){var sb=_empSB();if(!sb)throw new Error('No DB');var res=await sb.from('employee_transactions').update(patch).eq('id',id);if(res.error)throw res.error;return true;}
+async function _empTxnDelete(id){var sb=_empSB();if(!sb)throw new Error('No DB');var res=await sb.from('employee_transactions').delete().eq('id',id);if(res.error)throw res.error;return true;}
+function _empTxnById(id){return (window._empTxns||[]).find(function(t){return String(t.id)===String(id);});}
+
+async function renderEmpTransactions(){
+  var wrap=document.getElementById('empTxnWrap'); if(!wrap) return;
+  var e=window._empCurrent; if(!e){ wrap.innerHTML=''; return; }
+  if(!_empSB()){ wrap.innerHTML='<div class="empty"><i class="ti ti-cloud-off"></i> База недоступна</div>'; return; }
+  wrap.innerHTML='<div class="empty"><i class="ti ti-loader-2"></i> Loading…</div>';
+  window._empTxns=await _empTxnLoad(e.id);
+  var list=window._empTxns||[];
+  var paid=0,bonus=0,deduct=0;
+  list.forEach(function(t){var a=Number(t.amount)||0; if(t.type==='salary'||t.type==='advance'||t.type==='other')paid+=a; else if(t.type==='bonus')bonus+=a; else if(t.type==='deduction'||t.type==='debt')deduct+=a;});
+  var cards='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
+    '<div class="sc" style="min-width:150px"><div class="sc-hdr"><span>Выплачено</span></div><div style="font-size:22px;font-weight:700;margin-top:4px">AED '+paid+'</div></div>'+
+    '<div class="sc" style="min-width:150px"><div class="sc-hdr"><span>Премии</span></div><div style="font-size:22px;font-weight:700;margin-top:4px;color:#27ae60">AED '+bonus+'</div></div>'+
+    '<div class="sc" style="min-width:150px"><div class="sc-hdr"><span>Штрафы/вычеты</span></div><div style="font-size:22px;font-weight:700;margin-top:4px;color:#e74c3c">AED '+deduct+'</div></div>'+
+  '</div>';
+  var addBtn='<div style="margin-bottom:10px"><button class="btn-add" onclick="openAddEmpTxn()"><i class="ti ti-plus"></i> Добавить транзакцию</button></div>';
+  var rows = list.length ? list.map(function(t){
+    var col = t.type==='bonus'?'#27ae60':((t.type==='deduction'||t.type==='debt')?'#e74c3c':'var(--text)');
+    var sign = t.type==='bonus'?'+':((t.type==='deduction'||t.type==='debt')?'−':'');
+    return '<tr>'+
+      '<td style="white-space:nowrap">'+(_empDateDisp(t.date)||'—')+'</td>'+
+      '<td>'+escHtml(EMP_TXN_TYPES[t.type]||t.type||'—')+'</td>'+
+      '<td style="font-weight:600;color:'+col+'">'+sign+'AED '+(Number(t.amount)||0)+'</td>'+
+      '<td style="color:var(--text2)">'+escHtml(t.note||'')+'</td>'+
+      '<td><div style="display:flex;gap:6px">'+
+        '<button onclick="openEditEmpTxn(\''+t.id+'\')" title="Edit" style="background:none;border:1px solid var(--border2);border-radius:50%;width:26px;height:26px;cursor:pointer;color:var(--accent);font-size:12px"><i class="ti ti-pencil"></i></button>'+
+        '<button onclick="deleteEmpTxn(\''+t.id+'\')" title="Delete" style="background:none;border:1px solid var(--border2);border-radius:50%;width:26px;height:26px;cursor:pointer;color:#e74c3c;font-size:12px"><i class="ti ti-trash"></i></button>'+
+      '</div></td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="5"><div class="empty"><i class="ti ti-cash"></i> Нет транзакций</div></td></tr>';
+  wrap.innerHTML = cards + addBtn + '<div class="table-wrap"><table><thead><tr><th>Дата</th><th>Тип</th><th>Сумма</th><th>Комментарий</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+window.renderEmpTransactions=renderEmpTransactions;
+
+function openAddEmpTxn(){
+  if(!window._empCurrent) return;
+  window._editingTxnId=null;
+  var ti=document.getElementById('empTxnTitle'); if(ti) ti.innerHTML='<i class="ti ti-cash"></i> Добавить транзакцию';
+  document.getElementById('tx-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('tx-type').value='salary';
+  document.getElementById('tx-amount').value='';
+  document.getElementById('tx-note').value='';
+  document.getElementById('empTxnModal').classList.add('open');
+}
+window.openAddEmpTxn=openAddEmpTxn;
+function openEditEmpTxn(id){
+  var t=_empTxnById(id); if(!t) return;
+  window._editingTxnId=t.id;
+  var ti=document.getElementById('empTxnTitle'); if(ti) ti.innerHTML='<i class="ti ti-cash"></i> Изменить транзакцию';
+  document.getElementById('tx-date').value=(String(t.date||'').slice(0,10))||'';
+  document.getElementById('tx-type').value=t.type||'salary';
+  document.getElementById('tx-amount').value=(t.amount!=null?t.amount:'');
+  document.getElementById('tx-note').value=t.note||'';
+  document.getElementById('empTxnModal').classList.add('open');
+}
+window.openEditEmpTxn=openEditEmpTxn;
+async function saveEmpTxn(){
+  var e=window._empCurrent; if(!e) return;
+  var amount=Number(document.getElementById('tx-amount').value)||0;
+  if(!amount){ if(typeof showToast==='function') showToast('Введите сумму'); return; }
+  var pl={employee_id:e.id, date:document.getElementById('tx-date').value||null, type:document.getElementById('tx-type').value, amount:amount, note:document.getElementById('tx-note').value||null};
+  try{ if(window._editingTxnId!=null){ await _empTxnUpdate(window._editingTxnId,pl); } else { await _empTxnInsert(pl); } }
+  catch(err){ console.warn('saveEmpTxn',err); if(typeof showToast==='function') showToast('Ошибка: '+(err&&err.message||err)); return; }
+  var wasEdit=window._editingTxnId!=null; window._editingTxnId=null;
+  closeModal('empTxnModal');
+  renderEmpTransactions();
+  if(typeof showToast==='function') showToast(wasEdit?'Транзакция обновлена':'Транзакция добавлена');
+}
+window.saveEmpTxn=saveEmpTxn;
+async function deleteEmpTxn(id){
+  if(!confirm('Удалить транзакцию?')) return;
+  try{ await _empTxnDelete(id); }catch(err){ console.warn('deleteEmpTxn',err); if(typeof showToast==='function') showToast('Ошибка удаления'); return; }
+  renderEmpTransactions();
+  if(typeof showToast==='function') showToast('Удалено');
+}
+window.deleteEmpTxn=deleteEmpTxn;
 </script>
 </body></html>
