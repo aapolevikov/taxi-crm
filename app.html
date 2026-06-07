@@ -3400,7 +3400,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
             <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Upload XLSX files from aggregators (Salik, Fuel, ChargeGo etc.) — system will parse and create transactions automatically.</p>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;margin-bottom:16px;align-items:end">
               <div class="field-row" style="margin:0"><label data-i18n="uFileType">File type</label>
-                <select id="impFType"><option value="" data-i18n="uSelectType">Select type</option><option data-i18n="catSalik">Salik</option><option data-i18n="catFuel">Fuel</option><option data-i18n="catElectric">Electric charge</option><option data-i18n="catParking">Parking</option><option data-i18n="catFines">Fines</option><option data-i18n="catToll">Toll</option><option data-i18n="catOther">Other</option></select>
+                <select id="impFType"><option value="" data-i18n="uSelectType">Select type</option><option data-i18n="catSalik">Salik</option><option data-i18n="catFuel">Fuel</option><option data-i18n="catElectric">Electric charge</option><option data-i18n="catParking">Parking</option><option data-i18n="catFines">Fines</option><option data-i18n="catToll">Toll</option><option data-i18n="catOther">Other</option><option value="Bank statement">Bank statement (CSV)</option></select>
               </div>
               <div class="field-row" style="margin:0"><label data-i18n="uCashbox">Cash box</label>
                 <select id="impFCashbox"><option value="" data-i18n="uSelectCashbox">Select cash box</option></select>
@@ -4173,7 +4173,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.8';
+window.APP_VERSION = '2026-06-07.9';
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
 try{ console.log('%c[Mr Ride CRM] версия '+window.APP_VERSION+' (build '+window.APP_BUILD+')','color:#0d9e75;font-weight:bold'); }catch(_){}
 
@@ -11853,6 +11853,55 @@ function _salikForDriver(driver, from, to){
 }
 
 
+function _applyBankStatement(rows, cashboxId, baseComment){
+  var out={total:0,added:0,dup:0,failed:0,sumAbs:0,appliedAbs:0,curSkip:0};
+  if(!rows||!rows.length) return out;
+  var header=(rows[0]||[]).map(function(h){return String(h||'').trim().toLowerCase();});
+  function col(n){return header.indexOf(n);}
+  var iType=col('transaction type'), iDate=col('date'), iRef=col('ref. number'),
+      iDesc=col('description'), iAmt=col('amount'), iNotes=col('notes'),
+      iCur=col('account currency');
+  if(iDate<0||iAmt<0) throw new Error('Не найдены колонки Date/Amount (формат не похож на выписку)');
+  var cb=finCashboxes.find(function(c){return c.id===cashboxId;});
+  var cbCur=(cb&&cb.currency)?String(cb.currency).trim().toUpperCase():'';
+  var existing={};
+  finTxns.forEach(function(t){ if(t.bankRef&&String(t.cashboxId)===String(cashboxId)) existing[t.bankRef]=true; });
+  var seen={}, baseId=Date.now();
+  for(var r=1;r<rows.length;r++){
+    var row=rows[r]; if(!row||!row.length) continue;
+    var rawAmt=String(row[iAmt]!=null?row[iAmt]:'').replace(/,/g,'').trim();
+    if(rawAmt==='') continue;
+    out.total++;
+    var amt=parseFloat(rawAmt);
+    var date=String(row[iDate]||'').slice(0,10);
+    if(isNaN(amt)||!/^\d{4}-\d{2}-\d{2}$/.test(date)){ out.failed++; continue; }
+    var rcur=iCur>=0?String(row[iCur]||'').trim().toUpperCase():'';
+    if(cbCur&&rcur&&rcur!==cbCur){ out.curSkip++; continue; }
+    out.sumAbs+=Math.abs(amt);
+    var ref=iRef>=0?String(row[iRef]||'').trim():'';
+    var key=ref||(date+'|'+amt+'|'+(iDesc>=0?String(row[iDesc]||''):'')+'|r'+r);
+    if(existing[key]||seen[key]){ out.dup++; continue; }
+    seen[key]=true;
+    var desc=iDesc>=0?String(row[iDesc]||'').trim():'';
+    var notes=iNotes>=0?String(row[iNotes]||'').trim():'';
+    var btype=iType>=0?String(row[iType]||'').trim():'';
+    var comment=desc;
+    if(notes&&notes!=='N/A') comment+=(comment?' — ':'')+notes;
+    if(baseComment) comment=(comment?comment+' ':'')+'('+baseComment+')';
+    var isIncome=amt>0;
+    finTxns.unshift({
+      id: baseId++, type: isIncome?'Income':'Expense', purpose:'Other',
+      amount: Math.abs(amt), cashboxId: cashboxId, date: date, created: date+' 00:00',
+      driver:'', car:'', counterparty:'', comment: comment, user:'import',
+      cancelled:false, platform:false, txnTypeKey:'', label: btype||(isIncome?'Приход':'Расход'),
+      bankRef: key,
+    });
+    if(cb) cb.balance += isIncome?Math.abs(amt):-Math.abs(amt);
+    out.added++; out.appliedAbs+=Math.abs(amt);
+  }
+  return out;
+}
+
 function runImport(){
   const v=id=>document.getElementById(id)?.value||'';
   const fileType=v('impFType');
@@ -11944,28 +11993,52 @@ function runImport(){
     return;
   }
 
-  // Simulate parsing for other types (TODO: real parsers per type)
-  setTimeout(()=>{
-    const parsingSec=Math.floor(Math.random()*20)+5;
-    const count=Math.floor(Math.random()*2000)+100;
-    const amount=count*(5+Math.random()*8);
-    record.parsingSec=parsingSec;
-    record.processSec=Math.floor(Math.random()*5)+1;
-    record.status='DONE';
-    record.finished=fmt(new Date());
-    record.count=count;
-    record.amount=amount;
-    record.applied=Math.floor(count*0.95);
-    record.skipped=Math.floor(count*0.04);
-    record.failed=count-record.applied-record.skipped;
-    record.appliedAmount=amount*0.95;
-    renderImportTable();
-    // Reset form
-    document.getElementById('impFFile').value='';
-    document.getElementById('impFFileName').textContent='Click to Upload';
-    document.getElementById('impFComment').value='';
-    showToast(`Imported ${record.applied} of ${record.count} transactions`);
-  },1500);
+  // ── Real parser: Bank statement (CSV, e.g. Wio Bank) ──
+  if(fileType==='Bank statement'){
+    if(typeof XLSX==='undefined'){
+      record.status='FAILED'; record.finished=fmt(new Date());
+      record.comment=(record.comment||'')+' — XLSX library not loaded';
+      renderImportTable(); showToast('XLSX library not loaded, refresh page'); return;
+    }
+    var bt0=Date.now();
+    var breader=new FileReader();
+    breader.onload=function(ev){
+      try{
+        var bdata=new Uint8Array(ev.target.result);
+        var bwb=XLSX.read(bdata,{type:'array'});
+        var bws=bwb.Sheets[bwb.SheetNames[0]];
+        var brows=XLSX.utils.sheet_to_json(bws,{header:1,raw:false,defval:''});
+        var bres=_applyBankStatement(brows, cashboxId, comment);
+        record.parsingSec=Math.max(1,Math.round((Date.now()-bt0)/1000));
+        record.processSec=1; record.status='DONE'; record.finished=fmt(new Date());
+        record.count=bres.total; record.amount=bres.sumAbs; record.applied=bres.added;
+        record.skipped=bres.dup+bres.curSkip; record.failed=bres.failed; record.appliedAmount=bres.appliedAbs;
+        if(bres.curSkip>0){ record.comment=(record.comment||'')+' — пропущено '+bres.curSkip+' операций в другой валюте'; }
+        renderImportTable();
+        if(typeof saveFinanceToStorage==='function') saveFinanceToStorage();
+        renderTxnTable(); renderCashboxes();
+        document.getElementById('impFFile').value='';
+        document.getElementById('impFFileName').textContent='Click to Upload';
+        document.getElementById('impFComment').value='';
+        showToast('Выписка: добавлено '+bres.added+', дублей '+bres.dup+(bres.curSkip?(' , другая валюта '+bres.curSkip):'')+', сумма '+bres.appliedAbs.toFixed(2)+' '+(cb?cb.currency:'AED'));
+      }catch(err){
+        record.status='FAILED'; record.finished=fmt(new Date());
+        record.comment=(record.comment||'')+' — '+(err&&err.message||'parse error');
+        renderImportTable(); showToast('Ошибка разбора выписки: '+(err&&err.message||err));
+      }
+    };
+    breader.onerror=function(){ record.status='FAILED'; record.finished=fmt(new Date()); renderImportTable(); showToast('File read error'); };
+    breader.readAsArrayBuffer(file);
+    return;
+  }
+
+  // Other types: real parser not implemented yet — honest result, no fake numbers
+  record.status='FAILED';
+  record.finished=fmt(new Date());
+  record.count=0; record.amount=0; record.applied=0; record.skipped=0; record.failed=0; record.appliedAmount=0;
+  record.comment=(record.comment||'')+' — парсер для типа "'+fileType+'" ещё не реализован';
+  renderImportTable();
+  showToast('Импорт для типа "'+fileType+'" пока не поддерживается. Для банковской выписки выберите тип "Bank statement".');
 }
 
 function exportTxnXLSX(){
