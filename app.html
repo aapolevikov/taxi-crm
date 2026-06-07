@@ -3192,7 +3192,8 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
           <!-- TRANSACTIONS TAB -->
           <div class="fin-tab active" id="fin-tab-transactions">
-            <!-- Spends summary -->
+            <!-- Summary cards: Spends + Income + Cashbox balances -->
+            <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
             <div class="fin-spends-card">
               <div class="fin-spends-title"><i class="ti ti-chart-bar"></i> <span data-i18n="finSpends"> <span data-i18n="finSpends">Spends</span></span></div>
               <div class="fin-spends-rows">
@@ -3202,6 +3203,20 @@ body.no-icons .ti-external-link::before{content:"↗"}
                 <div class="fin-spend-row" data-cat="Parking"><span>Parking</span>: <b id="fin-spend-parking">0 AED</b></div>
                 <div class="fin-spend-row" data-cat="Fines"><span>Fines</span>: <b id="fin-spend-fines">0 AED</b></div>
               </div>
+            </div>
+            <div class="fin-spends-card">
+              <div class="fin-spends-title"><i class="ti ti-trending-up"></i> Приход</div>
+              <div class="fin-spends-rows">
+                <div class="fin-spend-row"><span>Всего</span>: <b id="fin-income-total" style="color:var(--accent)">0 AED</b></div>
+                <div class="fin-spend-row"><span>Чистый (приход − расход)</span>: <b id="fin-net-total">0 AED</b></div>
+              </div>
+            </div>
+            <div class="fin-spends-card">
+              <div class="fin-spends-title"><i class="ti ti-wallet"></i> Остаток по кассам</div>
+              <div class="fin-spends-rows" id="fin-cashbox-balances">
+                <div class="fin-spend-row"><span>Итого</span>: <b id="fin-cashbox-total">0 AED</b></div>
+              </div>
+            </div>
             </div>
 
             <!-- Action buttons -->
@@ -4158,7 +4173,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.7';
+window.APP_VERSION = '2026-06-07.8';
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
 try{ console.log('%c[Mr Ride CRM] версия '+window.APP_VERSION+' (build '+window.APP_BUILD+')','color:#0d9e75;font-weight:bold'); }catch(_){}
 
@@ -11443,6 +11458,19 @@ function renderTxnTable(){
   setText('fin-spend-salik',sum('Salik'));
   setText('fin-spend-parking',sum('Parking'));
   setText('fin-spend-fines',sum('Fines'));
+  // Приход (по тем же фильтрам) + чистый
+  const incomeTotal=data.filter(tx=>tx.type==='Income').reduce((s,tx)=>s+(+tx.amount||0),0);
+  const expenseTotal=sum();
+  setText('fin-income-total',incomeTotal);
+  const netEl=document.getElementById('fin-net-total');
+  if(netEl){ var net=incomeTotal-expenseTotal; netEl.textContent=(net>=0?'+':'')+net.toFixed(2)+' AED'; netEl.style.color=(net>=0?'var(--accent)':'#e74c3c'); }
+  // Остаток по кассам (по всем кассам, не зависит от фильтров транзакций)
+  var cbWrap=document.getElementById('fin-cashbox-balances');
+  if(cbWrap){
+    var cbTotal=finCashboxes.reduce(function(s,c){return s+(+c.balance||0);},0);
+    cbWrap.innerHTML='<div class="fin-spend-row"><span>Итого</span>: <b style="color:'+(cbTotal>=0?'var(--accent)':'#e74c3c')+'">'+cbTotal.toFixed(2)+' AED</b></div>'+
+      finCashboxes.map(function(c){return '<div class="fin-spend-row"><span>'+escHtml(c.name)+'</span>: <b style="color:'+((+c.balance>=0)?'var(--accent)':'#e74c3c')+'">'+(+c.balance||0).toFixed(2)+' AED</b></div>';}).join('');
+  }
 
   // Pagination
   const perPage=+(document.getElementById('txnPerPage')?.value||20);
