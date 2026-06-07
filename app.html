@@ -3400,7 +3400,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
             <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Загрузите файл: XLSX/CSV от агрегаторов (Salik, Fuel, ChargeGo), банковскую выписку Wio (CSV/XLSX) или выписку Emirates Islamic (PDF) — система сама распознает и создаст транзакции.</p>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;margin-bottom:16px;align-items:end">
               <div class="field-row" style="margin:0"><label data-i18n="uFileType">File type</label>
-                <select id="impFType"><option value="" data-i18n="uSelectType">Select type</option><option data-i18n="catSalik">Salik</option><option data-i18n="catFuel">Fuel</option><option data-i18n="catElectric">Electric charge</option><option data-i18n="catParking">Parking</option><option data-i18n="catFines">Fines</option><option data-i18n="catToll">Toll</option><option data-i18n="catOther">Other</option><option value="Bank statement">Bank statement (CSV)</option><option value="Bank statement PDF">Bank statement (PDF · Emirates Islamic)</option></select>
+                <select id="impFType"><option value="" data-i18n="uSelectType">Select type</option><option data-i18n="catSalik">Salik</option><option data-i18n="catFuel">Fuel</option><option data-i18n="catElectric">Electric charge</option><option data-i18n="catParking">Parking</option><option data-i18n="catFines">Fines</option><option data-i18n="catToll">Toll</option><option data-i18n="catOther">Other</option><option value="Bank statement">Bank statement (CSV)</option><option value="Bank statement PDF">Bank statement (PDF · Emirates Islamic)</option><option value="Paymob">Paymob (эквайринг)</option></select>
               </div>
               <div class="field-row" style="margin:0"><label data-i18n="uCashbox">Cash box</label>
                 <select id="impFCashbox"><option value="" data-i18n="uSelectCashbox">Select cash box</option></select>
@@ -4173,7 +4173,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.18';
+window.APP_VERSION = '2026-06-07.19';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -12131,6 +12131,88 @@ function _applyEIStatement(txns, cashboxId, baseComment, stmtCur, importId){
   return out;
 }
 
+// ===== Paymob acquiring report (XLSX) import =====
+function _parsePaymobWorkbook(wb){
+  var ws=wb.Sheets[wb.SheetNames[0]];
+  var rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+  var hi=-1;
+  for(var i=0;i<Math.min(rows.length,25);i++){
+    if(rows[i] && rows[i].some(function(c){return String(c).trim()==='Transaction ID';})){ hi=i; break; }
+  }
+  if(hi<0) throw new Error('\u041d\u0435 \u043f\u043e\u0445\u043e\u0436\u0435 \u043d\u0430 \u043e\u0442\u0447\u0451\u0442 Paymob (\u043d\u0435\u0442 \u043a\u043e\u043b\u043e\u043d\u043a\u0438 Transaction ID)');
+  var hdr=rows[hi].map(function(c){return String(c).trim();});
+  var col=function(name){ return hdr.indexOf(name); };
+  var ci={ tid:col('Transaction ID'), amt:col('Amount'), chan:col('Payment Channel'), pm:col('Payment Method'),
+           status:col('Status'), created:col('Created At'), paid:col('Paid At'), fees:col('Fees'), vat:col('VAT'),
+           transfer:col('Transfer ID'), batch:col('Batch ID'), term:col('Terminal ID'), last4:col('Card Last 4 Digits') };
+  var isod=function(x){ var m=String(x||'').match(/^(\d{4}-\d{2}-\d{2})/); return m?m[1]:''; };
+  var pick=function(row,i){ return (i>=0 && i<row.length)?row[i]:''; };
+  var out=[];
+  for(var r=hi+1;r<rows.length;r++){
+    var row=rows[r]; if(!row) continue;
+    var tid=pick(row,ci.tid); if(tid===''||tid==null) continue;
+    var dt=isod(pick(row,ci.paid))||isod(pick(row,ci.created));
+    out.push({
+      trnxId:String(tid).trim(),
+      amount:pick(row,ci.amt),
+      channel:String(pick(row,ci.chan)).trim(),
+      method:String(pick(row,ci.pm)).trim(),
+      status:String(pick(row,ci.status)).trim(),
+      date:dt,
+      created:(String(pick(row,ci.created)).slice(0,19))||(dt+' 00:00'),
+      fees:pick(row,ci.fees),
+      vat:pick(row,ci.vat),
+      transferId:String(pick(row,ci.transfer)).trim(),
+      batchId:String(pick(row,ci.batch)).trim(),
+      terminalId:String(pick(row,ci.term)).trim(),
+      last4:String(pick(row,ci.last4)).trim()
+    });
+  }
+  return out;
+}
+function _applyPaymobReport(txns, cashboxId, baseComment, importId){
+  var out={total:0,added:0,dup:0,failed:0,skippedStatus:0,noDriver:0,sumAbs:0,appliedAbs:0};
+  if(!txns||!txns.length) return out;
+  var cb=finCashboxes.find(function(c){return c.id===cashboxId;});
+  var carList=(typeof cars!=='undefined'&&cars)?cars:(window.cars||[]);
+  var existing={}; finTxns.forEach(function(t){ if(t.bankRef&&String(t.bankRef).indexOf('PM:')===0) existing[t.bankRef]=true; });
+  var seen={}, baseId=Date.now();
+  for(var i=0;i<txns.length;i++){
+    var tr=txns[i]; out.total++;
+    if(tr.status && tr.status.toLowerCase()!=='success'){ out.skippedStatus++; continue; }
+    var amt=parseFloat(String(tr.amount).replace(/,/g,''))||0;
+    if(!amt){ out.failed++; continue; }
+    var key='PM:'+String(tr.trnxId);
+    if(existing[key]||seen[key]){ out.dup++; continue; }
+    seen[key]=true;
+    var driver='', carId='';
+    if(tr.terminalId){
+      var car=carList.find(function(c){ return c.terminal && String(c.terminal).trim()===String(tr.terminalId).trim(); });
+      if(car){ driver=car.driver||''; carId=car.id||''; }
+    }
+    if(!driver) out.noDriver++;
+    var fee=parseFloat(String(tr.fees).replace(/,/g,''))||0;
+    var vat=parseFloat(String(tr.vat).replace(/,/g,''))||0;
+    var parts=['Paymob POS','term '+(tr.terminalId||'?'),'trnx '+tr.trnxId];
+    if(fee||vat) parts.push('fee '+(fee+vat).toFixed(2));
+    if(tr.transferId && tr.transferId!=='---') parts.push('transfer '+tr.transferId);
+    if(tr.last4 && tr.last4!=='---') parts.push(tr.last4);
+    var comment=parts.join(' \u00b7 ');
+    if(baseComment) comment+=' ('+baseComment+')';
+    finTxns.unshift({
+      id: baseId++, type:'Income', purpose:'Other', amount:amt, cashboxId:cashboxId,
+      date: tr.date, created: tr.created||(tr.date+' 00:00'),
+      driver: driver, car: carId, counterparty:'', comment: comment, user:'import',
+      cancelled:false, platform:false, txnTypeKey:'', label:'\u041f\u0440\u0438\u0445\u043e\u0434',
+      bankRef: key, importId: importId,
+      pmFee: fee+vat, pmTerminal: tr.terminalId||'', pmTransfer: (tr.transferId&&tr.transferId!=='---')?tr.transferId:''
+    });
+    if(cb) cb.balance += amt;
+    out.added++; out.appliedAbs+=amt;
+  }
+  return out;
+}
+
 function runImport(){
   const v=id=>document.getElementById(id)?.value||'';
   const fileType=v('impFType');
@@ -12221,6 +12303,42 @@ function runImport(){
   }
 
   // ── Real parser for Salik (reads .xls/.xlsx via SheetJS) ──
+  // \u2500\u2500 Paymob acquiring report (XLSX) \u2500\u2500
+  if(fileType==='Paymob'){
+    if(typeof XLSX==='undefined'){ record.status='FAILED'; record.finished=fmt(new Date()); record.comment=(record.comment||'')+' \u2014 XLSX library not loaded'; renderImportTable(); showToast('XLSX library not loaded, refresh page'); return; }
+    var pmt0=Date.now();
+    var pmreader=new FileReader();
+    pmreader.onload=function(ev){
+      try{
+        var pmdata=new Uint8Array(ev.target.result);
+        var pmwb=XLSX.read(pmdata,{type:'array'});
+        var pmtxns=_parsePaymobWorkbook(pmwb);
+        if(!pmtxns.length) throw new Error('0 \u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0439 \u0432 \u043e\u0442\u0447\u0451\u0442\u0435');
+        var pmres=_applyPaymobReport(pmtxns, cashboxId, comment, record.id);
+        record.parsingSec=Math.max(1,Math.round((Date.now()-pmt0)/1000)); record.processSec=1;
+        record.status='DONE'; record.finished=fmt(new Date());
+        record.count=pmres.total; record.amount=pmres.sumAbs; record.applied=pmres.added;
+        record.skipped=pmres.dup+pmres.skippedStatus; record.failed=pmres.failed; record.appliedAmount=pmres.appliedAbs;
+        var notes=[];
+        if(pmres.skippedStatus) notes.push('\u043d\u0435 Success: '+pmres.skippedStatus);
+        if(pmres.noDriver) notes.push('\u0431\u0435\u0437 \u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044f: '+pmres.noDriver);
+        if(notes.length) record.comment=(record.comment||'')+' \u2014 '+notes.join(', ');
+        renderImportTable();
+        if(typeof saveFinanceToStorage==='function') saveFinanceToStorage();
+        if(typeof renderTxnTable==='function') renderTxnTable();
+        if(typeof renderCashboxes==='function') renderCashboxes();
+        var ff=document.getElementById('impFFile'); if(ff) ff.value='';
+        var fn=document.getElementById('impFFileName'); if(fn) fn.textContent='Click to Upload';
+        var fc=document.getElementById('impFComment'); if(fc) fc.value='';
+        showToast('Paymob: \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u043e '+pmres.added+', \u0434\u0443\u0431\u043b\u0435\u0439 '+pmres.dup+(pmres.skippedStatus?(' , \u043d\u0435 Success '+pmres.skippedStatus):'')+(pmres.noDriver?(' , \u0431\u0435\u0437 \u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044f '+pmres.noDriver):'')+', \u0441\u0443\u043c\u043c\u0430 '+pmres.appliedAbs.toFixed(2)+' AED');
+        if(typeof crmNotify==='function' && pmres.added>0){ try{ crmNotify({type:'success',title:'\u0418\u043c\u043f\u043e\u0440\u0442 Paymob',msg:'\u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u043e '+pmres.added+' \u043f\u043b\u0430\u0442\u0435\u0436\u0435\u0439 \u043d\u0430 '+pmres.appliedAbs.toFixed(2)+' AED \u0432 \u043a\u0430\u0441\u0441\u0443 Paymob.'}); }catch(_){ } }
+      }catch(err){ record.status='FAILED'; record.finished=fmt(new Date()); record.comment=(record.comment||'')+' \u2014 '+(err&&err.message||'parse error'); renderImportTable(); showToast('\u041e\u0448\u0438\u0431\u043a\u0430 \u0440\u0430\u0437\u0431\u043e\u0440\u0430 Paymob: '+(err&&err.message||err)); }
+    };
+    pmreader.onerror=function(){ record.status='FAILED'; record.finished=fmt(new Date()); renderImportTable(); showToast('File read error'); };
+    pmreader.readAsArrayBuffer(file);
+    return;
+  }
+
   if(fileType==='Salik'){
     if(typeof XLSX==='undefined'){
       record.status='FAILED'; record.finished=fmt(new Date());
