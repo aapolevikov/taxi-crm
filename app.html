@@ -3251,7 +3251,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
             <!-- Transactions table -->
             <div class="table-wrap" id="txnTableWrap">
               <table class="data-table">
-                <thead><tr><th>№</th><th><span data-i18n="finType">Type</span></th><th data-i18n="uPurpose">Purpose</th><th>Amount, AED</th><th data-i18n="uCashbox">Cashbox</th><th data-i18n="uDate">Date</th><th data-i18n="uCreatedTime">Created Time</th><th data-i18n="uComment">Comment</th><th data-i18n="uUser">User</th><th data-i18n="uVehicle">Vehicle</th><th data-i18n="uCarBrand">Car Brand</th><th data-i18n="uCarModel">Car Model</th><th></th></tr></thead>
+                <thead><tr><th>№</th><th style="cursor:pointer" onclick="txnSort('type')"><span data-i18n="finType">Type</span><span class="txn-sort-arrow" data-f="type"></span></th><th style="cursor:pointer" onclick="txnSort('purpose')"><span data-i18n="uPurpose">Purpose</span><span class="txn-sort-arrow" data-f="purpose"></span></th><th style="cursor:pointer" onclick="txnSort('amount')">Amount, AED<span class="txn-sort-arrow" data-f="amount"></span></th><th style="cursor:pointer" onclick="txnSort('cashbox')"><span data-i18n="uCashbox">Cashbox</span><span class="txn-sort-arrow" data-f="cashbox"></span></th><th style="cursor:pointer" onclick="txnSort('date')"><span data-i18n="uDate">Date</span><span class="txn-sort-arrow" data-f="date"></span></th><th style="cursor:pointer" onclick="txnSort('created')"><span data-i18n="uCreatedTime">Created Time</span><span class="txn-sort-arrow" data-f="created"></span></th><th style="cursor:pointer" onclick="txnSort('comment')"><span data-i18n="uComment">Comment</span><span class="txn-sort-arrow" data-f="comment"></span></th><th style="cursor:pointer" onclick="txnSort('user')"><span data-i18n="uUser">User</span><span class="txn-sort-arrow" data-f="user"></span></th><th data-i18n="uVehicle">Vehicle</th><th data-i18n="uCarBrand">Car Brand</th><th data-i18n="uCarModel">Car Model</th><th></th></tr></thead>
                 <tbody id="txnBody"></tbody>
               </table>
               <div class="pagination">
@@ -4173,7 +4173,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.12';
+window.APP_VERSION = '2026-06-07.13';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -11350,6 +11350,8 @@ let finPosTerminals=[];
 // Filter state
 let finTxnPage=1;
 let finTxnDateFrom=null,finTxnDateTo=null;
+let finTxnSortField='date', finTxnSortDir='desc';
+let _editingFinTxnId=null;
 let finSalDateFrom=null,finSalDateTo=null;
 let finRevDateFrom=null,finRevDateTo=null;
 let finTxnShowPlatform=false,finTxnShowCancelled=false;
@@ -11444,12 +11446,11 @@ function renderTxnTable(){
     return true;
   });
 
-  // Newest first: by date desc, then created time desc
-  data.sort((a,b)=>{
-    var da=String(a.date||''), db=String(b.date||'');
-    if(da!==db) return da<db?1:-1;
-    var ca=String(a.created||''), cb=String(b.created||'');
-    return ca<cb?1:(ca>cb?-1:0);
+  // Sort by chosen column / direction
+  data.sort((a,b)=>{ var r=_txnCmp(a,b,finTxnSortField); return finTxnSortDir==='desc'?-r:r; });
+  // Update header sort arrows
+  document.querySelectorAll('.txn-sort-arrow').forEach(function(el){
+    el.textContent = (el.getAttribute('data-f')===finTxnSortField) ? (finTxnSortDir==='asc'?' ▲':' ▼') : '';
   });
 
   // Update spends summary
@@ -11500,13 +11501,56 @@ function renderTxnTable(){
       <td>${escHtml(tx.car||'—')}</td>
       <td style="font-size:12px;color:var(--text2)">${escHtml(carData?.brand||'—')}</td>
       <td style="font-size:12px;color:var(--text2)">${escHtml(carData?.model||'—')}</td>
-      <td><button class="ro-action-btn" onclick="deleteTxn(${tx.id})" title="Delete"><i class="ti ti-trash" style="font-size:14px;color:#e74c3c"></i></button></td>
+      <td><div style="display:flex;gap:6px;justify-content:flex-end"><button class="ro-action-btn" onclick="openEditTxn(${tx.id})" title="Edit"><i class="ti ti-pencil" style="font-size:14px;color:var(--accent)"></i></button><button class="ro-action-btn" onclick="deleteTxn(${tx.id})" title="Delete"><i class="ti ti-trash" style="font-size:14px;color:#e74c3c"></i></button></div></td>
     </tr>`;
   }).join(''):`<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--text3)">No transactions yet</td></tr>`;
 }
 
 function txnPrev(){if(finTxnPage>1){finTxnPage--;renderTxnTable();}}
 function txnNext(){finTxnPage++;renderTxnTable();}
+
+function _txnCmp(a,b,f){
+  function s(x){return String(x==null?'':x);}
+  switch(f){
+    case 'amount': return (+a.amount||0)-(+b.amount||0);
+    case 'cashbox': { var an=(finCashboxes.find(c=>c.id===a.cashboxId)||{}).name||''; var bn=(finCashboxes.find(c=>c.id===b.cashboxId)||{}).name||''; return an<bn?-1:an>bn?1:0; }
+    case 'date': { var ad=s(a.date), bd=s(b.date); if(ad!==bd) return ad<bd?-1:1; var ac=s(a.created),bc=s(b.created); return ac<bc?-1:ac>bc?1:0; }
+    case 'created': { var x=s(a.created),y=s(b.created); return x<y?-1:x>y?1:0; }
+    case 'type': { var x=s(a.type),y=s(b.type); return x<y?-1:x>y?1:0; }
+    case 'purpose': { var x=s(a.purpose),y=s(b.purpose); return x<y?-1:x>y?1:0; }
+    case 'comment': { var x=s(a.comment).toLowerCase(),y=s(b.comment).toLowerCase(); return x<y?-1:x>y?1:0; }
+    case 'user': { var x=s(a.user),y=s(b.user); return x<y?-1:x>y?1:0; }
+    default: return 0;
+  }
+}
+function txnSort(field){
+  if(finTxnSortField===field){ finTxnSortDir = (finTxnSortDir==='asc'?'desc':'asc'); }
+  else { finTxnSortField=field; finTxnSortDir = (field==='date'||field==='created'||field==='amount')?'desc':'asc'; }
+  finTxnPage=1;
+  renderTxnTable();
+}
+window.txnSort=txnSort;
+
+function openEditTxn(id){
+  const tx=finTxns.find(t=>t.id===id); if(!tx) return;
+  openTxnForm('', false);            // build + open modal, fill selects (resets edit flag)
+  _editingFinTxnId=id;
+  const setv=(el,val)=>{const e=document.getElementById(el); if(e) e.value=val;};
+  const title=document.getElementById('txnModalTitle'); if(title) title.textContent='Edit transaction';
+  setv('txnFType', tx.type||'Expense');
+  const pSel=document.getElementById('txnFPurpose');
+  if(pSel){ if(tx.purpose && !Array.prototype.some.call(pSel.options,function(o){return o.value===tx.purpose||o.textContent===tx.purpose;})){ const o=document.createElement('option'); o.textContent=tx.purpose; pSel.appendChild(o); } pSel.value=tx.purpose||'Other'; }
+  setv('txnFAmount', tx.amount);
+  setv('txnFCashbox', tx.cashboxId);
+  setv('txnFDate', String(tx.date||'').slice(0,10));
+  const drow=document.getElementById('txnFDriverRow'); if(drow) drow.style.display='';
+  setv('txnFDriver', tx.driver||'');
+  setv('txnFCar', tx.car||'');
+  setv('txnFParty', tx.counterparty||'');
+  setv('txnFComment', tx.comment||'');
+  const c2=document.getElementById('txnFCashbox2Row'); if(c2) c2.style.display='none';
+}
+window.openEditTxn=openEditTxn;
 
 // Transaction types per category
 // Helper to translate transaction label using stored typeKey
@@ -11576,6 +11620,7 @@ function openTxnModal(kind){
 
 function openTxnForm(typeKey,isDriver){
   closeModal('txnPickerModal');
+  _editingFinTxnId=null;
   // Find preset
   const presets=isDriver?TXN_TYPES_DRIVER:TXN_TYPES_DRIVERLESS;
   const preset=presets.find(t=>t.key===typeKey)||{label:'Transaction',type:'Expense',purpose:'Other',fromDriver:isDriver};
@@ -11643,6 +11688,27 @@ function saveTxn(){
   const created=now.toISOString().slice(0,10)+' '+now.toTimeString().slice(0,5);
   const cb1Id=+v('txnFCashbox');
   const cb2Id=+v('txnFCashbox2');
+  // Edit existing transaction
+  if(_editingFinTxnId!=null){
+    const etx=finTxns.find(t=>t.id===_editingFinTxnId);
+    if(etx){
+      const cbOld=finCashboxes.find(c=>c.id===etx.cashboxId);
+      const oldAmt=+etx.amount||0;
+      if(cbOld){ if(etx.type==='Income') cbOld.balance-=oldAmt; else cbOld.balance+=oldAmt; }
+      etx.type=txType; etx.purpose=v('txnFPurpose'); etx.amount=amount; etx.cashboxId=cb1Id;
+      etx.date=v('txnFDate'); etx.driver=v('txnFDriver'); etx.car=v('txnFCar');
+      etx.counterparty=v('txnFParty'); etx.comment=v('txnFComment');
+      const cbNew=finCashboxes.find(c=>c.id===cb1Id);
+      if(cbNew){ if(txType==='Income') cbNew.balance+=amount; else cbNew.balance-=amount; }
+    }
+    _editingFinTxnId=null;
+    closeModal('txnModal');
+    saveFinanceToStorage();
+    renderTxnTable();
+    renderCashboxes();
+    showToast('Transaction updated');
+    return;
+  }
   // Handle Transfer of funds: 2 transactions (expense from cb1, income to cb2)
   if(txType==='Transfer'||typeKey==='transfer_funds'){
     if(!cb2Id||cb2Id===cb1Id){showToast('Select different destination cash box');return;}
