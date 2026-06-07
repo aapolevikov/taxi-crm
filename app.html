@@ -3832,7 +3832,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 <div class="overlay" id="addOrderModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h2><i class="ti ti-briefcase"></i> Add new order</h2>
+    <h2 id="ordModalTitle"><i class="ti ti-briefcase"></i> Add new order</h2>
     <div class="fgrid">
       <div class="fr"><label>Driver *</label>
         <select id="foDriver">
@@ -4068,7 +4068,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.1';
+window.APP_VERSION = '2026-06-07.2';
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
 try{ console.log('%c[Mr Ride CRM] версия '+window.APP_VERSION+' (build '+window.APP_BUILD+')','color:#0d9e75;font-weight:bold'); }catch(_){}
 
@@ -9802,7 +9802,10 @@ function renderOrdersRows(){
 
   document.getElementById('ordersBody').innerHTML=slice.length?slice.map((o,i)=>`<tr>
     <td>${start+i+1}</td>
-    <td><button style="background:none;border:1px solid var(--border2);border-radius:50%;width:28px;height:28px;cursor:pointer;color:var(--accent);font-size:14px;display:flex;align-items:center;justify-content:center" title="Details"><i class="ti ti-chevron-right"></i></button></td>
+    <td><div style="display:flex;gap:6px">
+      <button onclick="openEditOrderModal(${o.id})" title="Edit" style="background:none;border:1px solid var(--border2);border-radius:50%;width:28px;height:28px;cursor:pointer;color:var(--accent);font-size:13px;display:flex;align-items:center;justify-content:center"><i class="ti ti-pencil"></i></button>
+      <button onclick="deleteOrder(${o.id})" title="Delete" style="background:none;border:1px solid var(--border2);border-radius:50%;width:28px;height:28px;cursor:pointer;color:#e74c3c;font-size:13px;display:flex;align-items:center;justify-content:center"><i class="ti ti-trash"></i></button>
+    </div></td>
     <td><span class="badge ${statusCls[o.status]||'b-none'}">${tOrderStatus(o.status)}</span></td>
     <td style="font-weight:500">${escHtml(o.driver)}</td>
     <td style="color:var(--accent);font-weight:600">${o.car}</td>
@@ -9831,6 +9834,10 @@ function renderOrdersRows(){
       </div>
       <div style="font-size:12px;color:var(--text2);margin-top:4px">${o.clientAddress||''} → ${o.destination||''}</div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px">${o.orderTime}</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="openEditOrderModal(${o.id})" style="flex:1;padding:6px;border:1px solid var(--border2);border-radius:var(--r);background:none;color:var(--accent);cursor:pointer;font-size:12px"><i class="ti ti-pencil"></i> Edit</button>
+        <button onclick="deleteOrder(${o.id})" style="flex:1;padding:6px;border:1px solid var(--border2);border-radius:var(--r);background:none;color:#e74c3c;cursor:pointer;font-size:12px"><i class="ti ti-trash"></i> Delete</button>
+      </div>
     </div>`).join(''):`<div class="empty"><i class="ti ti-briefcase"></i><span data-i18n="noOrdersFound">No orders found</span></div>`;
 
   renderOrdPagination();
@@ -9850,8 +9857,8 @@ function prevOrdPage(){if(ordPage>1){ordPage--;renderOrdersRows();}}
 function nextOrdPage(){if(ordPage<Math.ceil(ordFiltered.length/ordPerPage)){ordPage++;renderOrdersRows();}}
 function setOrdPerPage(v){ordPerPage=v;ordPage=1;renderOrdersRows();}
 
-function openAddOrderModal(){
-  // Populate driver + car selects from live data (so list is complete & matchable).
+// Fill the driver + car selects from live data (shared by Add and Edit).
+function _populateOrderSelects(){
   try{
     var dsel=document.getElementById('foDriver');
     var csel=document.getElementById('foCar');
@@ -9866,9 +9873,73 @@ function openAddOrderModal(){
       dsel.onchange=function(){var opt=dsel.options[dsel.selectedIndex];var car=opt?opt.getAttribute('data-car'):'';if(car&&csel)csel.value=car;};
     }
   }catch(_){}
+}
+function _ordTimeToInput(str){
+  var m=String(str||'').match(/^(\d{2})\.(\d{2})\.(\d{4})(?:[ T](\d{2}):(\d{2}))?/);
+  if(!m) return '';
+  return m[3]+'-'+m[2]+'-'+m[1]+'T'+(m[4]||'00')+':'+(m[5]||'00');
+}
+function openAddOrderModal(){
+  window._editingOrderId=null;
+  var ti=document.getElementById('ordModalTitle'); if(ti) ti.innerHTML='<i class="ti ti-briefcase"></i> Add new order';
+  _populateOrderSelects();
+  ['foDriver','foCar','foAmount','foClient','foWhoPays','foAddress','foDestination'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var pay=document.getElementById('foPayment'); if(pay) pay.value='Cash';
+  var st=document.getElementById('foStatus'); if(st) st.value='Done';
   document.getElementById('foTime').value=new Date().toISOString().slice(0,16);
   document.getElementById('addOrderModal').classList.add('open');
 }
+function openEditOrderModal(id){
+  var ord=ordersData.find(function(o){return String(o.id)===String(id);});
+  if(!ord){ if(typeof showToast==='function') showToast('Order not found'); return; }
+  _populateOrderSelects();
+  var dsel=document.getElementById('foDriver');
+  var csel=document.getElementById('foCar');
+  // Resolve the order's driver to a real driver (by id, exact name, then fuzzy name).
+  var all=(window.drivers||[]);
+  var md=null;
+  if(ord.driverId!=null) md=all.find(function(x){return String(x.id)===String(ord.driverId);});
+  if(!md && ord.driver) md=all.find(function(x){return x.name===ord.driver;}) || all.find(function(x){return (typeof _ordNameEq==='function')&&_ordNameEq(x.name, ord.driver);});
+  if(dsel){
+    if(md){
+      var has=Array.prototype.some.call(dsel.options,function(o){return String(o.value)===String(md.id);});
+      if(!has){ var op=document.createElement('option'); op.value=md.id; op.textContent=md.name; op.setAttribute('data-car',md.vehicleId||''); dsel.insertBefore(op, dsel.children[1]||null); }
+      dsel.value=String(md.id);
+    } else if(ord.driver){
+      var op2=document.createElement('option'); op2.value=ord.driver; op2.textContent=ord.driver; dsel.insertBefore(op2, dsel.children[1]||null); dsel.value=ord.driver;
+    }
+  }
+  if(csel){
+    if(ord.car){
+      var hasC=Array.prototype.some.call(csel.options,function(o){return String(o.value)===String(ord.car);});
+      if(!hasC){ var oc=document.createElement('option'); oc.value=ord.car; oc.textContent=ord.car+(ord.model?(' — '+ord.model):''); csel.insertBefore(oc, csel.children[1]||null); }
+    }
+    csel.value=ord.car||'';
+  }
+  document.getElementById('foPayment').value=ord.payment||'Cash';
+  document.getElementById('foAmount').value=(ord.amount!=null?ord.amount:'');
+  document.getElementById('foClient').value=ord.client||'';
+  document.getElementById('foWhoPays').value=ord.paymentTaker||'';
+  document.getElementById('foAddress').value=ord.clientAddress||'';
+  document.getElementById('foDestination').value=ord.destination||'';
+  document.getElementById('foTime').value=_ordTimeToInput(ord.orderTime);
+  document.getElementById('foStatus').value=ord.status||'Done';
+  var ti=document.getElementById('ordModalTitle'); if(ti) ti.innerHTML='<i class="ti ti-briefcase"></i> Edit order';
+  window._editingOrderId=ord.id;
+  document.getElementById('addOrderModal').classList.add('open');
+}
+window.openEditOrderModal=openEditOrderModal;
+function deleteOrder(id){
+  var ord=ordersData.find(function(o){return String(o.id)===String(id);});
+  var label=ord?((ord.driver||'')+' · '+(ord.amount||0)+' AED · '+(ord.orderTime||'')):('#'+id);
+  if(!confirm('Удалить заказ?\n'+label)) return;
+  ordersData=ordersData.filter(function(o){return String(o.id)!==String(id);});
+  if(typeof ordFiltered!=='undefined') ordFiltered=ordFiltered.filter(function(o){return String(o.id)!==String(id);});
+  saveOrdersToStorage();
+  renderOrdersTable();
+  if(typeof showToast==='function') showToast('Order deleted');
+}
+window.deleteOrder=deleteOrder;
 
 function addOrder(){
   const driverSel=document.getElementById('foDriver').value;
@@ -9884,8 +9955,7 @@ function addOrder(){
   const timeRaw=document.getElementById('foTime').value; // YYYY-MM-DDTHH:MM
   let timeFormatted='';
   if(timeRaw){ const mm=timeRaw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); timeFormatted = mm ? (mm[3]+'.'+mm[2]+'.'+mm[1]+' '+mm[4]+':'+mm[5]) : timeRaw.replace('T',' ').slice(0,16); }
-  const newOrder={
-    id:(ordersData.length?Math.max.apply(null,ordersData.map(o=>Number(o.id)||0)):0)+1,
+  const vals={
     status:document.getElementById('foStatus').value,
     driver:driverName,
     driverId:drvObj?drvObj.id:null,
@@ -9895,19 +9965,29 @@ function addOrder(){
     paymentTaker:document.getElementById('foWhoPays').value||'',
     payerEmployee:'',
     amount,
-    client:'',
+    client:document.getElementById('foClient').value||'',
     clientAddress:document.getElementById('foAddress').value,
     destination:document.getElementById('foDestination').value,
     orderTime:timeFormatted,
   };
-  ordersData.unshift(newOrder);
+  const editId=window._editingOrderId;
+  let edited=false;
+  if(editId!=null){
+    const idx=ordersData.findIndex(o=>String(o.id)===String(editId));
+    if(idx>=0){ ordersData[idx]=Object.assign({}, ordersData[idx], vals); edited=true; }
+    window._editingOrderId=null;
+  }
+  if(!edited){
+    vals.id=(ordersData.length?Math.max.apply(null,ordersData.map(o=>Number(o.id)||0)):0)+1;
+    ordersData.unshift(vals);
+  }
   saveOrdersToStorage();
   renderOrdersTable();
   closeModal('addOrderModal');
   ['foDriver','foCar','foAmount','foClient','foWhoPays','foAddress','foDestination'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
-  showToast('Order added!');
+  showToast(edited?'Order updated!':'Order added!');
 }
 
 function exportOrdersCSV(){
