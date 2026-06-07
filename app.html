@@ -3775,7 +3775,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 <div class="overlay" id="addRepairGlobalModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h2><i class="ti ti-tool"></i> Add Repair Order</h2>
+    <h2 id="rgModalTitle"><i class="ti ti-tool"></i> Add Repair Order</h2>
     <div class="fgrid">
       <div class="fr"><label>Date</label><input type="date" id="rg-date"></div>
       <div class="fr"><label>Order Number</label><input type="text" id="rg-num" placeholder="e.g. 9021"></div>
@@ -4068,7 +4068,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.2';
+window.APP_VERSION = '2026-06-07.3';
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
 try{ console.log('%c[Mr Ride CRM] версия '+window.APP_VERSION+' (build '+window.APP_BUILD+')','color:#0d9e75;font-weight:bold'); }catch(_){}
 
@@ -4567,7 +4567,29 @@ function saveCar(){
   showToast('Car saved!');
 }
 function renderTransactions(){document.getElementById('txBody').innerHTML=txSample.map((tx,i)=>`<tr><td>${i+1}</td><td style="font-size:11px;color:var(--text2)">${tx.id}</td><td>${tx.type}</td><td style="font-weight:500;color:var(--accent-t)">${tx.amount}</td><td style="font-size:11px;color:var(--text2);white-space:nowrap">${tx.date}</td><td style="font-size:11px;color:var(--text2)">${tx.comment}</td></tr>`).join('');}
-function renderRepairs(){document.getElementById('roBody').innerHTML=roSample.map((r,i)=>`<tr><td>${i+1}</td><td><button class="ro-action-btn"><i class="ti ti-edit" style="font-size:13px"></i></button></td><td style="white-space:nowrap">${r.date}</td><td>${r.num}</td><td><button class="vlink">${currentCar?currentCar.id:''}</button></td><td>${currentCar?currentCar.model.replace('Mercedes-Benz ',''):''}</td><td>${r.cp}</td><td>${r.tech}</td><td>${r.desc}</td><td style="font-weight:500">${r.cost}</td><td><span class="badge b-reserve" style="font-size:10px">${r.paid}</span></td></tr>`).join('');}
+function renderRepairs(){
+  var body=document.getElementById('roBody'); if(!body) return;
+  var cid=currentCar?currentCar.id:null;
+  var list=(typeof repairsData!=='undefined'&&Array.isArray(repairsData))?repairsData.filter(function(r){return r&&String(r.car)===String(cid);}):[];
+  body.innerHTML = list.length ? list.map(function(r,i){
+    return '<tr>'+
+      '<td>'+(i+1)+'</td>'+
+      '<td style="display:flex;gap:4px;align-items:center">'+
+        '<button class="ro-action-btn" onclick="openEditRepairModal('+r.id+')" title="Edit"><i class="ti ti-edit" style="font-size:13px"></i></button>'+
+        '<button class="ro-action-btn" onclick="deleteRepair('+r.id+')" title="Delete"><i class="ti ti-trash" style="font-size:13px"></i></button>'+
+      '</td>'+
+      '<td style="white-space:nowrap">'+(r.date||'')+'</td>'+
+      '<td>'+(r.orderNumber||'')+'</td>'+
+      '<td><button class="vlink">'+(r.car||'')+'</button></td>'+
+      '<td>'+String(r.carModel||'').replace('Mercedes-Benz ','')+'</td>'+
+      '<td>'+escHtml(r.counterparty||'')+'</td>'+
+      '<td>'+(r.technic||'')+'</td>'+
+      '<td>'+escHtml(r.description||'')+'</td>'+
+      '<td style="font-weight:500">'+(r.totalCost||0)+'</td>'+
+      '<td><span class="badge b-reserve" style="font-size:10px">'+(r.isPaid||'')+'</span></td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="11"><div class="empty"><i class="ti ti-tool"></i> No repair orders</div></td></tr>';
+}
 function renderServices(){document.getElementById('svcBody').innerHTML=svcSample.map((s,i)=>`<tr><td>${i+1}</td><td style="font-weight:600"><span class="svc ${s.color}" style="margin-right:6px">${s.name[0]}</span>${s.name}</td><td>${s.status}</td><td>${s.id}</td><td>${s.car}</td><td><button class="fbtn" style="font-size:11px;padding:3px 8px">Disconnect</button></td></tr>`).join('');}
 async function renderTrips(){
   const body=document.getElementById('tripsBody');
@@ -4666,7 +4688,11 @@ window.applyCarTripsPeriod=applyCarTripsPeriod;
 
 // MODALS
 function openAddModal(){document.getElementById('addModal').classList.add('open');}
-function openRepairModal(){document.getElementById('repairModal').classList.add('open');}
+function openRepairModal(){
+  var d=document.getElementById('ro-date'); if(d) d.value=new Date().toISOString().slice(0,10);
+  ['ro-num','ro-cp','ro-tech','ro-desc','ro-odo','ro-cost'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('repairModal').classList.add('open');
+}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 
@@ -4709,8 +4735,27 @@ function deleteCurrentCar(){
 }
 function addRepair(){
   const num=document.getElementById('ro-num').value;if(!num){alert('Enter order number');return;}
-  roSample.unshift({date:document.getElementById('ro-date').value,num,cp:document.getElementById('ro-cp').value,tech:document.getElementById('ro-tech').value,desc:document.getElementById('ro-desc').value,odo:+document.getElementById('ro-odo').value,cost:+document.getElementById('ro-cost').value,paid:t('awaitingPayment')});
-  renderRepairs();closeModal('repairModal');showToast('Repair order added!');
+  if(!currentCar){alert('Open a car first');return;}
+  const d=document.getElementById('ro-date').value;
+  const dateFmt=d?d.split('-').reverse().join('.'):'';
+  const cm=String(currentCar.model||'').replace(currentCar.brand?(currentCar.brand+' '):'','').trim();
+  const newId=(repairsData.length?Math.max.apply(null,repairsData.map(r=>Number(r.id)||0)):0)+1;
+  repairsData.unshift({
+    id:newId, date:dateFmt, orderNumber:num, car:currentCar.id, carModel:cm,
+    counterparty:document.getElementById('ro-cp').value||'',
+    technic:document.getElementById('ro-tech').value||'Mr Ride',
+    accountant:'',
+    description:document.getElementById('ro-desc').value||'',
+    odometer:+document.getElementById('ro-odo').value||0,
+    totalCost:+document.getElementById('ro-cost').value||0,
+    isPaid:t('awaitingPayment')
+  });
+  if(typeof saveRepairsToStorage==='function') saveRepairsToStorage();
+  renderRepairs();
+  if(typeof renderRepairsTable==='function') renderRepairsTable();
+  closeModal('repairModal');
+  ['ro-num','ro-cp','ro-tech','ro-desc','ro-odo','ro-cost'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  showToast('Repair order added!');
 }
 function exportCSV(){
   const rows=[['№','Vehicle ID','Model','Status','Services','Driver','Driver Status','Odometer']];
@@ -9584,6 +9629,10 @@ let repairsData=[
   {id:12,date:'05.02.2026',orderNumber:'08254160',car:'L93211',carModel:'E-Class',counterparty:'Counterparty1 (test)',technic:'Mr Ride',accountant:'',description:'Premium Car Tyres Trading',odometer:0,totalCost:2226,isPaid:t('awaitingPayment')},
   {id:13,date:'31.01.2026',orderNumber:'08261349',car:'L18309',carModel:'7er',counterparty:'Counterparty1 (test)',technic:'Mr Ride',accountant:'',description:'Premium Car Tyres',odometer:0,totalCost:462,isPaid:t('awaitingPayment')},
 ];
+// Restore repair orders from localStorage (survive refresh); seed is default.
+try{ const _rs=localStorage.getItem('mrride_repairs'); if(_rs){ const _ra=JSON.parse(_rs); if(Array.isArray(_ra)) repairsData=_ra; } }catch(_){}
+function saveRepairsToStorage(){ try{ localStorage.setItem('mrride_repairs', JSON.stringify(repairsData)); }catch(_){} }
+window.saveRepairsToStorage=saveRepairsToStorage;
 let roFiltered=[...repairsData],roSortKey='date',roSortDir=-1,roPage=1,roPerPage=20;
 let roDateFrom=null,roDateTo=null;
 
@@ -9675,9 +9724,20 @@ function prevRoPage(){if(roPage>1){roPage--;renderRepairsRows();}}
 function nextRoPage(){if(roPage<Math.ceil(roFiltered.length/roPerPage)){roPage++;renderRepairsRows();}}
 function setRoPerPage(v){roPerPage=v;roPage=1;renderRepairsRows();}
 
+function _populateRepairCarSelect(){
+  try{
+    var cs=document.getElementById('rg-car'); if(!cs) return;
+    var cl=(window.cars||[]).filter(function(c){return c&&c.id;});
+    cs.innerHTML='<option value="">Select car</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.id+' — '+escHtml(((c.brand?c.brand+' ':'')+(c.model||'')).trim())+'</option>';}).join('');
+  }catch(_){}
+}
 function openAddRepairGlobalModal(){
-  const today=new Date().toISOString().slice(0,10);
-  document.getElementById('rg-date').value=today;
+  window._editingRepairId=null;
+  var ti=document.getElementById('rgModalTitle'); if(ti) ti.innerHTML='<i class="ti ti-tool"></i> Add Repair Order';
+  _populateRepairCarSelect();
+  ['rg-num','rg-cp','rg-tech','rg-acc','rg-desc','rg-odo','rg-cost'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var cs=document.getElementById('rg-car'); if(cs) cs.value='';
+  document.getElementById('rg-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('addRepairGlobalModal').classList.add('open');
 }
 
@@ -9685,14 +9745,13 @@ function addRepairGlobal(){
   const num=document.getElementById('rg-num').value.trim();
   if(!num){alert('Enter order number');return;}
   const carSel=document.getElementById('rg-car').value;
-  const carParts=carSel.split(' — ');
-  const newId=Math.max(...repairsData.map(r=>r.id))+1;
-  repairsData.unshift({
-    id:newId,
+  const plate=(carSel.split(' — ')[0]||'').trim();
+  let cm=''; try{ const co=(window.cars||[]).find(c=>c.id===plate); if(co) cm=String(co.model||'').replace(co.brand?(co.brand+' '):'','').trim(); }catch(_){}
+  const vals={
     date:document.getElementById('rg-date').value.split('-').reverse().join('.'),
     orderNumber:num,
-    car:carParts[0]||'',
-    carModel:carParts[1]?.split(' ').pop()||'',
+    car:plate,
+    carModel:cm,
     counterparty:document.getElementById('rg-cp').value||'',
     technic:document.getElementById('rg-tech').value||'Mr Ride',
     accountant:document.getElementById('rg-acc').value||'',
@@ -9700,20 +9759,56 @@ function addRepairGlobal(){
     odometer:+document.getElementById('rg-odo').value||0,
     totalCost:+document.getElementById('rg-cost').value||0,
     isPaid:t('awaitingPayment'),
-  });
+  };
+  const editId=window._editingRepairId; let edited=false;
+  if(editId!=null){
+    const idx=repairsData.findIndex(r=>String(r.id)===String(editId));
+    if(idx>=0){ repairsData[idx]=Object.assign({}, repairsData[idx], vals); edited=true; }
+    window._editingRepairId=null;
+  }
+  if(!edited){ vals.id=(repairsData.length?Math.max.apply(null,repairsData.map(r=>Number(r.id)||0)):0)+1; repairsData.unshift(vals); }
+  if(typeof saveRepairsToStorage==='function') saveRepairsToStorage();
   renderRepairsTable();
+  if(typeof renderRepairs==='function' && currentCar) renderRepairs();
   closeModal('addRepairGlobalModal');
   ['rg-num','rg-cp','rg-tech','rg-acc','rg-desc','rg-odo','rg-cost'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
-  showToast('Repair order added!');
+  showToast(edited?'Repair order updated!':'Repair order added!');
 }
 
-function editRepair(id){showToast('Edit repair #'+id);}
+function editRepair(id){ openEditRepairModal(id); }
+function openEditRepairModal(id){
+  var r=repairsData.find(function(x){return String(x.id)===String(id);});
+  if(!r){ if(typeof showToast==='function') showToast('Repair not found'); return; }
+  _populateRepairCarSelect();
+  var dInput=''; var dm=String(r.date||'').match(/^(\d{2})\.(\d{2})\.(\d{4})/); if(dm) dInput=dm[3]+'-'+dm[2]+'-'+dm[1];
+  document.getElementById('rg-date').value=dInput;
+  document.getElementById('rg-num').value=r.orderNumber||'';
+  var cs=document.getElementById('rg-car');
+  if(cs){
+    if(r.car && !Array.prototype.some.call(cs.options,function(o){return String(o.value)===String(r.car);})){ var oc=document.createElement('option'); oc.value=r.car; oc.textContent=r.car+(r.carModel?(' — '+r.carModel):''); cs.insertBefore(oc, cs.children[1]||null); }
+    cs.value=r.car||'';
+  }
+  document.getElementById('rg-cp').value=r.counterparty||'';
+  document.getElementById('rg-tech').value=r.technic||'';
+  document.getElementById('rg-acc').value=r.accountant||'';
+  document.getElementById('rg-desc').value=r.description||'';
+  document.getElementById('rg-odo').value=(r.odometer!=null?r.odometer:'');
+  document.getElementById('rg-cost').value=(r.totalCost!=null?r.totalCost:'');
+  var ti=document.getElementById('rgModalTitle'); if(ti) ti.innerHTML='<i class="ti ti-tool"></i> Edit Repair Order';
+  window._editingRepairId=r.id;
+  document.getElementById('addRepairGlobalModal').classList.add('open');
+}
+window.openEditRepairModal=openEditRepairModal;
 function deleteRepair(id){
   if(!confirm('Delete repair order #'+id+'?'))return;
   repairsData=repairsData.filter(r=>r.id!==id);
-  renderRepairsTable();showToast(t('deleted'));
+  if(typeof roFiltered!=='undefined') roFiltered=roFiltered.filter(r=>r.id!==id);
+  if(typeof saveRepairsToStorage==='function') saveRepairsToStorage();
+  renderRepairsTable();
+  if(typeof renderRepairs==='function' && currentCar) renderRepairs();
+  showToast(t('deleted'));
 }
 
 function exportRepairsCSV(){
