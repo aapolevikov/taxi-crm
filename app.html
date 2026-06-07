@@ -1287,6 +1287,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
   <button class="ni active" onclick="switchPage(&#39;dashboard&#39;,this)" title="Dashboard"><i class="ti ti-layout-dashboard"></i></button>
   <button class="ni" onclick="switchPage(&#39;cars&#39;,this)" title="Cars"><i class="ti ti-car"></i></button>
   <button class="ni" onclick="switchPage(&#39;drivers&#39;,this)" title="Drivers"><i class="ti ti-users"></i></button>
+  <button class="ni" onclick="switchPage(&#39;employees&#39;,this)" title="Employees"><i class="ti ti-id-badge-2"></i></button>
   <button class="ni" onclick="switchPage(&#39;online&#39;,this)" title="Online"><i class="ti ti-map-pin"></i></button>
   <button class="ni" onclick="switchPage(&#39;reports&#39;,this)" title="Reports"><i class="ti ti-file-text"></i></button>
   <button class="ni" onclick="switchPage(&#39;carsreport&#39;,this)" title="Cars report"><i class="ti ti-clipboard-data"></i></button>
@@ -1311,6 +1312,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
   <button class="ditem active" onclick="switchPage(&#39;dashboard&#39;);closeDrawer()"><i class="ti ti-layout-dashboard"></i> <span data-i18n="dashboard">Dashboard</span></button>
   <button class="ditem" onclick="switchPage(&#39;cars&#39;);closeDrawer()"><i class="ti ti-car"></i> <span data-i18n="cars">Cars</span></button>
   <button class="ditem" onclick="switchPage(&#39;drivers&#39;);closeDrawer()"><i class="ti ti-users"></i> <span data-i18n="drivers">Drivers</span></button>
+  <button class="ditem" onclick="switchPage(&#39;employees&#39;);closeDrawer()"><i class="ti ti-id-badge-2"></i> <span data-i18n="employees">Employees</span></button>
   <button class="ditem" onclick="switchPage(&#39;online&#39;);closeDrawer()"><i class="ti ti-map-pin"></i> <span data-i18n="online">Online</span></button>
   <button class="ditem" onclick="switchPage(&#39;reports&#39;);closeDrawer()"><i class="ti ti-file-text"></i> <span data-i18n="reports">Reports</span></button>
   <button class="ditem" onclick="switchPage(&#39;gps&#39;);closeDrawer()"><i class="ti ti-map-2"></i> <span data-i18n="gpsTracking">GPS tracking</span></button>
@@ -2488,6 +2490,37 @@ body.no-icons .ti-external-link::before{content:"↗"}
     </div><!-- /drivers -->
 
     <!-- ══════════════ ONLINE PAGE ══════════════ -->
+    <div class="page" id="page-employees">
+      <div id="emp-listView">
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+          <div class="sc" style="min-width:180px"><div class="sc-hdr"><span data-i18n="empWorking">Working</span><i class="ti ti-id-badge-2"></i></div><div id="emp-working" style="font-size:30px;font-weight:700;margin-top:4px">0</div></div>
+          <div class="sc" style="min-width:180px"><div class="sc-hdr"><span data-i18n="empTotal">Total Employees</span><i class="ti ti-users"></i></div><div id="emp-total" style="font-size:30px;font-weight:700;margin-top:4px">0</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <input class="search-box" type="search" id="empSearch" placeholder="Name…" oninput="renderEmployees()" style="max-width:220px;border-radius:var(--r)">
+          <select class="st-sel" id="empStatus" onchange="renderEmployees()" style="border-radius:var(--r)">
+            <option value="">All statuses</option>
+            <option value="Working">Working</option>
+            <option value="Blocked">Blocked</option>
+            <option value="On leave">On leave</option>
+          </select>
+          <div class="sp"></div>
+          <button class="btn-add" onclick="openAddEmpModal()"><i class="ti ti-plus"></i> Add</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>№</th><th data-i18n="name">Name</th><th data-i18n="empPosition">Position</th>
+              <th data-i18n="phone">Phone</th><th>Email</th><th data-i18n="status">Status</th>
+              <th data-i18n="empSalary">Salary</th><th>Action</th>
+            </tr></thead>
+            <tbody id="empBody"><tr><td colspan="8"><div class="empty"><i class="ti ti-id-badge-2"></i> —</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="emp-detailView" style="display:none"></div>
+    </div>
+
     <div class="page" id="page-online">
 
       <!-- Top 2 stat cards -->
@@ -3689,6 +3722,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
   <button class="bn-item active" onclick="switchPage(&#39;dashboard&#39;,null,this)"><i class="ti ti-layout-dashboard"></i><span data-i18n="dashboard">Dashboard</span></button>
   <button class="bn-item" onclick="switchPage(&#39;cars&#39;,null,this)"><i class="ti ti-car"></i><span>Cars</span></button>
   <button class="bn-item" onclick="switchPage(&#39;drivers&#39;,null,this)"><i class="ti ti-users"></i><span>Drivers</span></button>
+  <button class="bn-item" onclick="switchPage(&#39;employees&#39;,null,this)"><i class="ti ti-id-badge-2"></i><span data-i18n="employees">Employees</span></button>
   <button class="bn-item" onclick="switchPage(&#39;online&#39;,null,this)"><i class="ti ti-map-pin"></i><span data-i18n="online">Online</span></button>
   <button class="bn-item" onclick="openDrawer()"><i class="ti ti-grid-dots"></i><span data-i18n="more">More</span></button>
 </div>
@@ -3802,6 +3836,37 @@ body.no-icons .ti-external-link::before{content:"↗"}
     <div class="mfooter">
       <button class="btn-cancel" onclick="closeModal(&#39;addRepairGlobalModal&#39;)">Cancel</button>
       <button class="btn-save" onclick="addRepairGlobal()"><i class="ti ti-check"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add / Edit employee -->
+<div class="overlay" id="empModal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-handle"></div>
+    <h2 id="empModalTitle"><i class="ti ti-id-badge-2"></i> Add employee</h2>
+    <div class="fgrid">
+      <div class="fr"><label>Full name *</label><input type="text" id="em-name"></div>
+      <div class="fr"><label>Position</label><input type="text" id="em-pos" placeholder="Dispatcher, Accountant…"></div>
+      <div class="fr"><label>Phone</label><input type="text" id="em-phone"></div>
+      <div class="fr"><label>Email</label><input type="text" id="em-email"></div>
+      <div class="fr"><label>Status</label><select id="em-status"><option>Working</option><option>Blocked</option><option>On leave</option></select></div>
+      <div class="fr"><label>Hire date</label><input type="date" id="em-hire"></div>
+      <div class="fr"><label>Salary (AED)</label><input type="number" id="em-salary" placeholder="0" inputmode="numeric"></div>
+      <div class="fr"><label>Salary period</label><select id="em-period"><option value="month">per month</option><option value="week">per week</option><option value="day">per day</option></select></div>
+      <div class="fr"><label>Emirates ID</label><input type="text" id="em-eid"></div>
+      <div class="fr"><label>Emirates ID expiry</label><input type="date" id="em-eidexp"></div>
+      <div class="fr"><label>Passport №</label><input type="text" id="em-pass"></div>
+      <div class="fr"><label>Passport expiry</label><input type="date" id="em-passexp"></div>
+      <div class="fr"><label>Visa №</label><input type="text" id="em-visa"></div>
+      <div class="fr"><label>Visa expiry</label><input type="date" id="em-visaexp"></div>
+      <div class="fr"><label>Contract / Labour card</label><input type="text" id="em-contract"></div>
+      <div class="fr"><label>Contract expiry</label><input type="date" id="em-contractexp"></div>
+      <div class="fr full"><label>Note</label><input type="text" id="em-note"></div>
+    </div>
+    <div class="mfooter">
+      <button class="btn-cancel" onclick="closeModal('empModal')">Cancel</button>
+      <button class="btn-save" onclick="saveEmp()"><i class="ti ti-check"></i> Save</button>
     </div>
   </div>
 </div>
@@ -4068,7 +4133,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.4';
+window.APP_VERSION = '2026-06-07.5';
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
 try{ console.log('%c[Mr Ride CRM] версия '+window.APP_VERSION+' (build '+window.APP_BUILD+')','color:#0d9e75;font-weight:bold'); }catch(_){}
 
@@ -4243,19 +4308,20 @@ let currentCar=null,filtered=[],driverFilter='all',sortKey='n',sortDir=1,page=1,
 function switchPage(name,sidebarBtn,bnBtn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  const titleKeys={dashboard:'dashboard',cars:'cars',drivers:'drivers',online:'online',reports:'reports',carsreport:'carsReport',gps:'gpsTracking',illegal:'illegal',orders:'orders',repairs:'repairs',board:'board',settings:'settings'};
+  const titleKeys={dashboard:'dashboard',cars:'cars',drivers:'drivers',employees:'employees',online:'online',reports:'reports',carsreport:'carsReport',gps:'gpsTracking',illegal:'illegal',orders:'orders',repairs:'repairs',board:'board',settings:'settings'};
   const subKey=['reports','illegal','carsreport'].includes(name)?'pageSubReports':name==='orders'?'pageSubOffice':'dashboard';
   const tk=titleKeys[name]||name;
   document.getElementById('pageTitle').innerHTML=`<h1 data-i18n="${tk}">${t(tk)}</h1><p data-i18n="${subKey}">${t(subKey)}</p>`;
   document.querySelectorAll('.sidebar .ni').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
-  const idx={dashboard:0,cars:1,drivers:2,online:3,reports:4,carsreport:5,gps:6,illegal:7,orders:8,repairs:9,board:10,finance:11,settings:12};
+  const idx={dashboard:0,cars:1,drivers:2,employees:3,online:4,reports:5,carsreport:6,gps:7,illegal:8,orders:9,repairs:10,board:11,finance:12,settings:13};
   if(idx[name]!==undefined){
     document.querySelectorAll('.sidebar .ni')[idx[name]]?.classList.add('active');
     document.querySelectorAll('.bn-item')[idx[name]]?.classList.add('active');
   }
   if(name==='cars'){closeCarDetails();applyFilters();}
   if(name==='drivers'){closeDriverDetails();applyDriverFilters();}
+  if(name==='employees'){ if(typeof initEmployeesPage==='function') initEmployeesPage(); }
   if(name==='online'){initOnlinePage();}
   if(name==='reports'){initReportsPage();}
   if(name==='carsreport'){ if(typeof initCarsReport==='function') initCarsReport(); }
@@ -15234,7 +15300,7 @@ en:{flag:'🇬🇧',code:'EN',dir:'ltr',
   driverType:'Driver type',driverName:'Driver',activityStatus:'Activity Status',
   addDriver:'Add driver',driverDetails:'Driver details',phone:'Phone',email:'Email',
   totalIncome:'Total Income',tripsToday:'Trips Today',totalTrips:'Total Trips',
-  totalIncomeAED:'Total Income (AED)',total:'Total',officeLabel:'Office:',
+  totalIncomeAED:'Total Income (AED)',total:'Total',officeLabel:'Office:',employees:'Employees',
   totalIncomeLbl:'TOTAL INCOME',tip:'Tip',cardIncome:'Card Income',yangoIncome:'Yango Income',
   uberIncome:'Uber Income',careemIncome:'Careem Income',boltIncome:'Bolt Income',
   officeIncome:'Office Income',zedIncome:'Zed Income',incomePerHour:'Income Per Hour',
@@ -15623,7 +15689,7 @@ ar:{flag:'🇦🇪',code:'عر',dir:'rtl',
   driverType:'Тип водителя',driverName:'Водитель',activityStatus:'Статус активности',
   addDriver:'Добавить водителя',driverDetails:'Карточка водителя',phone:'Телефон',email:'Email',
   totalIncome:'Общий доход',tripsToday:'Поездок сегодня',totalTrips:'Всего поездок',
-  totalIncomeAED:'Общий доход (AED)',total:'Итого',officeLabel:'Офис:',
+  totalIncomeAED:'Общий доход (AED)',total:'Итого',officeLabel:'Офис:',employees:'Сотрудники',
   totalIncomeLbl:'ОБЩИЙ ДОХОД',tip:'Чаевые',cardIncome:'Доход с карт',yangoIncome:'Доход Yango',
   uberIncome:'Доход Uber',careemIncome:'Доход Careem',boltIncome:'Доход Bolt',
   officeIncome:'Офисный доход',zedIncome:'Доход Zed',incomePerHour:'Доход в час',
@@ -16323,4 +16389,246 @@ function deleteCategory(idx){
 })();
 </script>
 
+<script>
+/* ════════════ EMPLOYEES MODULE (Supabase-backed) ════════════ */
+window.employees = window.employees || [];
+window._empCurrent = null;
+window._editingEmpId = null;
+
+function _empSB(){ return window._limoSB || null; }
+async function _empLoad(){
+  var sb=_empSB(); if(!sb) return [];
+  try{ var res=await sb.from('employees').select('*').order('created_at',{ascending:true}); if(res.error){console.warn('emp load',res.error);return [];} return res.data||[]; }
+  catch(e){ console.warn('emp load',e); return []; }
+}
+async function _empInsert(payload){ var sb=_empSB(); if(!sb) throw new Error('No DB'); var res=await sb.from('employees').insert(payload).select().single(); if(res.error) throw res.error; return res.data; }
+async function _empUpdate(id,patch){ var sb=_empSB(); if(!sb) throw new Error('No DB'); var res=await sb.from('employees').update(patch).eq('id',id); if(res.error) throw res.error; return true; }
+async function _empDelete(id){ var sb=_empSB(); if(!sb) throw new Error('No DB'); var res=await sb.from('employees').delete().eq('id',id); if(res.error) throw res.error; return true; }
+
+function _empDateDisp(d){ var m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m?(m[3]+'.'+m[2]+'.'+m[1]):''; }
+function _empDocStatus(exp){
+  if(!exp) return {cls:'',label:'',days:null};
+  var t=Date.parse(exp+'T00:00:00'); if(isNaN(t)) return {cls:'',label:'',days:null};
+  var days=Math.floor((t-Date.now())/86400000);
+  if(days<0) return {cls:'#e74c3c',label:'expired',days:days};
+  if(days<=30) return {cls:'#f5a623',label:days+'d left',days:days};
+  return {cls:'#27ae60',label:'ok',days:days};
+}
+function _empStatusBadge(st){
+  var map={'Working':'b-use','Blocked':'b-removed','On leave':'b-reserve'};
+  return '<span class="badge '+(map[st]||'b-none')+'">'+escHtml(st||'—')+'</span>';
+}
+
+async function initEmployeesPage(){
+  closeEmpDetails();
+  var body=document.getElementById('empBody');
+  if(!_empSB()){ if(body) body.innerHTML='<tr><td colspan="8"><div class="empty"><i class="ti ti-cloud-off"></i> База недоступна (Supabase)</div></td></tr>'; return; }
+  if(body) body.innerHTML='<tr><td colspan="8"><div class="empty"><i class="ti ti-loader-2"></i> Loading…</div></td></tr>';
+  window.employees = await _empLoad();
+  renderEmployees();
+}
+window.initEmployeesPage=initEmployeesPage;
+
+function renderEmployees(){
+  var list=window.employees||[];
+  var q=(document.getElementById('empSearch')?document.getElementById('empSearch').value:'').toLowerCase().trim();
+  var st=(document.getElementById('empStatus')?document.getElementById('empStatus').value:'');
+  var working=list.filter(function(e){return (e.status||'')==='Working';}).length;
+  var totEl=document.getElementById('emp-total'); if(totEl) totEl.textContent=list.length;
+  var wkEl=document.getElementById('emp-working'); if(wkEl) wkEl.textContent=working;
+  var f=list.filter(function(e){
+    if(st && (e.status||'')!==st) return false;
+    if(q){ var hay=((e.name||'')+' '+(e.position||'')+' '+(e.phone||'')+' '+(e.email||'')).toLowerCase(); if(hay.indexOf(q)<0) return false; }
+    return true;
+  });
+  var body=document.getElementById('empBody'); if(!body) return;
+  body.innerHTML = f.length ? f.map(function(e,i){
+    return '<tr>'+
+      '<td>'+(i+1)+'</td>'+
+      '<td><span style="color:var(--accent);font-weight:600;cursor:pointer" onclick="openEmpDetails(\''+e.id+'\')">'+escHtml(e.name||'—')+'</span></td>'+
+      '<td>'+escHtml(e.position||'—')+'</td>'+
+      '<td style="color:var(--text2)">'+escHtml(e.phone||'—')+'</td>'+
+      '<td style="color:var(--text2);font-size:12px">'+escHtml(e.email||'—')+'</td>'+
+      '<td>'+_empStatusBadge(e.status)+'</td>'+
+      '<td style="font-weight:600">'+(Number(e.salary)||0)+'</td>'+
+      '<td><div style="display:flex;gap:6px">'+
+        '<button onclick="openEditEmpModal(\''+e.id+'\')" title="Edit" style="background:none;border:1px solid var(--border2);border-radius:50%;width:28px;height:28px;cursor:pointer;color:var(--accent);font-size:13px;display:flex;align-items:center;justify-content:center"><i class="ti ti-pencil"></i></button>'+
+        '<button onclick="deleteEmp(\''+e.id+'\')" title="Delete" style="background:none;border:1px solid var(--border2);border-radius:50%;width:28px;height:28px;cursor:pointer;color:#e74c3c;font-size:13px;display:flex;align-items:center;justify-content:center"><i class="ti ti-trash"></i></button>'+
+      '</div></td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="8"><div class="empty"><i class="ti ti-id-badge-2"></i> No employees yet</div></td></tr>';
+}
+window.renderEmployees=renderEmployees;
+
+function _empById(id){ return (window.employees||[]).find(function(e){return String(e.id)===String(id);}); }
+
+function closeEmpDetails(){
+  var lv=document.getElementById('emp-listView'); var dv=document.getElementById('emp-detailView');
+  if(lv) lv.style.display=''; if(dv){ dv.style.display='none'; dv.innerHTML=''; }
+  window._empCurrent=null;
+}
+window.closeEmpDetails=closeEmpDetails;
+
+function _docRow(label,num,exp){
+  var st=_empDocStatus(exp);
+  var right = exp ? ('<span style="color:'+(st.cls||'var(--text2)')+'">'+_empDateDisp(exp)+(st.label?(' · '+st.label):'')+'</span>') : '<span style="color:var(--text3)">—</span>';
+  return '<div class="field-row"><label>'+escHtml(label)+'</label><div style="display:flex;justify-content:space-between;gap:10px;width:100%"><span>'+escHtml(num||'—')+'</span>'+right+'</div></div>';
+}
+
+function buildEmpDashboard(e){
+  // documents expiring soon
+  var docs=[['Emirates ID',e.doc_eid,e.doc_eid_exp],['Passport',e.doc_passport,e.doc_passport_exp],['Visa',e.doc_visa,e.doc_visa_exp],['Contract',e.doc_contract,e.doc_contract_exp]];
+  var alerts=docs.map(function(d){var st=_empDocStatus(d[2]); if(st.days!=null && st.days<=30){ return '<div style="color:'+st.cls+'">⚠ '+escHtml(d[0])+' — '+(st.days<0?'просрочен':('истекает через '+st.days+' дн'))+' ('+_empDateDisp(d[2])+')</div>'; } return '';}).filter(Boolean).join('');
+  return ''+
+  '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">'+
+    '<div class="sc" style="min-width:170px"><div class="sc-hdr"><span>Статус</span></div><div style="font-size:18px;font-weight:700;margin-top:4px">'+escHtml(e.status||'—')+'</div><div style="font-size:12px;color:var(--text3)">'+escHtml(e.position||'')+'</div></div>'+
+    '<div class="sc" style="min-width:170px"><div class="sc-hdr"><span>Оклад</span></div><div style="font-size:18px;font-weight:700;margin-top:4px">AED '+(Number(e.salary)||0)+'</div><div style="font-size:12px;color:var(--text3)">за '+( {month:'месяц',week:'неделю',day:'день'}[e.salary_period]||'месяц')+'</div></div>'+
+    '<div class="sc" style="min-width:170px"><div class="sc-hdr"><span>Дата найма</span></div><div style="font-size:18px;font-weight:700;margin-top:4px">'+(_empDateDisp(e.hire_date)||'—')+'</div></div>'+
+    '<div class="sc" style="min-width:170px"><div class="sc-hdr"><span>Телефон</span></div><div style="font-size:16px;font-weight:600;margin-top:6px">'+escHtml(e.phone||'—')+'</div><div style="font-size:12px;color:var(--text3)">'+escHtml(e.email||'')+'</div></div>'+
+  '</div>'+
+  '<div class="section-card"><div class="section-title"><i class="ti ti-alert-triangle"></i> Документы — внимание</div>'+(alerts||'<div style="color:var(--text3)">Все документы в порядке.</div>')+'</div>'+
+  (e.note?('<div class="section-card"><div class="section-title"><i class="ti ti-note"></i> Заметка</div><div>'+escHtml(e.note)+'</div></div>'):'')+
+  '<div class="section-card"><div class="section-title"><i class="ti ti-info-circle"></i> Дальше</div><div style="color:var(--text3)">Зарплата и Транзакции — на следующем этапе. Work diagram (месячный календарь смен) — следом.</div></div>';
+}
+
+function buildEmpDetailsTab(e){
+  return ''+
+  '<div class="details-grid-2col"><div>'+
+    '<div class="section-card">'+
+      '<div class="section-title"><i class="ti ti-info-circle"></i> Анкета</div>'+
+      '<div class="field-row"><label>ФИО</label><span>'+escHtml(e.name||'—')+'</span></div>'+
+      '<div class="field-row"><label>Должность</label><span>'+escHtml(e.position||'—')+'</span></div>'+
+      '<div class="field-row"><label>Статус</label><span>'+escHtml(e.status||'—')+'</span></div>'+
+      '<div class="field-row"><label>Телефон</label><span>'+escHtml(e.phone||'—')+'</span></div>'+
+      '<div class="field-row"><label>Email</label><span>'+escHtml(e.email||'—')+'</span></div>'+
+      '<div class="field-row"><label>Дата найма</label><span>'+(_empDateDisp(e.hire_date)||'—')+'</span></div>'+
+      '<div class="field-row"><label>Оклад</label><span>AED '+(Number(e.salary)||0)+' / '+( {month:'мес',week:'нед',day:'день'}[e.salary_period]||'мес')+'</span></div>'+
+    '</div>'+
+  '</div><div>'+
+    '<div class="section-card">'+
+      '<div class="section-title"><i class="ti ti-file-certificate"></i> Документы</div>'+
+      _docRow('Emirates ID', e.doc_eid, e.doc_eid_exp)+
+      _docRow('Паспорт', e.doc_passport, e.doc_passport_exp)+
+      _docRow('Виза', e.doc_visa, e.doc_visa_exp)+
+      _docRow('Контракт / Labour', e.doc_contract, e.doc_contract_exp)+
+    '</div>'+
+    '<div style="display:flex;gap:8px;margin-top:12px">'+
+      '<button class="btn-save" onclick="openEditEmpModal(\''+e.id+'\')"><i class="ti ti-pencil"></i> Редактировать</button>'+
+      '<button class="btn-cancel" onclick="deleteEmp(\''+e.id+'\')" style="color:#e74c3c"><i class="ti ti-trash"></i> Удалить</button>'+
+    '</div>'+
+  '</div></div>';
+}
+
+function _empPlaceholder(txt){ return '<div class="section-card"><div style="color:var(--text3);padding:8px">'+txt+'</div></div>'; }
+
+function openEmpDetails(id){
+  var e=_empById(id); if(!e){ if(typeof showToast==='function') showToast('Not found'); return; }
+  window._empCurrent=e;
+  var dv=document.getElementById('emp-detailView'); var lv=document.getElementById('emp-listView');
+  if(!dv) return;
+  dv.innerHTML=''+
+  '<button class="back-btn" onclick="closeEmpDetails()"><i class="ti ti-arrow-left"></i> Сотрудники</button>'+
+  '<div class="drvhdr" style="margin-top:10px">'+
+    '<div class="drvhdr-col"><span class="drvhdr-lbl">Name</span><span class="drvhdr-val">'+escHtml(e.name||'—')+'</span></div>'+
+    '<div class="drvhdr-divider"></div>'+
+    '<div class="drvhdr-col"><span class="drvhdr-lbl">Status</span><span class="drvhdr-val">'+escHtml(e.status||'—')+'</span></div>'+
+    '<div class="drvhdr-divider"></div>'+
+    '<div class="drvhdr-col"><span class="drvhdr-lbl">Position</span><span class="drvhdr-val" style="color:var(--text2)">'+escHtml(e.position||'—')+'</span></div>'+
+    '<div class="drvhdr-divider"></div>'+
+    '<div class="drvhdr-col"><span class="drvhdr-lbl">Salary</span><span class="drvhdr-val">AED '+(Number(e.salary)||0)+'</span></div>'+
+    '<div class="drvhdr-divider"></div>'+
+    '<div class="drvhdr-col"><span class="drvhdr-lbl">Hire date</span><span class="drvhdr-val">'+(_empDateDisp(e.hire_date)||'—')+'</span></div>'+
+  '</div>'+
+  '<div class="tabs" id="empTabs">'+
+    '<button class="tab active" onclick="empSwitchTab(\'dashboard\',this)">Dashboard</button>'+
+    '<button class="tab" onclick="empSwitchTab(\'details\',this)">Details</button>'+
+    '<button class="tab" onclick="empSwitchTab(\'salary\',this)">Salary</button>'+
+    '<button class="tab" onclick="empSwitchTab(\'transactions\',this)">Transactions</button>'+
+    '<button class="tab" onclick="empSwitchTab(\'workdiagram\',this)">Work diagram</button>'+
+  '</div>'+
+  '<div class="tab-content active" id="etab-dashboard">'+buildEmpDashboard(e)+'</div>'+
+  '<div class="tab-content" id="etab-details">'+buildEmpDetailsTab(e)+'</div>'+
+  '<div class="tab-content" id="etab-salary">'+_empPlaceholder('Зарплата (оклад/мес + надбавки/вычеты) — добавлю на этапе 2.')+'</div>'+
+  '<div class="tab-content" id="etab-transactions">'+_empPlaceholder('Транзакции (выплаты, авансы, премии, штрафы) — этап 2.')+'</div>'+
+  '<div class="tab-content" id="etab-workdiagram">'+_empPlaceholder('Work diagram — месячный календарь смен — этап 3.')+'</div>';
+  if(lv) lv.style.display='none';
+  dv.style.display='';
+  var pt=document.getElementById('pageTitle'); if(pt) pt.innerHTML='<h1>Employee</h1><p>Dashboard</p>';
+}
+window.openEmpDetails=openEmpDetails;
+
+function empSwitchTab(name,btn){
+  var dv=document.getElementById('emp-detailView'); if(!dv) return;
+  dv.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active');});
+  dv.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active');});
+  var el=document.getElementById('etab-'+name); if(el) el.classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+window.empSwitchTab=empSwitchTab;
+
+/* ---- Add / Edit modal ---- */
+function _empSetForm(e){
+  var v=function(id,val){var el=document.getElementById(id); if(el) el.value=(val==null?'':val);};
+  v('em-name',e.name); v('em-pos',e.position); v('em-phone',e.phone); v('em-email',e.email);
+  v('em-status',e.status||'Working'); v('em-hire',e.hire_date); v('em-salary',e.salary); v('em-period',e.salary_period||'month');
+  v('em-eid',e.doc_eid); v('em-eidexp',e.doc_eid_exp);
+  v('em-pass',e.doc_passport); v('em-passexp',e.doc_passport_exp);
+  v('em-visa',e.doc_visa); v('em-visaexp',e.doc_visa_exp);
+  v('em-contract',e.doc_contract); v('em-contractexp',e.doc_contract_exp);
+  v('em-note',e.note);
+}
+function openAddEmpModal(){
+  window._editingEmpId=null;
+  var ti=document.getElementById('empModalTitle'); if(ti) ti.innerHTML='<i class="ti ti-id-badge-2"></i> Add employee';
+  _empSetForm({status:'Working',salary_period:'month'});
+  document.getElementById('empModal').classList.add('open');
+}
+window.openAddEmpModal=openAddEmpModal;
+function openEditEmpModal(id){
+  var e=_empById(id); if(!e){ if(typeof showToast==='function') showToast('Not found'); return; }
+  window._editingEmpId=e.id;
+  var ti=document.getElementById('empModalTitle'); if(ti) ti.innerHTML='<i class="ti ti-id-badge-2"></i> Edit employee';
+  _empSetForm(e);
+  document.getElementById('empModal').classList.add('open');
+}
+window.openEditEmpModal=openEditEmpModal;
+
+async function saveEmp(){
+  var g=function(id){var el=document.getElementById(id); return el?el.value:'';};
+  var name=g('em-name').trim();
+  if(!name){ if(typeof showToast==='function') showToast('Введите ФИО'); return; }
+  var payload={
+    name:name, position:g('em-pos')||null, phone:g('em-phone')||null, email:g('em-email')||null,
+    status:g('em-status')||'Working', hire_date:g('em-hire')||null,
+    salary:Number(g('em-salary'))||0, salary_period:g('em-period')||'month',
+    doc_eid:g('em-eid')||null, doc_eid_exp:g('em-eidexp')||null,
+    doc_passport:g('em-pass')||null, doc_passport_exp:g('em-passexp')||null,
+    doc_visa:g('em-visa')||null, doc_visa_exp:g('em-visaexp')||null,
+    doc_contract:g('em-contract')||null, doc_contract_exp:g('em-contractexp')||null,
+    note:g('em-note')||null
+  };
+  try{
+    if(window._editingEmpId!=null){ await _empUpdate(window._editingEmpId, payload); }
+    else { await _empInsert(payload); }
+  }catch(err){ console.warn('saveEmp',err); if(typeof showToast==='function') showToast('Ошибка сохранения: '+(err&&err.message||err)); return; }
+  var keepId=window._editingEmpId; window._editingEmpId=null;
+  closeModal('empModal');
+  window.employees=await _empLoad();
+  renderEmployees();
+  if(window._empCurrent && keepId){ var fresh=_empById(keepId); if(fresh) openEmpDetails(fresh.id); }
+  if(typeof showToast==='function') showToast(keepId?'Сотрудник обновлён':'Сотрудник добавлен');
+}
+window.saveEmp=saveEmp;
+
+async function deleteEmp(id){
+  var e=_empById(id);
+  if(!confirm('Удалить сотрудника?\n'+(e?e.name:'')+'')) return;
+  try{ await _empDelete(id); }catch(err){ console.warn('deleteEmp',err); if(typeof showToast==='function') showToast('Ошибка удаления'); return; }
+  if(window._empCurrent && String(window._empCurrent.id)===String(id)) closeEmpDetails();
+  window.employees=await _empLoad();
+  renderEmployees();
+  if(typeof showToast==='function') showToast('Сотрудник удалён');
+}
+window.deleteEmp=deleteEmp;
+</script>
 </body></html>
