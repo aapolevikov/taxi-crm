@@ -4173,7 +4173,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.15';
+window.APP_VERSION = '2026-06-07.16';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -12019,8 +12019,8 @@ function _applyBankStatement(rows, cashboxId, baseComment){
 function _ensurePdfJs(cb){
   if(window.pdfjsLib){ cb(); return; }
   var s=document.createElement('script');
-  s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-  s.onload=function(){ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }catch(_){ } cb(); };
+  s.src='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+  s.onload=function(){ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'; }catch(_){ } cb(); };
   s.onerror=function(){ cb(new Error('\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c pdf.js (\u043f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0438\u043d\u0442\u0435\u0440\u043d\u0435\u0442)')); };
   document.head.appendChild(s);
 }
