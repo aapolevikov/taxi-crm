@@ -4158,7 +4158,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.6';
+window.APP_VERSION = '2026-06-07.7';
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
 try{ console.log('%c[Mr Ride CRM] версия '+window.APP_VERSION+' (build '+window.APP_BUILD+')','color:#0d9e75;font-weight:bold'); }catch(_){}
 
@@ -11315,6 +11315,11 @@ let finCashboxes=[
 ];
 // Transactions
 let finTxns=[];
+// Restore finance data from localStorage (survive refresh)
+try{ var _ftx=localStorage.getItem('mrride_finTxns'); if(_ftx){ var _fa=JSON.parse(_ftx); if(Array.isArray(_fa)) finTxns=_fa; } }catch(_){}
+try{ var _fcb=localStorage.getItem('mrride_finCashboxes'); if(_fcb){ var _fb=JSON.parse(_fcb); if(Array.isArray(_fb)&&_fb.length) finCashboxes=_fb; } }catch(_){}
+function saveFinanceToStorage(){ try{ localStorage.setItem('mrride_finTxns', JSON.stringify(finTxns)); localStorage.setItem('mrride_finCashboxes', JSON.stringify(finCashboxes)); }catch(_){} }
+window.saveFinanceToStorage=saveFinanceToStorage;
 // Salaries
 let finSalaries=[];
 // Motivation rules
@@ -11420,6 +11425,14 @@ function renderTxnTable(){
     if(finTxnDateFrom&&tx.date<finTxnDateFrom)return false;
     if(finTxnDateTo&&tx.date>finTxnDateTo)return false;
     return true;
+  });
+
+  // Newest first: by date desc, then created time desc
+  data.sort((a,b)=>{
+    var da=String(a.date||''), db=String(b.date||'');
+    if(da!==db) return da<db?1:-1;
+    var ca=String(a.created||''), cb=String(b.created||'');
+    return ca<cb?1:(ca>cb?-1:0);
   });
 
   // Update spends summary
@@ -11645,6 +11658,7 @@ function saveTxn(){
     }
   }
   closeModal('txnModal');
+  saveFinanceToStorage();
   renderTxnTable();
   renderCashboxes();
   showToast('Transaction added');
@@ -11661,6 +11675,7 @@ function deleteTxn(id){
       else cb.balance+=(+tx.amount||0);
     }
     finTxns=finTxns.filter(t=>t.id!==id);
+    saveFinanceToStorage();
     renderTxnTable();
     renderCashboxes();
     showToast('Deleted');
@@ -11993,6 +12008,7 @@ function saveCashbox(){
   });
   closeModal('cashboxModal');
   ['cbFName','cbFBalance','cbFDesc'].forEach(k=>{const el=document.getElementById(k);if(el)el.value='';});
+  saveFinanceToStorage();
   renderCashboxes();
   fillTxnFilterOptions();
   showToast('Cash box added');
@@ -12001,6 +12017,7 @@ function saveCashbox(){
 function deleteCashbox(id){
   if(!confirm('Delete this cash box?'))return;
   finCashboxes=finCashboxes.filter(c=>c.id!==id);
+  saveFinanceToStorage();
   renderCashboxes();
   fillTxnFilterOptions();
 }
