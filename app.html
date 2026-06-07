@@ -4173,7 +4173,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.9';
+window.APP_VERSION = '2026-06-07.10';
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
 try{ console.log('%c[Mr Ride CRM] версия '+window.APP_VERSION+' (build '+window.APP_BUILD+')','color:#0d9e75;font-weight:bold'); }catch(_){}
 
@@ -11717,6 +11717,10 @@ function importTxnFile(){
 
 // Import history records
 window.finImportHistory=window.finImportHistory||[];
+// Restore import history from localStorage (keep across refresh / page switch)
+try{ var _fih=localStorage.getItem('mrride_finImportHistory'); if(_fih){ var _fihA=JSON.parse(_fih); if(Array.isArray(_fihA)) window.finImportHistory=_fihA; } }catch(_){}
+function saveImportHistory(){ try{ localStorage.setItem('mrride_finImportHistory', JSON.stringify(window.finImportHistory||[])); }catch(_){} }
+window.saveImportHistory=saveImportHistory;
 
 function renderImportTable(){
   const tbody=document.getElementById('importBody');
@@ -11747,6 +11751,7 @@ function renderImportTable(){
       <td style="font-size:12px">Applied/skipped/failed: <b>${r.applied||0} / ${r.skipped||0} / ${r.failed||0}</b><br>Amount: <b>${(+r.appliedAmount||0).toFixed(2)} AED</b></td>
     </tr>`;
   }).join('');
+  if(typeof saveImportHistory==='function') saveImportHistory();
 }
 
 // ══════════════ SALIK IMPORT (toll roads) ══════════════
@@ -11994,7 +11999,7 @@ function runImport(){
   }
 
   // ── Real parser: Bank statement (CSV, e.g. Wio Bank) ──
-  if(fileType==='Bank statement'){
+  if(fileType!=='Salik'){  /* auto-detect bank statement by columns for any type */
     if(typeof XLSX==='undefined'){
       record.status='FAILED'; record.finished=fmt(new Date());
       record.comment=(record.comment||'')+' — XLSX library not loaded';
