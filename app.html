@@ -2462,7 +2462,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
           </div>
           <div class="sp"></div>
           <button class="btn-xlsx" onclick="exportDriversCSV()"><i class="ti ti-download"></i> XLSX</button>
-          <button class="btn-add" onclick="openAddDriverModal()"><i class="ti ti-plus"></i> Add</button>
+          <button class="btn-xlsx" onclick="syncBolt()"><i class="ti ti-refresh"></i> Синхр. Bolt</button><button class="btn-add" onclick="openAddDriverModal()"><i class="ti ti-plus"></i> Add</button>
         </div>
 
         <!-- Table -->
@@ -4201,7 +4201,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.20';
+window.APP_VERSION = '2026-06-07.21';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -7035,6 +7035,87 @@ function addDriver(){
   var _bm=document.getElementById('fdBoltMatch'); if(_bm)_bm.textContent='';
   document.querySelectorAll('#addDriverModal .svc-check input').forEach(i=>i.checked=false);
   showToast('Driver '+name+' added!');
+}
+function _normPhoneBolt(p){ var s=String(p||'').replace(/\D/g,''); return s.slice(-9); }
+async function syncBolt(){
+  if(typeof showToast==='function') showToast('\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 Bolt\u2026');
+  var to=new Date().toISOString().slice(0,10);
+  var f=new Date(Date.now()-6*86400000).toISOString().slice(0,10);
+  var data=null;
+  try{ var r=await fetch('/.netlify/functions/bolt-api?start='+f+'&end='+to); data=await r.json(); }
+  catch(e){ if(typeof showToast==='function') showToast('Bolt \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d'); return; }
+  if(!data||!data.ok||!Array.isArray(data.drivers)){ if(typeof showToast==='function') showToast('Bolt: \u043d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445'); return; }
+  var linked=[], already=0, news=[];
+  data.drivers.forEach(function(b){
+    if(!b.uuid) return;
+    var bp=_normPhoneBolt(b.phone);
+    var d=drivers.find(function(x){ return (x.boltId&&x.boltId===b.uuid) || (bp&&_normPhoneBolt(x.phone)===bp); });
+    if(d){
+      var changed=false;
+      if(d.boltId!==b.uuid){ d.boltId=b.uuid; changed=true; }
+      if(!Array.isArray(d.services)) d.services=[];
+      if(d.services.indexOf('BOLT')<0){ d.services.push('BOLT'); changed=true; }
+      if(changed) linked.push(d.name); else already++;
+    } else {
+      news.push({uuid:b.uuid, name:b.name||'(\u0431\u0435\u0437 \u0438\u043c\u0435\u043d\u0438)', phone:b.phone||'', plate:b.vehiclePlate||''});
+    }
+  });
+  if(linked.length){ try{ saveDriversToStorage(); }catch(_){} try{ applyDriverFilters(); }catch(_){} }
+  window._boltSync={linked:linked, already:already, news:news};
+  _renderBoltSyncModal();
+}
+function _renderBoltSyncModal(){
+  var s=window._boltSync||{linked:[],already:0,news:[]};
+  var m=document.getElementById('boltSyncModal');
+  if(!m){ m=document.createElement('div'); m.className='overlay'; m.id='boltSyncModal'; document.body.appendChild(m); }
+  var esc=(typeof escHtml==='function')?escHtml:function(x){return String(x==null?'':x);};
+  var drvOpts='<option value="">\u2014 \u043f\u0440\u0438\u0432\u044f\u0437\u0430\u0442\u044c \u043a \u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044e \u2014</option>'+drivers.slice().sort(function(a,b){return String(a.name).localeCompare(String(b.name));}).map(function(d){return '<option value="'+esc(String(d.id))+'">'+esc(d.name)+(d.vehicleId?(' \u00b7 '+esc(d.vehicleId)):'')+'</option>';}).join('');
+  var newsHtml = s.news.length ? s.news.map(function(n){
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--bg2)">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">'+
+        '<div><div style="font-weight:500">'+esc(n.name)+'</div><div style="font-size:12px;color:var(--text2)">'+esc(n.phone||'')+(n.plate?(' \u00b7 '+esc(n.plate)):'')+'</div></div>'+
+        (n._added?'<span style="color:var(--accent);font-size:13px;white-space:nowrap">\u0413\u043e\u0442\u043e\u0432\u043e \u2713</span>':'<button class="btn-primary" onclick="addBoltDriver(\''+esc(n.uuid)+'\')" title="\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043d\u043e\u0432\u043e\u0433\u043e">\u041d\u043e\u0432\u044b\u0439</button>')+
+      '</div>'+
+      (n._added?'':'<div style="display:flex;gap:6px;align-items:center;margin-top:6px"><select id="blink_'+esc(n.uuid)+'" style="flex:1;font-size:12px">'+drvOpts+'</select><button class="btn-secondary" style="font-size:12px;padding:5px 10px" onclick="linkBoltDriver(\''+esc(n.uuid)+'\')">\u041f\u0440\u0438\u0432\u044f\u0437\u0430\u0442\u044c</button></div>')+
+    '</div>';
+  }).join('') : '<div style="font-size:13px;color:var(--text3)">\u041d\u043e\u0432\u044b\u0445 \u043d\u0435\u0442</div>';
+  m.innerHTML='<div class="modal" style="max-width:560px">'+
+    '<div class="modal-hdr"><h2>\u0421\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0430\u0446\u0438\u044f Bolt</h2><button class="x" onclick="closeModal(\'boltSyncModal\')">\u00d7</button></div>'+
+    '<div class="modal-body">'+
+      '<div style="font-size:13px;color:var(--text2);margin-bottom:12px">\u041f\u0440\u0438\u0432\u044f\u0437\u0430\u043d\u043e/\u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u043e: <b>'+s.linked.length+'</b> \u00b7 \u0443\u0436\u0435 \u0431\u044b\u043b\u043e: <b>'+(s.already||0)+'</b> \u00b7 \u043d\u043e\u0432\u044b\u0445: <b>'+s.news.length+'</b></div>'+
+      (s.linked.length?('<div style="font-size:13px;font-weight:600;margin-bottom:4px">\u041f\u0440\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d boltId</div><div style="font-size:13px;color:var(--text2);margin-bottom:14px">'+s.linked.map(esc).join(', ')+'</div>'):'')+
+      '<div style="font-size:13px;font-weight:600;margin-bottom:4px">\u041d\u043e\u0432\u044b\u0435 \u0432\u043e\u0434\u0438\u0442\u0435\u043b\u0438 \u0438\u0437 Bolt</div>'+newsHtml+
+    '</div>'+
+    '<div class="modal-footer"><button class="btn-secondary" onclick="closeModal(\'boltSyncModal\')">\u0417\u0430\u043a\u0440\u044b\u0442\u044c</button></div>'+
+  '</div>';
+  m.classList.add('open');
+}
+function addBoltDriver(uuid){
+  var s=window._boltSync; if(!s) return;
+  var n=s.news.find(function(x){return x.uuid===uuid;}); if(!n) return;
+  if(drivers.some(function(d){return d.boltId===uuid;})){ n._added=true; _renderBoltSyncModal(); if(typeof showToast==='function') showToast('\u0423\u0436\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d'); return; }
+  var newId=(drivers.length?Math.max.apply(null,drivers.map(function(d){return Number(d.id)||0;})):0)+1;
+  var nd={id:newId,name:n.name,type:'',motivRule:'',motivType:'',status:'Working',phone:n.phone||'',email:'-',services:['BOLT'],carBrand:'',carModel:'',vehicleId:'',boltId:uuid};
+  drivers.push(nd);
+  try{ if(typeof saveDriversToStorage==='function') saveDriversToStorage(); }catch(_){}
+  try{ if(typeof _limoSaveDriverCloud==='function') _limoSaveDriverCloud(nd); }catch(_){}
+  try{ if(typeof applyDriverFilters==='function') applyDriverFilters(); }catch(_){}
+  n._added=true; _renderBoltSyncModal();
+  if(typeof showToast==='function') showToast('\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c '+n.name+' \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d');
+}
+function linkBoltDriver(uuid){
+  var s=window._boltSync; if(!s) return;
+  var n=s.news.find(function(x){return x.uuid===uuid;}); if(!n) return;
+  var sel=document.getElementById('blink_'+uuid); var did=sel?sel.value:'';
+  if(!did){ if(typeof showToast==='function') showToast('\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044f'); return; }
+  var d=drivers.find(function(x){return String(x.id)===String(did);}); if(!d) return;
+  d.boltId=uuid;
+  if(!Array.isArray(d.services)) d.services=[];
+  if(d.services.indexOf('BOLT')<0) d.services.push('BOLT');
+  try{ if(typeof saveDriversToStorage==='function') saveDriversToStorage(); }catch(_){}
+  try{ if(typeof applyDriverFilters==='function') applyDriverFilters(); }catch(_){}
+  n._added=true; _renderBoltSyncModal();
+  if(typeof showToast==='function') showToast('Bolt \u043f\u0440\u0438\u0432\u044f\u0437\u0430\u043d \u043a '+d.name);
 }
 function exportDriversCSV(){
   const rows=[['№','Name','Type','Status','Phone','Email','Services','Car Brand','Car Model','Vehicle ID']];
