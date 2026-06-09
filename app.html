@@ -4201,7 +4201,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.21';
+window.APP_VERSION = '2026-06-07.22';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -11658,6 +11658,7 @@ function openEditTxn(id){
         '<div class="field-row"><label>Date</label><input type="date" id="txnFDate"></div>'+
         '<div class="field-row" id="txnFDriverRow"><label>Driver</label><select id="txnFDriver"></select></div>'+
         '<div class="field-row"><label>Car (optional)</label><select id="txnFCar"></select></div>'+
+        '<div class="field-row"><label>Учёт (P&L)</label><select id="txnFCapital"><option value="0">Операционная — в P&L</option><option value="1">Капитальная — инвестор / покупка авто</option></select></div>'+
         '<div class="field-row"><label>Counter party</label><input type="text" id="txnFParty"></div>'+
         '<div class="field-row"><label>Comment</label><textarea id="txnFComment" rows="2" style="resize:vertical;font-family:inherit"></textarea></div>'+
       '</div>'+
@@ -11684,6 +11685,7 @@ function openEditTxn(id){
   var drow=document.getElementById('txnFDriverRow'); if(drow) drow.style.display='';
   setv('txnFDriver', tx.driver||'');
   setv('txnFCar', tx.car||'');
+  setv('txnFCapital', tx.capital?'1':'0');
   setv('txnFParty', tx.counterparty||'');
   setv('txnFComment', tx.comment||'');
   var c2=document.getElementById('txnFCashbox2Row'); if(c2) c2.style.display='none';
@@ -11779,6 +11781,7 @@ function openTxnForm(typeKey,isDriver){
         <div class="field-row"><label>Date</label><input type="date" id="txnFDate"></div>
         <div class="field-row" id="txnFDriverRow"><label>Driver</label><select id="txnFDriver"></select></div>
         <div class="field-row"><label>Car (optional)</label><select id="txnFCar"></select></div>
+        <div class="field-row"><label>Учёт (P&L)</label><select id="txnFCapital"><option value="0">Операционная — в P&L</option><option value="1">Капитальная — инвестор / покупка авто</option></select></div>
         <div class="field-row"><label>Counter party</label><input type="text" id="txnFParty" placeholder="e.g. Garage name"></div>
         <div class="field-row"><label>Comment</label><textarea id="txnFComment" rows="2" style="resize:vertical;font-family:inherit"></textarea></div>
       </div>
@@ -11838,6 +11841,7 @@ function saveTxn(){
       if(cbOld){ if(etx.type==='Income') cbOld.balance-=oldAmt; else cbOld.balance+=oldAmt; }
       etx.type=txType; etx.purpose=v('txnFPurpose'); etx.amount=amount; etx.cashboxId=cb1Id;
       etx.date=v('txnFDate'); etx.driver=v('txnFDriver'); etx.car=v('txnFCar');
+      etx.capital=v('txnFCapital')==='1';
       etx.counterparty=v('txnFParty'); etx.comment=v('txnFComment');
       const cbNew=finCashboxes.find(c=>c.id===cb1Id);
       if(cbNew){ if(txType==='Income') cbNew.balance+=amount; else cbNew.balance-=amount; }
@@ -11880,6 +11884,7 @@ function saveTxn(){
       created,
       driver:v('txnFDriver'),
       car:v('txnFCar'),
+      capital:v('txnFCapital')==='1',
       counterparty:v('txnFParty'),
       comment:v('txnFComment'),
       user:'admin',
@@ -12344,18 +12349,19 @@ function renderPnl(){
     var drs=(typeof getCarDrivers==='function')?(getCarDrivers(c)||[]):[];
     var rev=0;
     drs.forEach(function(d){ try{ var a=aggregateDriverData(d,from,to); rev+=(+a.income||0); }catch(e){} });
-    var opex=0;
+    var opex=0; var inv=0;
     if(typeof finTxns!=='undefined') finTxns.forEach(function(tx){
       if(tx.type!=='Expense'||tx.cancelled) return;
       if(String(tx.car)!==String(c.id)) return;
+      var amt=+tx.amount||0;
+      if(tx.capital){ inv+=amt; return; }
       var dd=String(tx.date||'').slice(0,10); if(dd<from||dd>to) return;
-      var amt=+tx.amount||0; opex+=amt; addCat(tx.purpose, amt);
+      opex+=amt; addCat(tx.purpose, amt);
     });
     if(typeof repairsData!=='undefined') repairsData.forEach(function(r){
       if(String(r.car)!==String(c.id)) return; var dd=_pnlISO(r.date); if(!dd||dd<from||dd>to) return;
       var amt=+r.totalCost||0; opex+=amt; addCat('\u0420\u0435\u043c\u043e\u043d\u0442\u044b', amt);
     });
-    var inv=0;
     carCosts.forEach(function(x){
       if(String(x.car)!==String(c.id)) return; var amt=+x.amount||0;
       if(_carCostCap(x.type)){ inv+=amt; }
