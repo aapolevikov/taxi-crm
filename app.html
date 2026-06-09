@@ -3248,8 +3248,9 @@ body.no-icons .ti-external-link::before{content:"↗"}
               <select id="txnLabelFilter" onchange="renderTxnTable()" style="border-radius:var(--r)"><option value="" data-i18n="finType">Transaction type</option></select>
               <select id="txnPurposeFilter" onchange="renderTxnTable()" style="border-radius:var(--r)"><option value="" data-i18n="uPurpose">Purpose</option></select>
               <select id="txnCashboxFilter" onchange="renderTxnTable()" style="border-radius:var(--r)"><option value="" data-i18n="uCashbox">Cash box</option></select>
-              <input class="search-box" type="search" id="txnDriverFilter" placeholder="Driver" data-i18n-ph="driver" oninput="renderTxnTable()" style="max-width:140px">
+              <select id="txnDriverFilter" onchange="renderTxnTable()" style="border-radius:var(--r)"><option value="">Driver</option></select>
               <select id="txnCarFilter" onchange="renderTxnTable()" style="border-radius:var(--r)"><option value="" data-i18n="uSelectCar">Select a car</option></select>
+              <select id="txnCapitalFilter" onchange="renderTxnTable()" style="border-radius:var(--r)"><option value="">Учёт (P&L)</option><option value="op">Операционные</option><option value="cap">Капитальные</option></select>
               <input class="search-box" type="search" id="txnPartyFilter" placeholder="Counter party" data-i18n-ph="uCounterParty" oninput="renderTxnTable()" style="max-width:140px">
               <div class="drp-wrap" id="txnDateRange" data-value="">
                 <i class="ti ti-calendar drp-icon"></i>
@@ -4201,7 +4202,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.22';
+window.APP_VERSION = '2026-06-07.23';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -11521,6 +11522,8 @@ function fillTxnFilterOptions(){
   if(carSel){
     carSel.innerHTML='<option value="">Select a car</option>'+cars.filter(c=>c.id&&c.id!=='-').map(c=>`<option>${escHtml(c.id)}</option>`).join('');
   }
+  const drvSel=document.getElementById('txnDriverFilter');
+  if(drvSel&&drvSel.tagName==='SELECT'){ const cur=drvSel.value; drvSel.innerHTML='<option value="">Driver</option>'+drivers.map(d=>`<option>${escHtml(d.name)}</option>`).join(''); if(cur)drvSel.value=cur; }
   // Transaction type labels
   const labelSel=document.getElementById('txnLabelFilter');
   if(labelSel&&typeof TXN_TYPES_DRIVER!=='undefined'){
@@ -11538,6 +11541,7 @@ function renderTxnTable(){
   const cashboxF=document.getElementById('txnCashboxFilter')?.value||'';
   const driverF=(document.getElementById('txnDriverFilter')?.value||'').toLowerCase();
   const carF=document.getElementById('txnCarFilter')?.value||'';
+  const capF=document.getElementById('txnCapitalFilter')?.value||'';
   const partyF=(document.getElementById('txnPartyFilter')?.value||'').toLowerCase();
   const labelF=document.getElementById('txnLabelFilter')?.value||'';
 
@@ -11551,6 +11555,8 @@ function renderTxnTable(){
     if(cashboxF&&String(tx.cashboxId)!==cashboxF)return false;
     if(driverF&&!(tx.driver||'').toLowerCase().includes(driverF))return false;
     if(carF&&tx.car!==carF)return false;
+    if(capF==='cap'&&!tx.capital)return false;
+    if(capF==='op'&&tx.capital)return false;
     if(partyF&&!(tx.counterparty||'').toLowerCase().includes(partyF))return false;
     if(finTxnDateFrom&&tx.date<finTxnDateFrom)return false;
     if(finTxnDateTo&&tx.date>finTxnDateTo)return false;
@@ -11607,7 +11613,7 @@ function renderTxnTable(){
       <td>${escHtml(cashboxName)}</td>
       <td style="font-size:12px">${escHtml(tx.date||'')}</td>
       <td style="font-size:11px;color:var(--text2)">${escHtml(tx.created||'')}</td>
-      <td style="font-size:12px;color:var(--text2)">${escHtml(tx.comment||'')}</td>
+      <td style="font-size:12px;color:var(--text2)" title="${escHtml(tx.comment||'')}">${tx.capital?'<span style="font-size:10px;background:var(--accent-l);color:var(--accent);padding:1px 6px;border-radius:8px;margin-right:5px">КАП</span>':''}${escHtml(tx.comment||'')}</td>
       <td style="font-size:12px">${escHtml(tx.user||'admin')}</td>
       <td>${escHtml(tx.car||'—')}</td>
       <td style="font-size:12px;color:var(--text2)">${escHtml(carData?.brand||'—')}</td>
@@ -12716,6 +12722,7 @@ function exportTxnPDF(){
   var q=(g('txnSearch')||'').toLowerCase();
   var typeF=g('txnTypeFilter'), purposeF=g('txnPurposeFilter'), cashboxF=g('txnCashboxFilter');
   var driverF=(g('txnDriverFilter')||'').toLowerCase(), carF=g('txnCarFilter');
+  var capF=g('txnCapitalFilter');
   var partyF=(g('txnPartyFilter')||'').toLowerCase(), labelF=g('txnLabelFilter');
   var data=finTxns.filter(function(tx){
     if(!finTxnShowCancelled&&tx.cancelled)return false;
@@ -12727,6 +12734,8 @@ function exportTxnPDF(){
     if(cashboxF&&String(tx.cashboxId)!==cashboxF)return false;
     if(driverF&&!(tx.driver||'').toLowerCase().includes(driverF))return false;
     if(carF&&tx.car!==carF)return false;
+    if(capF==='cap'&&!tx.capital)return false;
+    if(capF==='op'&&tx.capital)return false;
     if(partyF&&!(tx.counterparty||'').toLowerCase().includes(partyF))return false;
     if(finTxnDateFrom&&tx.date<finTxnDateFrom)return false;
     if(finTxnDateTo&&tx.date>finTxnDateTo)return false;
