@@ -177,6 +177,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .day-chip input{margin:0;cursor:pointer}
 .day-presets{display:flex;gap:6px;margin-top:8px}
 .field-hint{font-size:11px;color:var(--text3);margin-top:6px}
+.cday-wrap{margin-top:10px;max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);padding:6px;display:flex;flex-direction:column;gap:5px}
+.cday-row{display:flex;align-items:center;gap:6px}
+.cday-row.cday-head{position:sticky;top:-6px;background:var(--bg);padding-top:2px;padding-bottom:4px}
+.cday-row .cd-date{flex:0 0 78px;font-size:12px;color:var(--text2)}
+.cday-row .cd-date b{color:var(--text)}
+.cday-row .cd-hd{flex:1;min-width:0;font-size:11px;color:var(--text3);text-align:center}
+.cday-row input{flex:1;min-width:0;width:100%;padding:6px 7px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;font-family:inherit}
+.cday-row input:focus{border-color:var(--accent);outline:none}
 .modal-acts{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 
 .empty-state{text-align:center;padding:50px 20px;color:var(--text3)}
@@ -550,6 +558,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <select id="cl_smode" onchange="toggleSchedMode()">
           <option value="weekdays">По дням недели</option>
           <option value="rotation">Сменный график (N через N)</option>
+          <option value="custom">Индивидуально по датам (своё время каждый день)</option>
         </select>
       </div>
       <div id="cl_weekdays">
@@ -603,6 +612,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="field-2">
         <div class="field-row"><label>Период с</label><input id="cl_pfrom" type="date"></div>
         <div class="field-row"><label>Период по</label><input id="cl_pto" type="date"></div>
+      </div>
+      <div id="cl_custom" style="display:none">
+        <div class="field-hint" style="margin-top:0;margin-bottom:8px">Укажите период выше (можно отметить дни недели — пусто = все дни). Нажмите «Сформировать дни» — появится список всех дней, на каждый впишите своё время. Поля «Утро / День / Вечер» сверху используются как значение по умолчанию. Пустой день = поездки нет.</div>
+        <button class="mini-btn primary" type="button" onclick="buildCustomDays()"><i class="ti ti-calendar-plus"></i> Сформировать дни</button>
+        <div id="cl_custom_list" class="cday-wrap"></div>
       </div>
       <div class="field-2">
         <div class="field-row"><label>Длительность (мин)</label><input id="cl_dur" type="number" min="0" step="5" placeholder="60"></div>
@@ -1399,10 +1413,13 @@ function daysLabel(s){
   return arr.map(function(n){return DOW[n];}).join(' ');
 }
 function scheduleLabel(c){
-  if((c.sched_mode||'weekdays')==='rotation'){ var n=c.rotation!=null?c.rotation:1; return n+'/'+n+' (смена)'; }
+  var m=c.sched_mode||'weekdays';
+  if(m==='rotation'){ var n=c.rotation!=null?c.rotation:1; return n+'/'+n+' (смена)'; }
+  if(m==='custom'){ var k=(c.custom_days&&c.custom_days.length)?c.custom_days.length:0; return 'по датам'+(k?' ('+k+')':''); }
   return daysLabel(c.days);
 }
 function clientTimesLabel(c){
+  if((c.sched_mode||'')==='custom') return '<span style="color:var(--text3)">разное по дням</span>';
   var t=[];
   if(c.t_morning) t.push('☀ '+c.t_morning);
   if(c.t_day) t.push('⛅ '+c.t_day);
@@ -1461,9 +1478,10 @@ function toggleClientSchedule(){
   document.getElementById('cl_sched').style.display = onetime ? 'none' : '';
 }
 function toggleSchedMode(){
-  var rot = document.getElementById('cl_smode').value==='rotation';
-  document.getElementById('cl_weekdays').style.display = rot ? 'none' : '';
-  document.getElementById('cl_rotation').style.display = rot ? '' : 'none';
+  var m = document.getElementById('cl_smode').value;
+  document.getElementById('cl_rotation').style.display = (m==='rotation') ? '' : 'none';
+  document.getElementById('cl_weekdays').style.display = (m==='rotation') ? 'none' : '';
+  document.getElementById('cl_custom').style.display = (m==='custom') ? '' : 'none';
 }
 function openClientModal(id){
   editingClientId = id||null;
@@ -1482,6 +1500,8 @@ function openClientModal(id){
   document.getElementById('cl_rot').value=(c.rotation!=null?c.rotation:1);
   document.getElementById('cl_rotstart').value=c.rotation_start||'';
   toggleSchedMode();
+  document.getElementById('cl_custom_list').innerHTML='';
+  if((c.sched_mode||'')==='custom' && c.custom_days && c.custom_days.length){ renderCustomList(c.custom_days); }
   document.getElementById('cl_tm').value=c.t_morning||'';
   document.getElementById('cl_td').value=c.t_day||'';
   document.getElementById('cl_te').value=c.t_evening||'';
@@ -1520,6 +1540,7 @@ async function saveClient(){
     sd_evening:document.getElementById('cl_sde').value||null,
     period_from:document.getElementById('cl_pfrom').value||null,
     period_to:document.getElementById('cl_pto').value||null,
+    custom_days: document.getElementById('cl_smode').value==='custom' ? readCustomDays() : null,
     duration: document.getElementById('cl_dur').value!=='' ? Number(document.getElementById('cl_dur').value) : 60,
     wait: document.getElementById('cl_wait').value!=='' ? Number(document.getElementById('cl_wait').value) : 0,
     company_id:'mrride'
@@ -1540,6 +1561,50 @@ async function delClient(id){
 
 function fmtDate(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 
+// ── Индивидуальное расписание по датам ──
+function buildCustomDays(){
+  var pf=document.getElementById('cl_pfrom').value, pt=document.getElementById('cl_pto').value;
+  if(!pf||!pt){ alert('Сначала укажите период (Период с / по).'); return; }
+  var start=new Date(pf+'T00:00:00'), end=new Date(pt+'T00:00:00');
+  if(end<start){ alert('Дата «по» раньше даты «с».'); return; }
+  var filter=[]; document.querySelectorAll('.cl-day:checked').forEach(function(b){ filter.push(Number(b.value)); });
+  var dm=document.getElementById('cl_tm').value.trim(), dd=document.getElementById('cl_td').value.trim(), de=document.getElementById('cl_te').value.trim();
+  // сохранить уже введённое, если список перестраивают
+  var prev={}; document.querySelectorAll('#cl_custom_list .cday-row[data-date]').forEach(function(r){ prev[r.getAttribute('data-date')]={m:r.querySelector('.cd-m').value,d:r.querySelector('.cd-d').value,e:r.querySelector('.cd-e').value}; });
+  var arr=[]; var d=new Date(start);
+  while(d<=end){
+    var iso=d.getDay()===0?7:d.getDay();
+    if(!filter.length || filter.indexOf(iso)>=0){
+      var ds=fmtDate(d); var p=prev[ds];
+      arr.push({date:ds, m:(p?p.m:dm), d:(p?p.d:dd), e:(p?p.e:de)});
+    }
+    d.setDate(d.getDate()+1);
+  }
+  if(!arr.length){ alert('В периоде нет подходящих дней.'); return; }
+  renderCustomList(arr);
+}
+function renderCustomList(arr){
+  var h='<div class="cday-row cday-head"><div class="cd-date"><b>День</b></div><div class="cd-hd">☀ утро</div><div class="cd-hd">⛅ день</div><div class="cd-hd">🌙 веч</div></div>';
+  arr.forEach(function(x){
+    var dt=new Date(x.date+'T00:00:00'); var iso=dt.getDay()===0?7:dt.getDay();
+    var lbl=x.date.slice(8,10)+'.'+x.date.slice(5,7)+' '+DOW[iso];
+    h+='<div class="cday-row" data-date="'+x.date+'">'+
+       '<div class="cd-date"><b>'+lbl+'</b></div>'+
+       '<input class="cd-m" placeholder="☀ утро" value="'+esc(x.m||'')+'">'+
+       '<input class="cd-d" placeholder="⛅ день" value="'+esc(x.d||'')+'">'+
+       '<input class="cd-e" placeholder="🌙 веч" value="'+esc(x.e||'')+'">'+
+       '</div>';
+  });
+  document.getElementById('cl_custom_list').innerHTML=h;
+}
+function readCustomDays(){
+  var arr=[];
+  document.querySelectorAll('#cl_custom_list .cday-row[data-date]').forEach(function(r){
+    arr.push({date:r.getAttribute('data-date'), m:r.querySelector('.cd-m').value.trim(), d:r.querySelector('.cd-d').value.trim(), e:r.querySelector('.cd-e').value.trim()});
+  });
+  return arr;
+}
+
 // Создать поездки на период по расписанию клиента
 async function generateTrips(id){
   var c = CLIENTS.find(function(x){return x.id===id;});
@@ -1548,15 +1613,33 @@ async function generateTrips(id){
   var mode = c.sched_mode||'weekdays';
   var days=(c.days||'').split(',').filter(Boolean).map(Number);
   var N = c.rotation!=null ? Number(c.rotation) : 1;
-  if(mode==='weekdays' && !days.length){ alert('Выберите дни недели в расписании клиента.'); return; }
-  if(mode==='rotation' && !(N>=1)){ alert('Выберите сменный график (N/N).'); return; }
-  if(!(c.t_morning||c.t_day||c.t_evening)){ alert('Укажите хотя бы одно время (утро/день/вечер).'); return; }
+  if(mode==='custom'){
+    if(!(c.custom_days && c.custom_days.length)){ alert('Нет списка дней. Откройте клиента, выберите «Индивидуально по датам» и нажмите «Сформировать дни».'); return; }
+  } else {
+    if(mode==='weekdays' && !days.length){ alert('Выберите дни недели в расписании клиента.'); return; }
+    if(mode==='rotation' && !(N>=1)){ alert('Выберите сменный график (N/N).'); return; }
+    if(!(c.t_morning||c.t_day||c.t_evening)){ alert('Укажите хотя бы одно время (утро/день/вечер).'); return; }
+  }
   // уже созданные дни этого клиента в периоде — чтобы не дублировать
   var ex = await sb.from('tour_orders').select('trip_date').eq('client', c.name).gte('trip_date', c.period_from).lte('trip_date', c.period_to);
   if(ex.error){ alert('Ошибка проверки: '+ex.error.message); return; }
   var have={}; (ex.data||[]).forEach(function(r){ if(r.trip_date) have[r.trip_date]=true; });
   var anyDrv = c.sd_morning||c.sd_day||c.sd_evening;
   var rows=[];
+  if(mode==='custom'){
+    (c.custom_days||[]).forEach(function(x){
+      if(!x || !x.date) return;
+      if(x.date < c.period_from || x.date > c.period_to) return;
+      var m=(x.m||'').trim(), dd=(x.d||'').trim(), e=(x.e||'').trim();
+      if(!m && !dd && !e) return;
+      if(have[x.date]) return;
+      rows.push({client:c.name, phone:c.phone, from_loc:c.from_loc, to_loc:c.to_loc,
+        morning:m||null, day_time:dd||null, evening:e||null,
+        driver_morning:c.sd_morning||null, driver_day:c.sd_day||null, driver_evening:c.sd_evening||null,
+        duration:(c.duration!=null?c.duration:60), wait:(c.wait!=null?c.wait:0),
+        trip_date:x.date, status: anyDrv?'assigned':'new', type:'round', company_id:'mrride'});
+    });
+  } else {
   var anchor = (mode==='rotation' && c.rotation_start) ? new Date(c.rotation_start+'T00:00:00') : new Date(c.period_from+'T00:00:00');
   var d=new Date(c.period_from+'T00:00:00'); var end=new Date(c.period_to+'T00:00:00');
   while(d<=end){
@@ -1577,6 +1660,7 @@ async function generateTrips(id){
         trip_date:ds, status: anyDrv?'assigned':'new', type:'round', company_id:'mrride'});
     }
     d.setDate(d.getDate()+1);
+  }
   }
   if(!rows.length){ alert('Нечего создавать: подходящих дней нет или поездки на этот период уже созданы.'); return; }
   var res = await sb.from('tour_orders').insert(rows);
