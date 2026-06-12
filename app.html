@@ -100,6 +100,7 @@ window.addEventListener('load', function(){
       if(cRes && cRes.merged > 0){
         console.log('[startup] Auto-merged', cRes.merged, 'car duplicate(s):', cRes.pairs);
       }
+      try{ var _fid=window._fixDriverIds&&window._fixDriverIds(); if(_fid) console.log('[startup] Fixed', _fid, 'driver id(s)'); }catch(_){}
     } catch(e){ console.warn('startup dedupe error:', e); }
 
     // Clean up services arrays: the demo data set everyone to
@@ -4203,7 +4204,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.24';
+window.APP_VERSION = '2026-06-07.25';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -5045,7 +5046,22 @@ function saveDriversToStorage(){
 
 let filteredDrivers=[...drivers],driverSortKey='name',driverSortDir=1,driverPage=1,driverPerPage=20,currentDriver=null;
 
+function _fixDriverIds(){
+  var list=window.drivers||[]; if(!list.length) return 0;
+  var seen={}, fixed=0, maxId=0;
+  list.forEach(function(d){ var n=Number(d.id); if(!isNaN(n)&&n>maxId) maxId=n; });
+  list.forEach(function(d){
+    var n=Number(d.id);
+    var valid=(d.id!=null && d.id!=='' && !isNaN(n) && n>0 && String(d.id)===String(n) && !seen[String(n)]);
+    if(valid){ seen[String(n)]=1; }
+    else { maxId++; d.id=maxId; seen[String(maxId)]=1; fixed++; }
+  });
+  if(fixed){ try{ if(typeof saveDriversToStorage==='function')saveDriversToStorage(); }catch(e){} }
+  return fixed;
+}
+window._fixDriverIds=_fixDriverIds;
 function applyDriverFilters(){
+  try{ _fixDriverIds(); }catch(e){}
   const q=(document.getElementById('driverSearch').value||'').toLowerCase();
   const type=document.getElementById('dTypeFilter').value;
   const st=document.getElementById('dStatusFilter').value;
@@ -5074,7 +5090,7 @@ function renderDrivers(){
     const dModel=d.vehicleId?((dcar?dcar.model:d.carModel)||'—'):'—';
     return `<tr>
       <td>${start+i+1}</td>
-      <td><button class="vlink" onclick="openDriverDetails(${d.id})">${d.name}</button></td>
+      <td><button class="vlink" onclick="openDriverDetails('${d.id}')">${d.name}</button></td>
       <td style="color:var(--text2)">${tType(d.type)||'—'}</td>
       <td style="color:var(--text2)">${escHtml(d.motivRule||d.motivation||'—')}</td><td style="color:var(--text2)">${tType(d.motivationType)||'—'}</td>
       <td><span style="${stStyle}">${tStatus(d.status)}</span></td>
@@ -5091,7 +5107,7 @@ function renderDrivers(){
     const stColor=d.status==='Working'?'#0d9e75':'#e74c3c';
     const dcar=getDriverCar(d);
     const carLabel=d.vehicleId?((dcar?(dcar.brand+' '+dcar.model):((d.carBrand||'')+' '+(d.carModel||''))).trim()):'';
-    return `<div class="car-card" onclick="openDriverDetails(${d.id})">
+    return `<div class="car-card" onclick="openDriverDetails('${d.id}')">
       <div class="car-card-top">
         <span style="font-size:14px;font-weight:700">${d.name}</span>
         <span style="font-size:12px;font-weight:600;color:${stColor}">${tStatus(d.status)}</span>
@@ -5120,7 +5136,7 @@ function nextDriverPage(){if(driverPage<Math.ceil(filteredDrivers.length/driverP
 function setDriverPerPage(v){driverPerPage=v;driverPage=1;renderDrivers();}
 
 function openDriverDetails(id){
-  currentDriver=drivers.find(d=>d.id===id);if(!currentDriver)return;
+  currentDriver=drivers.find(d=>String(d.id)===String(id));if(!currentDriver)return;
   const d=currentDriver;
 
   // Pull orders + transactions for THIS driver (by yandexId). Everything
@@ -7096,7 +7112,7 @@ function addBoltDriver(uuid){
   var s=window._boltSync; if(!s) return;
   var n=s.news.find(function(x){return x.uuid===uuid;}); if(!n) return;
   if(drivers.some(function(d){return d.boltId===uuid;})){ n._added=true; _renderBoltSyncModal(); if(typeof showToast==='function') showToast('\u0423\u0436\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d'); return; }
-  var newId=(drivers.length?Math.max.apply(null,drivers.map(function(d){return Number(d.id)||0;})):0)+1;
+  var newId=Math.max(0,...drivers.map(function(d){return Number(d.id)||0;}))+1;
   var nd={id:newId,name:n.name,type:'',motivRule:'',motivType:'',status:'Working',phone:n.phone||'',email:'-',services:['BOLT'],carBrand:'',carModel:'',vehicleId:'',boltId:uuid};
   drivers.push(nd);
   try{ if(typeof saveDriversToStorage==='function') saveDriversToStorage(); }catch(_){}
