@@ -3279,6 +3279,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
             <div class="fin-section-header">
               <h2 data-i18n="finCashboxes"><span data-i18n="finCashboxes">Cash boxes</span></h2>
               <button class="fin-btn" onclick="openCashboxModal()"><i class="ti ti-plus"></i> <span data-i18n="finAddCashbox">Add cash box</span></button>
+              <button class="fin-btn" onclick="migrateFinanceToCloud()" style="margin-left:6px"><i class="ti ti-cloud-upload"></i> Перенести в облако</button>
             </div>
             <div class="fin-cards-grid" id="cashboxGrid"></div>
             <div class="table-wrap">
@@ -4202,7 +4203,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.23';
+window.APP_VERSION = '2026-06-07.24';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -11446,7 +11447,7 @@ let finTxns=[];
 // Restore finance data from localStorage (survive refresh)
 try{ var _ftx=localStorage.getItem('mrride_finTxns'); if(_ftx){ var _fa=JSON.parse(_ftx); if(Array.isArray(_fa)) finTxns=_fa; } }catch(_){}
 try{ var _fcb=localStorage.getItem('mrride_finCashboxes'); if(_fcb){ var _fb=JSON.parse(_fcb); if(Array.isArray(_fb)&&_fb.length) finCashboxes=_fb; } }catch(_){}
-function saveFinanceToStorage(){ try{ localStorage.setItem('mrride_finTxns', JSON.stringify(finTxns)); localStorage.setItem('mrride_finCashboxes', JSON.stringify(finCashboxes)); }catch(_){} }
+function saveFinanceToStorage(){ try{ localStorage.setItem('mrride_finTxns', JSON.stringify(finTxns)); localStorage.setItem('mrride_finCashboxes', JSON.stringify(finCashboxes)); }catch(_){} if(typeof _finCloudSyncSoon==='function')_finCloudSyncSoon(); }
 window.saveFinanceToStorage=saveFinanceToStorage;
 // Salaries
 let finSalaries=[];
@@ -11939,7 +11940,85 @@ function importTxnFile(){
 window.finImportHistory=window.finImportHistory||[];
 // Restore import history from localStorage (keep across refresh / page switch)
 try{ var _fih=localStorage.getItem('mrride_finImportHistory'); if(_fih){ var _fihA=JSON.parse(_fih); if(Array.isArray(_fihA)) window.finImportHistory=_fihA; } }catch(_){}
-function saveImportHistory(){ try{ localStorage.setItem('mrride_finImportHistory', JSON.stringify(window.finImportHistory||[])); }catch(_){} }
+function saveImportHistory(){ try{ localStorage.setItem('mrride_finImportHistory', JSON.stringify(window.finImportHistory||[])); }catch(_){} if(typeof _finCloudSyncSoon==='function')_finCloudSyncSoon(); }
+// ===== Finance cloud sync (Supabase) =====
+function _finSB(){ return window._limoSB||null; }
+async function _finUpsert(table, arr){
+  var sb=_finSB(); if(!sb||!Array.isArray(arr)) return 0;
+  var rows=arr.filter(function(x){return x&&x.id!=null;}).map(function(x){return {id:String(x.id), data:x, updated_at:new Date().toISOString()};});
+  if(!rows.length) return 0;
+  var n=0;
+  for(var i=0;i<rows.length;i+=400){
+    var chunk=rows.slice(i,i+400);
+    var res=await sb.from(table).upsert(chunk,{onConflict:'id'});
+    if(res.error){ console.warn('[fin cloud] upsert '+table+':', res.error.message); break; }
+    n+=chunk.length;
+  }
+  return n;
+}
+async function _finCloudPush(){
+  var t=await _finUpsert('fin_transactions', finTxns);
+  var c=await _finUpsert('fin_cashboxes', finCashboxes);
+  var h=await _finUpsert('fin_import_history', window.finImportHistory||[]);
+  return {txns:t, cashboxes:c, imports:h};
+}
+async function _finLoadTable(table){
+  var sb=_finSB(); if(!sb) return [];
+  var out=[], from=0, page=1000;
+  while(true){
+    var res=await sb.from(table).select('data').range(from, from+page-1);
+    if(res.error){ console.warn('[fin cloud] load '+table+':', res.error.message); break; }
+    var rows=(res.data||[]).map(function(r){return r.data;}).filter(Boolean);
+    out=out.concat(rows);
+    if(rows.length<page) break;
+    from+=page;
+  }
+  return out;
+}
+function _finMergeById(cloud, local){
+  var map={}; (cloud||[]).forEach(function(x){ if(x&&x.id!=null) map[String(x.id)]=x; });
+  (local||[]).forEach(function(x){ if(x&&x.id!=null && !(String(x.id) in map)) map[String(x.id)]=x; });
+  return Object.keys(map).map(function(k){return map[k];});
+}
+async function loadFinanceFromCloud(){
+  var sb=_finSB(); if(!sb) return;
+  try{
+    var cTx=await _finLoadTable('fin_transactions');
+    var cCb=await _finLoadTable('fin_cashboxes');
+    var cIh=await _finLoadTable('fin_import_history');
+    if(!cTx.length && !cCb.length && !cIh.length){ console.log('[fin cloud] облако пустое — работаю локально'); return; }
+    var localOnlyTx=finTxns.filter(function(x){ return x&&x.id!=null && !cTx.some(function(c){return String(c.id)===String(x.id);}); });
+    window._finLoadingCloud=true;
+    finTxns=_finMergeById(cTx, finTxns);
+    if(cCb.length) finCashboxes=_finMergeById(cCb, finCashboxes);
+    window.finImportHistory=_finMergeById(cIh, window.finImportHistory||[]);
+    saveFinanceToStorage(); saveImportHistory();
+    window._finLoadingCloud=false;
+    if(localOnlyTx.length){ _finUpsert('fin_transactions', localOnlyTx); }
+    console.log('[fin cloud] загружено: txns',cTx.length,'cashboxes',cCb.length,'imports',cIh.length,'| локальных довложено',localOnlyTx.length);
+    try{ if(typeof renderFinanceAll==='function') renderFinanceAll(); }catch(e){}
+  }catch(e){ window._finLoadingCloud=false; console.warn('[fin cloud] load ex', e); }
+}
+var _finPushTimer=null;
+function _finCloudSyncSoon(){
+  if(!_finSB()||window._finLoadingCloud) return;
+  clearTimeout(_finPushTimer);
+  _finPushTimer=setTimeout(function(){ _finCloudPush().then(function(r){ console.log('[fin cloud] синхронизировано', JSON.stringify(r)); }).catch(function(e){ console.warn('[fin cloud] push', e); }); }, 2500);
+}
+async function migrateFinanceToCloud(){
+  if(!_finSB()){ if(typeof showToast==='function')showToast('Нет подключения к базе'); return; }
+  // проверка дублей id (чтобы не схлопнуть в облаке)
+  var seen={}, dup=0; finTxns.forEach(function(x){ if(x&&x.id!=null){ var k=String(x.id); if(seen[k])dup++; seen[k]=1; } });
+  var warn = dup? ('\n\u26a0 Найдено '+dup+' транзакций с одинаковым id — в облаке они схлопнутся. Сообщите разработчику.') : '';
+  if(!window.confirm('Перенести в облако: '+finTxns.length+' транзакций, '+finCashboxes.length+' касс?\nПосле этого их увидят сотрудники с других устройств.'+warn)) return;
+  if(typeof showToast==='function')showToast('Перенос в облако…');
+  try{
+    var r=await _finCloudPush();
+    if(typeof showToast==='function')showToast('Перенесено: '+r.txns+' транз., '+r.cashboxes+' касс, '+r.imports+' импортов');
+    console.log('[fin cloud] миграция', JSON.stringify(r));
+  }catch(e){ if(typeof showToast==='function')showToast('Ошибка переноса'); console.warn(e); }
+}
+window.addEventListener('DOMContentLoaded', function(){ setTimeout(loadFinanceFromCloud, 1200); });
 window.saveImportHistory=saveImportHistory;
 
 function renderImportTable(){
