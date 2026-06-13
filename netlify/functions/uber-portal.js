@@ -14,6 +14,23 @@
 //   uuids  — список UUID водителей через запятую (по умолчанию: из ENV UBER_PORTAL_DRIVERS)
 
 const PORTAL_URL = 'https://supplier.uber.com/graphql';
+const { connectLambda, getStore } = require('@netlify/blobs');
+const DRIVERS_STORE = 'uber-config';
+const DRIVERS_KEY = 'drivers';
+async function _loadDriverList(){
+  try{
+    const st = getStore(DRIVERS_STORE);
+    const rec = await st.get(DRIVERS_KEY, { type: 'json' });
+    if (rec && Array.isArray(rec.uuids)) return rec.uuids.slice();
+  }catch(e){}
+  return String(process.env.UBER_PORTAL_DRIVERS||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
+}
+async function _saveDriverList(arr){
+  const st = getStore(DRIVERS_STORE);
+  const uniq = Array.from(new Set((arr||[]).map(function(x){return String(x).trim();}).filter(Boolean)));
+  await st.setJSON(DRIVERS_KEY, { uuids: uniq, updated_at: new Date().toISOString() });
+  return uniq;
+}
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -70,6 +87,40 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS, body: '' };
   }
+  try { connectLambda(event); } catch (e) {}
+
+  try {
+    const _qs = event.queryStringParameters || {};
+    let _b = {}; if (event.body) { try { _b = JSON.parse(event.body); } catch(e){} }
+    const action = _qs.action || _b.action || '';
+    if (action === 'list-drivers') {
+      const list = await _loadDriverList();
+      return { statusCode:200, headers:CORS, body:JSON.stringify({ ok:true, uuids:list, count:list.length }) };
+    }
+    if (action === 'add-driver') {
+      const uuid = String(_qs.uuid || _b.uuid || '').trim();
+      if (!/^[0-9a-fA-F-]{20,}$/.test(uuid)) return { statusCode:200, headers:CORS, body:JSON.stringify({ ok:false, error:'bad uuid' }) };
+      const list = await _loadDriverList();
+      if (!list.includes(uuid)) list.push(uuid);
+      const saved = await _saveDriverList(list);
+      return { statusCode:200, headers:CORS, body:JSON.stringify({ ok:true, added:uuid, uuids:saved, count:saved.length }) };
+    }
+    if (action === 'remove-driver') {
+      const uuid = String(_qs.uuid || _b.uuid || '').trim();
+      const list = (await _loadDriverList()).filter(function(x){return x !== uuid;});
+      const saved = await _saveDriverList(list);
+      return { statusCode:200, headers:CORS, body:JSON.stringify({ ok:true, removed:uuid, uuids:saved, count:saved.length }) };
+    }
+    if (action === 'migrate-env') {
+      const envList = String(process.env.UBER_PORTAL_DRIVERS||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
+      const cur = await _loadDriverList();
+      const merged = Array.from(new Set(cur.concat(envList)));
+      const saved = await _saveDriverList(merged);
+      return { statusCode:200, headers:CORS, body:JSON.stringify({ ok:true, migrated:envList.length, uuids:saved, count:saved.length }) };
+    }
+  } catch(e){
+    return { statusCode:200, headers:CORS, body:JSON.stringify({ ok:false, error:'Blobs error: '+(e&&e.message||e) }) };
+  }
 
   try {
     const cookie = process.env.UBER_PORTAL_COOKIE;
@@ -102,8 +153,10 @@ exports.handler = async (event) => {
     // all=1 → игнорируем фиксированный список и просим у портала ВСЕХ водителей
     // (нужно, чтобы найти UUID новых водителей, которых ещё нет в env).
     const wantAll = (qs.all==='1' || qs.all==='true' || body.all===true);
-    let uuids = wantAll ? '' : (qs.uuids || body.uuids || process.env.UBER_PORTAL_DRIVERS || '');
-    uuids = String(uuids).split(',').map(s => s.trim()).filter(Boolean);
+    let uuids;
+    if (wantAll) { uuids = []; }
+    else if (qs.uuids || body.uuids) { uuids = String(qs.uuids||body.uuids).split(',').map(function(x){return x.trim();}).filter(Boolean); }
+    else { uuids = await _loadDriverList(); }
 
     const variables = {
       performanceReportRequest: {
