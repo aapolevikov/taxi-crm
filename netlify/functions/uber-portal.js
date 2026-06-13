@@ -1,5 +1,7 @@
 // netlify/functions/uber-portal.js
-// v1.0 — Тянет поездки/часы/доход водителей из портала supplier.uber.com
+// v1.2 — Тянет поездки/часы/доход водителей из портала supplier.uber.com
+//        + список водителей в Netlify Blobs (uber-config/drivers), управление из CRM:
+//          action=list-drivers | add-driver&uuid= | remove-driver&uuid= | migrate-env
 // через GraphQL GetPerformanceReport, используя сохранённую cookie-сессию.
 //
 // ВАЖНО: cookie хранятся в переменной окружения Netlify UBER_PORTAL_COOKIE,
