@@ -2463,7 +2463,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
           </div>
           <div class="sp"></div>
           <button class="btn-xlsx" onclick="exportDriversCSV()"><i class="ti ti-download"></i> XLSX</button>
-          <button class="btn-xlsx" onclick="syncBolt()"><i class="ti ti-refresh"></i> Синхр. Bolt</button><button class="btn-add" onclick="openAddDriverModal()"><i class="ti ti-plus"></i> Add</button>
+          <button class="btn-xlsx" onclick="syncBolt()"><i class="ti ti-refresh"></i> Синхр. Bolt</button><button class="btn-xlsx" onclick="openUberDriversModal()"><i class="ti ti-brand-uber"></i> Uber ID</button><button class="btn-add" onclick="openAddDriverModal()"><i class="ti ti-plus"></i> Add</button>
         </div>
 
         <!-- Table -->
@@ -4112,6 +4112,25 @@ body.no-icons .ti-external-link::before{content:"↗"}
   </div>
 </div>
 
+<div class="overlay" id="uberDriversModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2><i class="ti ti-brand-uber"></i> Uber-водители (список для портала)</h2>
+    <p style="font-size:13px;color:var(--text3);margin:4px 0 10px">CRM показывает Uber-данные только для водителей из этого списка. Добавьте Uber-uuid нового водителя — его метрики начнут подтягиваться. uuid берётся с supplier.uber.com (в адресе страницы водителя после /drivers/).</p>
+    <div class="fr full">
+      <label>Добавить Uber-uuid</label>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="uberNewUuid" placeholder="напр. bc239a0e-2be4-4b61-b224-28dd3ea1eec1" style="flex:1">
+        <button class="btn-add" onclick="addUberDriverUuid()"><i class="ti ti-plus"></i></button>
+      </div>
+    </div>
+    <div id="uberDriversList" style="margin-top:12px;max-height:320px;overflow:auto"></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="btn-cancel" onclick="closeModal('uberDriversModal')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="addDriverModal">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -4204,7 +4223,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.25';
+window.APP_VERSION = '2026-06-07.26';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -7003,6 +7022,51 @@ function deleteDriver(){
   else if(typeof renderDrivers==='function')renderDrivers();
   if(typeof applyFilters==='function')applyFilters();
   showToast(t('deleted'));
+}
+async function openUberDriversModal(){
+  document.getElementById('uberDriversModal').classList.add('open');
+  document.getElementById('uberDriversList').innerHTML = '<div style="color:var(--text3);font-size:13px">Загрузка…</div>';
+  await renderUberDriversList();
+}
+async function renderUberDriversList(){
+  var box=document.getElementById('uberDriversList'); if(!box) return;
+  try{
+    var r=await fetch('/.netlify/functions/uber-portal?action=list-drivers');
+    var j=await r.json();
+    if(!j.ok){ box.innerHTML='<div style="color:#e74c3c">Ошибка: '+(j.error||'')+'</div>'; return; }
+    var list=j.uuids||[];
+    if(!list.length){ box.innerHTML='<div style="color:var(--text3);font-size:13px">Список пуст</div>'; return; }
+    var rows=list.map(function(u){
+      var d=(window.drivers||[]).find(function(x){return String(x.uberId||'')===String(u);});
+      var name=d?(d.name+(d.vehicleId?(' · '+d.vehicleId):'')):'<span style="color:#e74c3c">не привязан к водителю в CRM</span>';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="min-width:0"><div style="font-weight:600;font-size:13px">'+name+'</div>'
+        +'<div style="font-size:11px;color:var(--text3);font-family:monospace;word-break:break-all">'+u+'</div></div>'
+        +'<button class="btn-cancel" style="flex:none;padding:4px 8px" onclick="removeUberDriverUuid(\''+u+'\')"><i class="ti ti-trash"></i></button>'
+        +'</div>';
+    }).join('');
+    box.innerHTML='<div style="font-size:12px;color:var(--text3);margin-bottom:4px">Всего: '+list.length+'</div>'+rows;
+  }catch(e){ box.innerHTML='<div style="color:#e74c3c">Ошибка сети</div>'; }
+}
+async function addUberDriverUuid(){
+  var inp=document.getElementById('uberNewUuid'); var u=(inp.value||'').trim();
+  if(!/^[0-9a-fA-F-]{20,}$/.test(u)){ if(typeof showToast==='function')showToast('Некорректный uuid'); return; }
+  if(typeof showToast==='function')showToast('Добавляю…');
+  try{
+    var r=await fetch('/.netlify/functions/uber-portal?action=add-driver&uuid='+encodeURIComponent(u));
+    var j=await r.json();
+    if(j.ok){ inp.value=''; if(typeof showToast==='function')showToast('Добавлено. Всего: '+j.count); await renderUberDriversList(); }
+    else { if(typeof showToast==='function')showToast('Ошибка: '+(j.error||'')); }
+  }catch(e){ if(typeof showToast==='function')showToast('Ошибка сети'); }
+}
+async function removeUberDriverUuid(u){
+  if(!window.confirm('Убрать этот uuid из списка? Метрики Uber для него перестанут подтягиваться.')) return;
+  try{
+    var r=await fetch('/.netlify/functions/uber-portal?action=remove-driver&uuid='+encodeURIComponent(u));
+    var j=await r.json();
+    if(j.ok){ if(typeof showToast==='function')showToast('Удалено. Всего: '+j.count); await renderUberDriversList(); }
+    else { if(typeof showToast==='function')showToast('Ошибка: '+(j.error||'')); }
+  }catch(e){ if(typeof showToast==='function')showToast('Ошибка сети'); }
 }
 function openAddDriverModal(){document.getElementById('addDriverModal').classList.add('open');}
 function _normPhone(p){ var d=String(p||'').replace(/\D/g,''); return d.length>9?d.slice(-9):d; }
