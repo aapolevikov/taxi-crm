@@ -2421,8 +2421,8 @@ function renderFinance(){
       '<select id="fin_type" onchange="applyFinFilter()" class="df-pick"><option value="all"'+(f.type==='all'?' selected':'')+'>Все типы</option><option value="income"'+(f.type==='income'?' selected':'')+'>Доходы</option><option value="expense"'+(f.type==='expense'?' selected':'')+'>Расходы</option></select>'+
     '</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      '<button class="btn-sec" onclick="document.getElementById(\'finImport\').click()"><i class="ti ti-upload"></i> Загрузить выписку</button>'+
-      '<input type="file" id="finImport" accept=".csv,text/csv" style="display:none" onchange="importStatement(this)">'+
+      '<button class="btn-sec" onclick="document.getElementById(\'finImport\').click()"><i class="ti ti-upload"></i> Загрузить выписку (PDF/CSV)</button>'+
+      '<input type="file" id="finImport" accept=".pdf,.csv,application/pdf,text/csv" style="display:none" onchange="importStatement(this)">'+
       '<button class="btn-sec" onclick="exportTxnsCsv()"><i class="ti ti-download"></i> CSV</button>'+
     '</div>'+
   '</div>';
@@ -2505,12 +2505,23 @@ function finParseCsv(text){
   if(cur!==''||row.length){ row.push(cur); rows.push(row); }
   return rows.filter(function(r){ return r.some(function(c){return String(c).trim()!=='';}); });
 }
+function commitImportedTxns(txns){
+  if(!txns||!txns.length){ alert('Не нашёл операций в файле.'); return; }
+  if(!confirm('Найдено операций: '+txns.length+'. Загрузить их в Финансы?')) return;
+  sb.from('tour_transactions').insert(txns).then(function(res){
+    if(res.error){ alert('Ошибка импорта: '+res.error.message); return; }
+    loadTxns().then(renderFinance); alert('Загружено операций: '+txns.length);
+  });
+}
 function importStatement(input){
   if(!input.files||!input.files[0])return;
+  var file=input.files[0]; input.value='';
+  var nm=(file.name||'').toLowerCase();
+  if(nm.indexOf('.pdf')>=0 || file.type==='application/pdf'){ parsePdfStatement(file); return; }
+  // ---- CSV ----
   var rdr=new FileReader();
   rdr.onload=function(e){
     var text=String(e.target.result||'').replace(/^\ufeff/,'');
-    input.value='';
     var rows=finParseCsv(text);
     if(rows.length<2){ alert('В файле нет данных.'); return; }
     var head=rows[0].map(function(h){return String(h).toLowerCase().trim();});
@@ -2518,10 +2529,7 @@ function importStatement(input){
     var ciDate=col(['date','дата']), ciAmt=col(['amount','сумма','amt']),
         ciDeb=col(['debit','дебет','расход','withdraw']), ciCr=col(['credit','кредит','приход','deposit']),
         ciDesc=col(['description','narrative','details','comment','назнач','описан','коммент','remarks']);
-    if(ciDate<0 || (ciAmt<0 && ciDeb<0 && ciCr<0)){
-      alert('Не удалось распознать формат выписки (нужны колонки с датой и суммой). Пришли этот файл в чат — настрою парсер под твой банк.');
-      return;
-    }
+    if(ciDate<0 || (ciAmt<0 && ciDeb<0 && ciCr<0)){ alert('Не удалось распознать формат CSV (нужны колонки даты и суммы).'); return; }
     var txns=[];
     for(var r=1;r<rows.length;r++){ var row=rows[r]; if(!row) continue;
       var d=finParseDate(row[ciDate]); if(!d) continue;
@@ -2531,14 +2539,75 @@ function importStatement(input){
       else { var v=finParseNum(row[ciAmt]); if(!v) continue; amount=Math.abs(v); type=v<0?'expense':'income'; }
       txns.push({id:'tx_'+Date.now()+'_'+r, tx_date:d, type:type, amount:amount, category:'выписка', client:null, driver_id:null, method:'transfer', note:(ciDesc>=0?String(row[ciDesc]||'').slice(0,200):null), company_id:'mrride'});
     }
-    if(!txns.length){ alert('Не нашёл операций в файле.'); return; }
-    if(!confirm('Найдено операций: '+txns.length+'. Загрузить их в Финансы?')) return;
-    sb.from('tour_transactions').insert(txns).then(function(res){
-      if(res.error){ alert('Ошибка импорта: '+res.error.message); return; }
-      loadTxns().then(renderFinance); alert('Загружено операций: '+txns.length);
-    });
+    commitImportedTxns(txns);
   };
-  rdr.readAsText(input.files[0]);
+  rdr.readAsText(file);
+}
+function ensurePdfJs(cb){
+  if(window.pdfjsLib){ cb(); return; }
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  s.onload=function(){ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }catch(e){} cb(); };
+  s.onerror=function(){ alert('Не удалось загрузить PDF-движок (проверь интернет).'); };
+  document.head.appendChild(s);
+}
+function parsePdfStatement(file){
+  ensurePdfJs(function(){
+    var rdr=new FileReader();
+    rdr.onload=function(e){ openPdfWithPwd(new Uint8Array(e.target.result), null); };
+    rdr.readAsArrayBuffer(file);
+  });
+}
+function openPdfWithPwd(data, pwd){
+  var opts = pwd ? {data:data, password:pwd} : {data:data};
+  window.pdfjsLib.getDocument(opts).promise.then(function(pdf){ extractMbankPdf(pdf); }).catch(function(err){
+    if(err && err.name==='PasswordException'){
+      var p=prompt('PDF-выписка защищена паролем. Введите пароль:');
+      if(p===null) return;
+      openPdfWithPwd(data, p);
+    } else { alert('Не удалось открыть PDF: '+((err&&err.message)||err)); }
+  });
+}
+async function extractMbankPdf(pdf){
+  var dateRe=/^\d{1,2}\/\d{1,2}\/\d{4}$/, moneyRe=/^\d{1,3}(,\d{3})*\.\d{2}$|^\d+\.\d{2}$/;
+  function num(s){ return parseFloat(s.replace(/,/g,'')); }
+  var txns=[];
+  try {
+    for(var pn=1; pn<=pdf.numPages; pn++){
+      var page=await pdf.getPage(pn);
+      var vp=page.getViewport({scale:1});
+      var tc=await page.getTextContent();
+      var items=tc.items.map(function(it){ var x=it.transform[4], y=it.transform[5]; return {x:x, x1:x+(it.width||0), top:vp.height-y, str:(it.str||'')}; })
+                        .filter(function(o){ return o.str.trim()!==''; });
+      var rows={};
+      items.forEach(function(o){ var k=Math.round(o.top/4); (rows[k]=rows[k]||[]).push(o); });
+      var keys=Object.keys(rows).map(Number).sort(function(a,b){return a-b;});
+      var buf=[];
+      keys.forEach(function(k){
+        var ws=rows[k].sort(function(a,b){return a.x-b.x;});
+        var merged=[]; ws.forEach(function(w){ var last=merged[merged.length-1]; if(last && (w.x-last.x1)<3){ last.str+=w.str; last.x1=w.x1; } else { merged.push({x:w.x,x1:w.x1,str:w.str}); } });
+        var line=merged.map(function(m){return m.str;}).join(' ').toLowerCase();
+        if(line.indexOf('debit')>=0 && line.indexOf('credit')>=0){ buf=[]; return; }   // заголовок таблицы
+        if(line.indexOf('balance')>=0 && (line.indexOf('forward')>=0||line.indexOf('opening')>=0||line.indexOf('closing')>=0)){ buf=[]; return; }
+        var pdate=null, deb=null, cr=null, det=[];
+        merged.forEach(function(m){
+          var t=m.str.trim();
+          if(dateRe.test(t) && m.x<210 && !pdate){ pdate=t; return; }
+          if(moneyRe.test(t)){ var v=num(t); if(m.x1<628) deb=v; else if(m.x1<692) cr=v; return; }
+          if(m.x>150 && m.x<445 && !dateRe.test(t)) det.push(t);
+        });
+        if(!pdate){ if(det.length) buf=buf.concat(det); return; }
+        deb=deb||0; cr=cr||0;
+        if(deb===0 && cr===0){ buf=[]; return; }
+        var pp=pdate.split('/');
+        var iso=pp[2]+'-'+('0'+pp[1]).slice(-2)+'-'+('0'+pp[0]).slice(-2);
+        var note=buf.concat(det).join(' ').replace(/\s+/g,' ').trim().slice(0,200);
+        txns.push({id:'tx_'+Date.now()+'_'+pn+'_'+k, tx_date:iso, type:(deb>0?'expense':'income'), amount:(deb>0?deb:cr), category:'выписка mBank', client:null, driver_id:null, method:(deb>0?'card':'transfer'), note:note||null, company_id:'mrride'});
+        buf=[];
+      });
+    }
+  } catch(e){ alert('Ошибка разбора PDF: '+(e&&e.message||e)); return; }
+  commitImportedTxns(txns);
 }
 
 // ─────────── SETTINGS ───────────
