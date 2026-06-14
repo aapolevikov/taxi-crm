@@ -919,6 +919,7 @@ function refreshPage(){
   if(currentPage==='funnel'){ if(document.getElementById('funnelCols')) renderFunnel(); }
   else if(currentPage==='dashboard'){ renderDashboard(); }
   else if(currentPage==='orders'){ renderOrders(); }
+  else if(currentPage==='clients'){ if(window._clientCardOpen) openClientCard(window._clientCardOpen); else renderClients(); }
   else { render(); }
 }
 
@@ -1742,18 +1743,23 @@ function togglePkgQty(){
 function openClientCard(id){
   var c=CLIENTS.find(function(x){return x.id===id;}); if(!c) return;
   window._clientCardOpen=id;
+  var s=window._ccSort||{by:'date',dir:'asc'};
   var trips=(ORDERS||[]).filter(function(o){return (o.client||'')===(c.name||'');});
-  trips.sort(function(a,b){ return (a.trip_date||'').localeCompare(b.trip_date||''); });
+  trips.sort(function(a,b){
+    if(s.by==='status'){ var av=a.done?1:0,bv=b.done?1:0; return s.dir==='asc'?(av-bv):(bv-av); }
+    var r=(a.trip_date||'').localeCompare(b.trip_date||''); return s.dir==='asc'?r:-r;
+  });
   var pf=c.period_from||'', pt=c.period_to||'';
   function inPeriod(o){ if(!pf&&!pt) return true; var d=o.trip_date||''; if(pf&&d<pf) return false; if(pt&&d>pt) return false; return true; }
   var scope=trips.filter(inPeriod);
   var done=scope.filter(function(o){return o.done;});
   var doneTrips=done.length;
-  var doneHours=done.reduce(function(s,o){return s+(Number(o.done_hours)||0);},0);
+  var doneHours=done.reduce(function(s2,o){return s2+(Number(o.done_hours)||0);},0);
   var ptype=c.package_type||'none', qty=(c.package_qty!=null?Number(c.package_qty):null);
   var initial=esc((c.name||'?').trim().charAt(0).toUpperCase());
   function cell(k,v){ return '<div class="dcard-cell"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
   function bar(used,total){ var pct=total>0?Math.min(100,Math.round(used/total*100)):0; return '<div style="height:10px;background:var(--bg3);border-radius:6px;overflow:hidden;margin:10px 0 2px"><div style="height:100%;width:'+pct+'%;background:var(--accent)"></div></div>'; }
+  var arrow=function(by){ return s.by===by?(s.dir==='asc'?' ▲':' ▼'):''; };
   var h='';
   h+='<button class="btn-sec" onclick="renderClients()" style="margin-bottom:16px"><i class="ti ti-arrow-left"></i> Клиенты</button>';
   h+='<div class="dcard"><div class="dcard-top"><div class="dcard-ava">'+initial+'</div>'+
@@ -1775,13 +1781,23 @@ function openClientCard(id){
     h+=cell('Всего поездок',String(scope.length));
   }
   h+=cell('Период',(pf||pt)?((pf||'…')+' → '+(pt||'…')):'без периода');
+  h+=cell('Оплачено','<b id="cc_paid">…</b>');
+  if(c.price!=null){
+    var unit={month:'/мес',week:'/нед',day:'/день'}[c.price_unit]||'';
+    h+=cell('Договор','<b>'+fmtNum(c.price)+'</b> AED'+unit);
+    h+=cell('Баланс','<b id="cc_bal">…</b>');
+  }
   h+='</div>';
   if(qty!=null && qty>0){ h+=(ptype==='hours')?bar(doneHours,qty):(ptype==='trips'?bar(doneTrips,qty):''); }
   h+='</div>';
-  h+='<div class="action-row" style="margin-top:14px"><div></div><div><button class="btn-sec" onclick="clientReportCsv(\''+c.id+'\')"><i class="ti ti-download"></i> Отчёт CSV</button></div></div>';
-  if(!trips.length){ h+='<div class="empty-state"><i class="ti ti-route"></i>У клиента пока нет поездок.</div>'; }
+  h+='<div class="action-row" style="margin-top:14px"><div></div><div style="display:flex;gap:8px;flex-wrap:wrap">'+
+     '<button class="btn-add" onclick="newTripForClient(\''+c.id+'\')"><i class="ti ti-plus"></i> Создать поездку</button>'+
+     '<button class="btn-sec" onclick="clientReportPdf(\''+c.id+'\')"><i class="ti ti-file-text"></i> PDF</button>'+
+     '<button class="btn-sec" onclick="clientReportCsv(\''+c.id+'\')"><i class="ti ti-download"></i> CSV</button>'+
+     '</div></div>';
+  if(!trips.length){ h+='<div class="empty-state"><i class="ti ti-route"></i>У клиента пока нет поездок.<br>Нажмите «Создать поездку».</div>'; }
   else {
-    h+='<table class="tbl"><thead><tr><th>Дата</th><th>Маршрут</th><th>Часы</th><th>Статус</th><th></th></tr></thead><tbody>';
+    h+='<table class="tbl"><thead><tr><th style="cursor:pointer" onclick="ccSort(\'date\')">Дата'+arrow('date')+'</th><th>Маршрут</th><th>Часы</th><th style="cursor:pointer" onclick="ccSort(\'status\')">Статус'+arrow('status')+'</th><th></th></tr></thead><tbody>';
     trips.forEach(function(o){
       var route=(o.from||o.to)?(esc(o.from||'')+' → '+esc(o.to||'')):'—';
       var st=o.done?'<span class="badge-st ok">✓ выполнено</span>':'<span class="badge-st warn">○ не выполнено</span>';
@@ -1791,6 +1807,64 @@ function openClientCard(id){
     h+='</tbody></table>';
   }
   document.getElementById('page-clients').innerHTML=h;
+  // деньги клиента (асинхронно) — оплачено из транзакций-доходов
+  (async function(){
+    var paid=0;
+    try{ var tr=await sb.from('tour_transactions').select('amount,type,client').eq('client', c.name);
+      if(tr&&!tr.error){ (tr.data||[]).forEach(function(t){ if((t.type||'')!=='expense') paid+=Number(t.amount)||0; }); } }catch(e){}
+    var pe=document.getElementById('cc_paid'); if(pe) pe.textContent=fmtNum(paid)+' AED';
+    var be=document.getElementById('cc_bal');
+    if(be && c.price!=null){ var bal=paid-Number(c.price);
+      be.innerHTML = bal>=0 ? ('<span style="color:var(--accent)">+'+fmtNum(bal)+' AED</span> переплата') : ('<span style="color:var(--danger)">'+fmtNum(bal)+' AED</span> долг'); }
+  })();
+}
+function ccSort(by){ var s=window._ccSort||{by:'date',dir:'asc'}; if(s.by===by){ s.dir=(s.dir==='asc'?'desc':'asc'); } else { s.by=by; s.dir='asc'; } window._ccSort=s; if(window._clientCardOpen) openClientCard(window._clientCardOpen); }
+function newTripForClient(id){
+  var c=CLIENTS.find(function(x){return x.id===id;}); if(!c) return;
+  openOrderModal();
+  document.getElementById('f_client').value=c.name||'';
+  document.getElementById('f_phone').value=c.phone||'';
+  document.getElementById('f_from').value=c.from_loc||'';
+  document.getElementById('f_to').value=c.to_loc||'';
+}
+function clientReportPdf(id){
+  var c=CLIENTS.find(function(x){return x.id===id;}); if(!c) return;
+  var s=window._ccSort||{by:'date',dir:'asc'};
+  var trips=(ORDERS||[]).filter(function(o){return (o.client||'')===(c.name||'');});
+  trips.sort(function(a,b){
+    if(s.by==='status'){ var av=a.done?1:0,bv=b.done?1:0; return s.dir==='asc'?(av-bv):(bv-av); }
+    var r=(a.trip_date||'').localeCompare(b.trip_date||''); return s.dir==='asc'?r:-r;
+  });
+  var pf=c.period_from||'', pt=c.period_to||'';
+  var scope=trips.filter(function(o){ var d=o.trip_date||''; if(pf&&d<pf) return false; if(pt&&d>pt) return false; return true; });
+  var done=scope.filter(function(o){return o.done;});
+  var doneTrips=done.length, doneHours=done.reduce(function(s2,o){return s2+(Number(o.done_hours)||0);},0);
+  var ptype=c.package_type||'none', qty=(c.package_qty!=null?Number(c.package_qty):null);
+  var pkg='Без лимита';
+  if(ptype==='trips'&&qty!=null) pkg='Поездки: '+doneTrips+' из '+qty+' (осталось '+Math.max(0,qty-doneTrips)+')';
+  else if(ptype==='hours'&&qty!=null) pkg='Часы: '+fmtNum(doneHours)+' из '+qty+' (осталось '+fmtNum(Math.max(0,qty-doneHours))+')';
+  else pkg='Выполнено поездок: '+doneTrips+', часов: '+fmtNum(doneHours);
+  var period=(pf||pt)?((pf||'…')+' → '+(pt||'…')):'без периода';
+  var rows=trips.map(function(o){
+    var route=(o.from||o.to)?(esc(o.from||'')+' → '+esc(o.to||'')):'—';
+    return '<tr><td>'+esc(o.trip_date||'—')+'</td><td>'+route+'</td><td style="text-align:center">'+(o.done&&o.done_hours!=null?fmtNum(o.done_hours):'—')+'</td><td style="text-align:center">'+(o.done?'✓ выполнено':'○ не выполнено')+'</td></tr>';
+  }).join('');
+  var html='<!doctype html><html><head><meta charset="utf-8"><title>Отчёт — '+esc(c.name)+'</title>'+
+    '<style>body{font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;padding:32px;font-size:13px}'+
+    'h1{font-size:22px;margin:0 0 2px}.sub{color:#666;margin-bottom:18px}'+
+    '.box{border:1px solid #ddd;border-radius:8px;padding:14px 16px;margin-bottom:18px}'+
+    '.box div{margin:3px 0}.box b{display:inline-block;min-width:160px;color:#555;font-weight:600}'+
+    'table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #e2e2e2;padding:7px 9px;text-align:left}'+
+    'th{background:#f5f5f5}@media print{body{padding:0}}</style></head><body>'+
+    '<h1>Mr Ride Tourism — отчёт по клиенту</h1>'+
+    '<div class="sub">'+esc(c.name)+(c.phone?(' · '+esc(c.phone)):'')+'</div>'+
+    '<div class="box"><div><b>Период</b>'+esc(period)+'</div><div><b>Пакет / сверка</b>'+esc(pkg)+'</div>'+
+    (c.price!=null?('<div><b>Стоимость договора</b>'+fmtNum(c.price)+' AED</div>'):'')+
+    '<div><b>Сформировано</b>'+dateStr(0)+'</div></div>'+
+    '<table><thead><tr><th>Дата</th><th>Маршрут</th><th>Часы</th><th>Статус</th></tr></thead><tbody>'+(rows||'<tr><td colspan="4">Поездок нет</td></tr>')+'</tbody></table>'+
+    '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},250);}</scr'+'ipt></body></html>';
+  var w=window.open('','_blank'); if(!w){ alert('Разрешите всплывающие окна, чтобы сформировать PDF.'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
 }
 async function markTripDone(id){
   var o=(ORDERS||[]).find(function(x){return x.id===id;}); if(!o) return;
