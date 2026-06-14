@@ -621,6 +621,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </select>
       </div>
     </div>
+    <div class="field-2">
+      <div class="field-row">
+        <label>Пакет (сверка)</label>
+        <select id="cl_pkgtype" onchange="togglePkgQty()">
+          <option value="none">Без лимита</option>
+          <option value="trips">По поездкам</option>
+          <option value="hours">По часам</option>
+        </select>
+      </div>
+      <div class="field-row" id="cl_pkgqty_row" style="display:none">
+        <label id="cl_pkgqty_lbl">Куплено</label>
+        <input id="cl_pkgqty" type="number" min="0" step="1" placeholder="напр. 20">
+      </div>
+    </div>
 
     <div id="cl_sched">
       <div class="field-row">
@@ -852,6 +866,7 @@ function rowToOrder(r){
           dM:r.driver_morning, dD:r.driver_day, dE:r.driver_evening,
           duration:r.duration, wait:r.wait,
           status:r.status, note:r.note, type:r.type,
+          done:r.done===true, done_hours:r.done_hours, done_at:r.done_at,
           request:r.request, trip_date:r.trip_date, day:r.day_time};
 }
 // объект доски -> поля для DB
@@ -1511,7 +1526,7 @@ async function loadClients(){
 var titles={board:['Доска заявок','по водителям'],funnel:['Воронка заявок','входящие'],orders:['Заявки / поездки','все поездки'],dashboard:['Дашборд','сводка дня'],clients:['Клиенты','база клиентов'],drivers:['Водители','команда'],cars:['Машины','автопарк'],repairs:['Ремонты','Repair Orders'],finance:['Финансы','доходы и расходы'],payments:['Оплаты','ссылки Nomod'],settings:['Настройки','параметры']};
 function goPage(p){
   currentPage=p;
-  window._carCardOpen=null; window._drvCardOpen=null;
+  window._carCardOpen=null; window._drvCardOpen=null; window._clientCardOpen=null;
   document.querySelectorAll('.page').forEach(function(el){el.style.display='none';});
   var pg=document.getElementById('page-'+p); if(pg) pg.style.display='';
   document.querySelectorAll('.sidebar .ni').forEach(function(b){b.classList.remove('active');});
@@ -1593,6 +1608,7 @@ function priceLabel(c){
 }
 
 function renderClients(){
+  window._clientCardOpen=null;
   var html='<div class="page-head"><span class="ttl">Клиенты</span><span class="spacer"></span><button class="btn-add" onclick="openClientModal()"><i class="ti ti-plus"></i> Клиент</button></div>';
   html+='<div class="info-banner"><i class="ti ti-info-circle"></i> Постоянному клиенту задайте расписание и нажмите «Создать поездки» — система сама заведёт поездки на каждый нужный день за период.</div>';
   if(!CLIENTS.length){
@@ -1604,7 +1620,7 @@ function renderClients(){
     var period = (c.period_from||c.period_to) ? (esc(c.period_from||'…')+' → '+esc(c.period_to||'…')) : '—';
     var typeLbl = c.kind==='onetime' ? '<span style="color:var(--text3)">разовый</span>' : '<span style="color:var(--accent)">постоянный</span>';
     html+='<tr>'+
-      '<td><b>'+esc(c.name)+'</b></td>'+
+      '<td><b><a class="lnk" href="#" onclick="openClientCard(\''+c.id+'\');return false;">'+esc(c.name)+'</a></b></td>'+
       '<td>'+esc(c.phone)+'</td>'+
       '<td>'+(c.from_loc?esc(c.from_loc)+' → '+esc(c.to_loc||''):'—')+'</td>'+
       '<td>'+(c.kind==='onetime'?'—':scheduleLabel(c))+'</td>'+
@@ -1655,6 +1671,9 @@ function openClientModal(id){
   document.getElementById('cl_to').value=c.to_loc||'';
   document.getElementById('cl_price').value=(c.price!=null?c.price:'');
   document.getElementById('cl_price_unit').value=c.price_unit||'month';
+  document.getElementById('cl_pkgtype').value=c.package_type||'none';
+  document.getElementById('cl_pkgqty').value=(c.package_qty!=null?c.package_qty:'');
+  togglePkgQty();
   setDays((c.days||'').split(',').filter(Boolean).map(Number));
   document.getElementById('cl_smode').value=c.sched_mode||'weekdays';
   document.getElementById('cl_rot').value=(c.rotation!=null?c.rotation:1);
@@ -1688,6 +1707,8 @@ async function saveClient(){
     to_loc:document.getElementById('cl_to').value.trim(),
     price: document.getElementById('cl_price').value!=='' ? Number(document.getElementById('cl_price').value) : null,
     price_unit: document.getElementById('cl_price_unit').value,
+    package_type: document.getElementById('cl_pkgtype').value,
+    package_qty: document.getElementById('cl_pkgqty').value!=='' ? Number(document.getElementById('cl_pkgqty').value) : null,
     days:days.join(','),
     sched_mode:document.getElementById('cl_smode').value,
     rotation:Number(document.getElementById('cl_rot').value)||1,
@@ -1710,7 +1731,99 @@ async function saveClient(){
   else { res = await sb.from('tour_clients').insert(data); }
   if(res.error){ alert('Ошибка сохранения клиента: '+res.error.message); return; }
   closeClientModal();
-  await loadClients(); renderClients();
+  await loadClients();
+  if(window._clientCardOpen){ openClientCard(window._clientCardOpen); } else { renderClients(); }
+}
+function togglePkgQty(){
+  var t=document.getElementById('cl_pkgtype').value;
+  document.getElementById('cl_pkgqty_row').style.display = (t==='none') ? 'none' : '';
+  document.getElementById('cl_pkgqty_lbl').textContent = (t==='hours') ? 'Куплено часов' : 'Куплено поездок';
+}
+function openClientCard(id){
+  var c=CLIENTS.find(function(x){return x.id===id;}); if(!c) return;
+  window._clientCardOpen=id;
+  var trips=(ORDERS||[]).filter(function(o){return (o.client||'')===(c.name||'');});
+  trips.sort(function(a,b){ return (a.trip_date||'').localeCompare(b.trip_date||''); });
+  var pf=c.period_from||'', pt=c.period_to||'';
+  function inPeriod(o){ if(!pf&&!pt) return true; var d=o.trip_date||''; if(pf&&d<pf) return false; if(pt&&d>pt) return false; return true; }
+  var scope=trips.filter(inPeriod);
+  var done=scope.filter(function(o){return o.done;});
+  var doneTrips=done.length;
+  var doneHours=done.reduce(function(s,o){return s+(Number(o.done_hours)||0);},0);
+  var ptype=c.package_type||'none', qty=(c.package_qty!=null?Number(c.package_qty):null);
+  var initial=esc((c.name||'?').trim().charAt(0).toUpperCase());
+  function cell(k,v){ return '<div class="dcard-cell"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+  function bar(used,total){ var pct=total>0?Math.min(100,Math.round(used/total*100)):0; return '<div style="height:10px;background:var(--bg3);border-radius:6px;overflow:hidden;margin:10px 0 2px"><div style="height:100%;width:'+pct+'%;background:var(--accent)"></div></div>'; }
+  var h='';
+  h+='<button class="btn-sec" onclick="renderClients()" style="margin-bottom:16px"><i class="ti ti-arrow-left"></i> Клиенты</button>';
+  h+='<div class="dcard"><div class="dcard-top"><div class="dcard-ava">'+initial+'</div>'+
+     '<div style="flex:1"><div style="font-size:20px;font-weight:700">'+esc(c.name)+'</div>'+
+     '<div style="color:var(--text2);font-size:13px">'+esc(c.phone||'')+(c.from_loc?(' · '+esc(c.from_loc)+'→'+esc(c.to_loc||'')):'')+'</div></div>'+
+     '<button class="btn-sec" onclick="openClientModal(\''+c.id+'\')"><i class="ti ti-pencil"></i> Изменить</button></div>';
+  h+='<div class="dcard-grid">';
+  if(ptype==='trips' && qty!=null){
+    h+=cell('Поездки','<b>'+doneTrips+'</b> из '+qty);
+    h+=cell('Осталось','<b>'+Math.max(0,qty-doneTrips)+'</b> поездок');
+    h+=cell('Часы','<b>'+fmtNum(doneHours)+'</b> ч');
+  } else if(ptype==='hours' && qty!=null){
+    h+=cell('Часы','<b>'+fmtNum(doneHours)+'</b> из '+qty);
+    h+=cell('Осталось','<b>'+fmtNum(Math.max(0,qty-doneHours))+'</b> ч');
+    h+=cell('Поездки','<b>'+doneTrips+'</b>');
+  } else {
+    h+=cell('Выполнено поездок','<b>'+doneTrips+'</b>');
+    h+=cell('Часы','<b>'+fmtNum(doneHours)+'</b> ч');
+    h+=cell('Всего поездок',String(scope.length));
+  }
+  h+=cell('Период',(pf||pt)?((pf||'…')+' → '+(pt||'…')):'без периода');
+  h+='</div>';
+  if(qty!=null && qty>0){ h+=(ptype==='hours')?bar(doneHours,qty):(ptype==='trips'?bar(doneTrips,qty):''); }
+  h+='</div>';
+  h+='<div class="action-row" style="margin-top:14px"><div></div><div><button class="btn-sec" onclick="clientReportCsv(\''+c.id+'\')"><i class="ti ti-download"></i> Отчёт CSV</button></div></div>';
+  if(!trips.length){ h+='<div class="empty-state"><i class="ti ti-route"></i>У клиента пока нет поездок.</div>'; }
+  else {
+    h+='<table class="tbl"><thead><tr><th>Дата</th><th>Маршрут</th><th>Часы</th><th>Статус</th><th></th></tr></thead><tbody>';
+    trips.forEach(function(o){
+      var route=(o.from||o.to)?(esc(o.from||'')+' → '+esc(o.to||'')):'—';
+      var st=o.done?'<span class="badge-st ok">✓ выполнено</span>':'<span class="badge-st warn">○ не выполнено</span>';
+      var btn=o.done?('<button class="mini-btn" onclick="unmarkTripDone(\''+o.id+'\')" title="Снять отметку">↺</button>'):('<button class="mini-btn primary" onclick="markTripDone(\''+o.id+'\')">✓ Выполнено</button>');
+      h+='<tr><td style="white-space:nowrap">'+esc(o.trip_date||'—')+'</td><td style="font-size:12px">'+route+'</td><td style="white-space:nowrap">'+(o.done&&o.done_hours!=null?fmtNum(o.done_hours)+' ч':'—')+'</td><td>'+st+'</td><td style="text-align:right">'+btn+'</td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  document.getElementById('page-clients').innerHTML=h;
+}
+async function markTripDone(id){
+  var o=(ORDERS||[]).find(function(x){return x.id===id;}); if(!o) return;
+  var def=(o.duration!=null && o.duration>0)?(Math.round((o.duration/60)*100)/100):1;
+  var inp=prompt('Сколько часов заняла поездка? (можно дробное, напр. 1.5)', String(def));
+  if(inp===null) return;
+  var hrs=parseFloat(String(inp).replace(',','.')); if(isNaN(hrs)||hrs<0){ alert('Неверное число часов'); return; }
+  var res=await sb.from('tour_orders').update({done:true, done_hours:hrs, done_at:new Date().toISOString()}).eq('id', id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  o.done=true; o.done_hours=hrs; o.done_at=new Date().toISOString();
+  tripDoneRefresh();
+}
+async function unmarkTripDone(id){
+  if(!confirm('Снять отметку «выполнено»?')) return;
+  var res=await sb.from('tour_orders').update({done:false, done_hours:null, done_at:null}).eq('id', id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  var o=(ORDERS||[]).find(function(x){return x.id===id;}); if(o){ o.done=false; o.done_hours=null; o.done_at=null; }
+  tripDoneRefresh();
+}
+function tripDoneRefresh(){
+  if(window._clientCardOpen){ openClientCard(window._clientCardOpen); }
+  else if(currentPage==='orders'){ renderOrders(); }
+  else if(window._drvCardOpen){ openDriverCard(window._drvCardOpen); }
+}
+function clientReportCsv(id){
+  var c=CLIENTS.find(function(x){return x.id===id;}); if(!c) return;
+  var trips=(ORDERS||[]).filter(function(o){return (o.client||'')===(c.name||'');});
+  trips.sort(function(a,b){ return (a.trip_date||'').localeCompare(b.trip_date||''); });
+  var rows=[['Дата','Маршрут','Часы','Выполнено']];
+  trips.forEach(function(o){ rows.push([o.trip_date||'', ((o.from||'')+' -> '+(o.to||'')), (o.done&&o.done_hours!=null?o.done_hours:''), (o.done?'да':'нет')]); });
+  var csv=rows.map(function(r){return r.map(function(x){x=String(x); return /[",\n;]/.test(x)?('"'+x.replace(/"/g,'""')+'"'):x;}).join(',');}).join('\n');
+  var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='client_'+String(c.name||'').replace(/\s+/g,'_')+'.csv'; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
 }
 async function delClient(id){
   if(!confirm('Удалить клиента? Уже созданные поездки останутся.')) return;
@@ -2364,7 +2477,7 @@ function renderOrders(){
     var tl=[]; if(o.morning)tl.push('☀'+esc(o.morning)); if(o.day)tl.push('⛅'+esc(o.day)); if(o.evening)tl.push('🌙'+esc(o.evening));
     var dr=[dname(o.dM),dname(o.dD),dname(o.dE)].filter(Boolean).join(', ')||'<span style="color:var(--text3)">—</span>';
     var route=(o.from||o.to)?(esc(o.from||'—')+' → '+esc(o.to||'—')):'—';
-    html+='<tr><td style="white-space:nowrap">'+esc(o.trip_date||'—')+'</td><td><b>'+esc(o.client||'—')+'</b></td><td style="font-size:12px;color:var(--text2)">'+route+'</td><td style="white-space:nowrap">'+(tl.join(' ')||'—')+'</td><td>'+dr+'</td><td>'+tripStatusBadge(o.status)+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="payFromOrder(\''+o.id+'\')" title="Ссылка на оплату">💳</button> <button class="mini-btn" onclick="openOrderModal(\''+o.id+'\')">✎</button> <button class="mini-btn" onclick="delOrder(\''+o.id+'\')">×</button></td></tr>';
+    html+='<tr><td style="white-space:nowrap">'+esc(o.trip_date||'—')+'</td><td><b>'+esc(o.client||'—')+'</b></td><td style="font-size:12px;color:var(--text2)">'+route+'</td><td style="white-space:nowrap">'+(tl.join(' ')||'—')+'</td><td>'+dr+'</td><td>'+tripStatusBadge(o.status)+'</td><td style="white-space:nowrap;text-align:right">'+(o.done?'<button class="mini-btn" style="color:var(--accent)" onclick="unmarkTripDone(\''+o.id+'\')" title="Выполнено — снять">✓</button>':'<button class="mini-btn" onclick="markTripDone(\''+o.id+'\')" title="Отметить выполнено">✓</button>')+' <button class="mini-btn" onclick="payFromOrder(\''+o.id+'\')" title="Ссылка на оплату">💳</button> <button class="mini-btn" onclick="openOrderModal(\''+o.id+'\')">✎</button> <button class="mini-btn" onclick="delOrder(\''+o.id+'\')">×</button></td></tr>';
   });
   html+='</tbody></table>';
   document.getElementById('page-orders').innerHTML=html;
