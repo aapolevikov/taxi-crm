@@ -792,6 +792,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="modal-acts"><button class="btn-sec" onclick="closeRepairModal()">Отмена</button><button class="btn-add" onclick="saveRepair()"><i class="ti ti-check"></i> Сохранить</button></div>
 </div></div>
 
+<!-- MODAL: transaction -->
+<div class="modal-bg" id="txnModal"><div class="modal">
+  <h2 id="txnModalTitle">Новая операция</h2>
+  <div class="field-2">
+    <div class="field-row"><label>Дата</label><input id="tx_date" type="date"></div>
+    <div class="field-row"><label>Тип</label><select id="tx_type"><option value="income">Доход</option><option value="expense">Расход</option></select></div>
+  </div>
+  <div class="field-2">
+    <div class="field-row"><label>Сумма (AED)</label><input id="tx_amount" type="number" min="0" step="0.01" placeholder="0"></div>
+    <div class="field-row"><label>Категория</label><input id="tx_cat" placeholder="Оплата клиента / Топливо / Salik..."></div>
+  </div>
+  <div class="field-2">
+    <div class="field-row"><label>Клиент</label><input id="tx_client" placeholder="Имя клиента"></div>
+    <div class="field-row"><label>Водитель</label><select id="tx_driver"></select></div>
+  </div>
+  <div class="field-row"><label>Способ оплаты</label><select id="tx_method"><option value="">—</option><option value="cash">Наличные</option><option value="card">Карта</option><option value="transfer">Перевод</option></select></div>
+  <div class="field-row"><label>Комментарий</label><input id="tx_note" placeholder="Комментарий"></div>
+  <div class="modal-acts"><button class="btn-sec" onclick="closeTxnModal()">Отмена</button><button class="btn-add" onclick="saveTxn()"><i class="ti ti-check"></i> Сохранить</button></div>
+</div></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ─────────── SUPABASE (общая база) ───────────
@@ -1493,7 +1513,7 @@ function goPage(p){
   if(p==='drivers'){ loadFleet().then(renderDrivers); }
   if(p==='cars'){ loadFleet().then(renderCars); }
   if(p==='repairs'){ loadFleet().then(function(){ loadAllRepairs().then(renderRepairsPage); }); }
-  if(p==='finance') renderFinance();
+  if(p==='finance'){ loadTxns().then(renderFinance); }
   if(p==='settings') renderSettings();
 }
 
@@ -2361,22 +2381,164 @@ async function saveCarPhoto(dataUrl){
 }
 
 // ─────────── FINANCE ───────────
+var editingTxnId=null;
+function finFmt(n){ return fmtNum(n)+' AED'; }
+async function loadTxns(){
+  try{ var res=await sb.from('tour_transactions').select('*').order('tx_date',{ascending:false}); window._txns=(res&&!res.error)?(res.data||[]):[]; }
+  catch(e){ window._txns=[]; }
+}
+function finFiltered(){
+  var f=window._finFilter||{from:'',to:'',type:'all'};
+  return (window._txns||[]).filter(function(t){
+    if(f.type!=='all' && (t.type||'')!==f.type) return false;
+    if(f.from && (t.tx_date||'')<f.from) return false;
+    if(f.to && (t.tx_date||'')>f.to) return false;
+    return true;
+  });
+}
+function applyFinFilter(){
+  var g=function(x){var e=document.getElementById(x);return e?e.value:'';};
+  window._finFilter={ from:g('fin_from'), to:g('fin_to'), type:g('fin_type')||'all' };
+  renderFinance();
+}
 function renderFinance(){
-  var html='<div class="page-head"><span class="ttl">Финансы</span></div>';
-  html+='<div class="info-banner"><i class="ti ti-info-circle"></i> Прототип: цифры демонстрационные. Здесь будут реальные оплаты клиентов и расчёты с водителями.</div>';
+  var f=window._finFilter||{from:'',to:'',type:'all'};
+  var list=finFiltered();
+  var inc=0,exp=0; list.forEach(function(t){ var a=Number(t.amount)||0; if((t.type||'')==='expense') exp+=a; else inc+=a; });
+  function dname(did){ if(!did) return '—'; var d=DRIVERS.find(function(x){return x.id===did;}); return d?esc(d.name):'—'; }
+  var html='<div class="page-head"><span class="ttl">Финансы</span><span class="spacer"></span><button class="btn-add" onclick="openTxnModal()"><i class="ti ti-plus"></i> Операция</button></div>';
   html+='<div class="stats">'+
-    statCard('Доход за день','3 200 AED','ok','')+
-    statCard('Расходы (топливо/Salik)','480 AED','warn','')+
-    statCard('Прибыль','2 720 AED','ok','')+
-    statCard('К выплате водителям','1 100 AED','','')+
+    statCard('Доход', finFmt(inc),'ok','за период')+
+    statCard('Расход', finFmt(exp),'warn','за период')+
+    statCard('Прибыль', finFmt(inc-exp),(inc-exp)>=0?'ok':'danger','доход − расход')+
+    statCard('Операций', String(list.length),'','')+
   '</div>';
-  html+='<div class="page-head" style="margin-top:8px"><span class="ttl">Последние операции</span></div>';
-  html+='<table class="tbl"><thead><tr><th>Дата</th><th>Клиент</th><th>Водитель</th><th>Сумма</th><th>Тип</th></tr></thead><tbody>'+
-    '<tr><td>04.06</td><td>Anton</td><td>Ahmed</td><td>250 AED</td><td><span style="color:var(--accent)">оплата</span></td></tr>'+
-    '<tr><td>04.06</td><td>Oksana</td><td>Ali</td><td>400 AED</td><td><span style="color:var(--accent)">оплата</span></td></tr>'+
-    '<tr><td>04.06</td><td>—</td><td>Ahmed</td><td>120 AED</td><td><span style="color:var(--warn)">топливо</span></td></tr>'+
-  '</tbody></table>';
+  html+='<div class="action-row">'+
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+      '<input type="date" id="fin_from" value="'+esc(f.from)+'" onchange="applyFinFilter()" class="df-pick">'+
+      '<span style="color:var(--text3)">—</span>'+
+      '<input type="date" id="fin_to" value="'+esc(f.to)+'" onchange="applyFinFilter()" class="df-pick">'+
+      '<select id="fin_type" onchange="applyFinFilter()" class="df-pick"><option value="all"'+(f.type==='all'?' selected':'')+'>Все типы</option><option value="income"'+(f.type==='income'?' selected':'')+'>Доходы</option><option value="expense"'+(f.type==='expense'?' selected':'')+'>Расходы</option></select>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn-sec" onclick="document.getElementById(\'finImport\').click()"><i class="ti ti-upload"></i> Загрузить выписку</button>'+
+      '<input type="file" id="finImport" accept=".csv,text/csv" style="display:none" onchange="importStatement(this)">'+
+      '<button class="btn-sec" onclick="exportTxnsCsv()"><i class="ti ti-download"></i> CSV</button>'+
+    '</div>'+
+  '</div>';
+  if(!list.length){ html+='<div class="empty-state"><i class="ti ti-cash"></i>Операций нет.<br>Добавьте операцию или загрузите выписку из банка.</div>'; document.getElementById('page-finance').innerHTML=html; return; }
+  html+='<table class="tbl"><thead><tr><th>Дата</th><th>Тип</th><th>Категория</th><th>Клиент</th><th>Водитель</th><th>Способ</th><th>Сумма</th><th>Комментарий</th><th></th></tr></thead><tbody>';
+  list.forEach(function(t){
+    var isExp=(t.type||'')==='expense';
+    var typeBadge=isExp?'<span style="color:var(--warn)">расход</span>':'<span style="color:var(--accent)">доход</span>';
+    var amt=(isExp?'−':'+')+fmtNum(t.amount)+' AED';
+    var method={cash:'Наличные',card:'Карта',transfer:'Перевод'}[t.method]||'—';
+    html+='<tr><td style="white-space:nowrap">'+fmtDateDMY(t.tx_date)+'</td><td>'+typeBadge+'</td><td>'+esc(t.category||'—')+'</td><td>'+esc(t.client||'—')+'</td><td>'+dname(t.driver_id)+'</td><td>'+method+'</td><td style="white-space:nowrap;font-weight:600;color:'+(isExp?'var(--warn)':'var(--accent)')+'">'+amt+'</td><td style="font-size:12px;color:var(--text2)">'+esc(t.note||'')+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openTxnModal(\''+t.id+'\')">✎</button> <button class="mini-btn" onclick="delTxn(\''+t.id+'\')">×</button></td></tr>';
+  });
+  html+='</tbody></table>';
   document.getElementById('page-finance').innerHTML=html;
+}
+function fillTxnDriverSelect(){
+  document.getElementById('tx_driver').innerHTML='<option value="">— водитель —</option>'+(DRIVERS||[]).map(function(d){return '<option value="'+d.id+'">'+esc(d.name)+'</option>';}).join('');
+}
+function closeTxnModal(){ document.getElementById('txnModal').classList.remove('show'); }
+function openTxnModal(id){
+  editingTxnId=id||null;
+  fillTxnDriverSelect();
+  var x=id?(window._txns||[]).find(function(t){return t.id===id;}):null;
+  document.getElementById('txnModalTitle').textContent=id?'Редактировать операцию':'Новая операция';
+  document.getElementById('tx_date').value=x?(x.tx_date||''):dateStr(0);
+  document.getElementById('tx_type').value=x?(x.type||'income'):'income';
+  document.getElementById('tx_amount').value=x&&x.amount!=null?x.amount:'';
+  document.getElementById('tx_cat').value=x?(x.category||''):'';
+  document.getElementById('tx_client').value=x?(x.client||''):'';
+  document.getElementById('tx_driver').value=x?(x.driver_id||''):'';
+  document.getElementById('tx_method').value=x?(x.method||''):'';
+  document.getElementById('tx_note').value=x?(x.note||''):'';
+  document.getElementById('txnModal').classList.add('show');
+}
+async function saveTxn(){
+  var amt=document.getElementById('tx_amount').value;
+  if(amt===''){ alert('Введите сумму'); return; }
+  var data={ tx_date:document.getElementById('tx_date').value||null, type:document.getElementById('tx_type').value,
+    amount:Number(amt), category:document.getElementById('tx_cat').value.trim()||null,
+    client:document.getElementById('tx_client').value.trim()||null,
+    driver_id:document.getElementById('tx_driver').value||null,
+    method:document.getElementById('tx_method').value||null,
+    note:document.getElementById('tx_note').value.trim()||null, company_id:'mrride' };
+  var res = editingTxnId ? await sb.from('tour_transactions').update(data).eq('id',editingTxnId)
+                         : await sb.from('tour_transactions').insert(Object.assign({id:'tx_'+Date.now()},data));
+  if(res.error){ alert('Ошибка сохранения операции: '+res.error.message); return; }
+  closeTxnModal(); loadTxns().then(renderFinance);
+}
+async function delTxn(id){
+  if(!confirm('Удалить операцию?')) return;
+  var res=await sb.from('tour_transactions').delete().eq('id',id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  loadTxns().then(renderFinance);
+}
+function exportTxnsCsv(){
+  var list=finFiltered();
+  function dname(did){ if(!did) return ''; var d=DRIVERS.find(function(x){return x.id===did;}); return d?d.name:''; }
+  var rows=[['Дата','Тип','Категория','Клиент','Водитель','Способ','Сумма','Комментарий']];
+  list.forEach(function(t){ rows.push([t.tx_date||'', t.type||'', t.category||'', t.client||'', dname(t.driver_id), t.method||'', (t.amount!=null?t.amount:''), (t.note||'')]); });
+  var csv=rows.map(function(r){ return r.map(function(c){ c=String(c); return /[",\n;]/.test(c)?('"'+c.replace(/"/g,'""')+'"'):c; }).join(','); }).join('\n');
+  var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='finance_mrride.csv'; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+}
+function finParseNum(s){ if(s==null) return 0; s=String(s).replace(/[^0-9.\-]/g,''); var n=parseFloat(s); return isNaN(n)?0:n; }
+function finParseDate(s){
+  s=String(s||'').trim(); if(!s) return null;
+  var m=s.match(/(\d{4})-(\d{2})-(\d{2})/); if(m) return m[1]+'-'+m[2]+'-'+m[3];
+  m=s.match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/);
+  if(m){ var dd=('0'+m[1]).slice(-2), mm=('0'+m[2]).slice(-2), yy=m[3].length===2?('20'+m[3]):m[3]; return yy+'-'+mm+'-'+dd; }
+  return null;
+}
+function finParseCsv(text){
+  var firstLine=text.split('\n')[0]||'';
+  var delim=(firstLine.split(';').length>firstLine.split(',').length)?';':',';
+  var rows=[], row=[], cur='', q=false;
+  for(var i=0;i<text.length;i++){ var ch=text[i];
+    if(q){ if(ch=='"'){ if(text[i+1]=='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+    else { if(ch=='"') q=true; else if(ch===delim){ row.push(cur); cur=''; } else if(ch=='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; } else if(ch=='\r'){} else cur+=ch; }
+  }
+  if(cur!==''||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(function(r){ return r.some(function(c){return String(c).trim()!=='';}); });
+}
+function importStatement(input){
+  if(!input.files||!input.files[0])return;
+  var rdr=new FileReader();
+  rdr.onload=function(e){
+    var text=String(e.target.result||'').replace(/^\ufeff/,'');
+    input.value='';
+    var rows=finParseCsv(text);
+    if(rows.length<2){ alert('В файле нет данных.'); return; }
+    var head=rows[0].map(function(h){return String(h).toLowerCase().trim();});
+    function col(keys){ for(var i=0;i<head.length;i++){ for(var k=0;k<keys.length;k++){ if(head[i].indexOf(keys[k])>=0) return i; } } return -1; }
+    var ciDate=col(['date','дата']), ciAmt=col(['amount','сумма','amt']),
+        ciDeb=col(['debit','дебет','расход','withdraw']), ciCr=col(['credit','кредит','приход','deposit']),
+        ciDesc=col(['description','narrative','details','comment','назнач','описан','коммент','remarks']);
+    if(ciDate<0 || (ciAmt<0 && ciDeb<0 && ciCr<0)){
+      alert('Не удалось распознать формат выписки (нужны колонки с датой и суммой). Пришли этот файл в чат — настрою парсер под твой банк.');
+      return;
+    }
+    var txns=[];
+    for(var r=1;r<rows.length;r++){ var row=rows[r]; if(!row) continue;
+      var d=finParseDate(row[ciDate]); if(!d) continue;
+      var amount=0, type='expense';
+      if(ciDeb>=0||ciCr>=0){ var deb=ciDeb>=0?finParseNum(row[ciDeb]):0; var cr=ciCr>=0?finParseNum(row[ciCr]):0;
+        if(cr>0){ amount=cr; type='income'; } else if(deb>0){ amount=deb; type='expense'; } else continue; }
+      else { var v=finParseNum(row[ciAmt]); if(!v) continue; amount=Math.abs(v); type=v<0?'expense':'income'; }
+      txns.push({id:'tx_'+Date.now()+'_'+r, tx_date:d, type:type, amount:amount, category:'выписка', client:null, driver_id:null, method:'transfer', note:(ciDesc>=0?String(row[ciDesc]||'').slice(0,200):null), company_id:'mrride'});
+    }
+    if(!txns.length){ alert('Не нашёл операций в файле.'); return; }
+    if(!confirm('Найдено операций: '+txns.length+'. Загрузить их в Финансы?')) return;
+    sb.from('tour_transactions').insert(txns).then(function(res){
+      if(res.error){ alert('Ошибка импорта: '+res.error.message); return; }
+      loadTxns().then(renderFinance); alert('Загружено операций: '+txns.length);
+    });
+  };
+  rdr.readAsText(input.files[0]);
 }
 
 // ─────────── SETTINGS ───────────
