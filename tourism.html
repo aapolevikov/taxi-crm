@@ -823,9 +823,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="field-row"><label>Клиент</label><input id="tx_client" placeholder="Имя клиента"></div>
     <div class="field-row"><label>Водитель</label><select id="tx_driver"></select></div>
   </div>
+  <div class="field-2">
+    <div class="field-row"><label>Касса / счёт</label><select id="tx_cashbox"></select></div>
+    <div class="field-row"><label>Назначение</label><select id="tx_purpose"></select></div>
+  </div>
   <div class="field-row"><label>Способ оплаты</label><select id="tx_method"><option value="">—</option><option value="cash">Наличные</option><option value="card">Карта</option><option value="transfer">Перевод</option></select></div>
   <div class="field-row"><label>Комментарий</label><input id="tx_note" placeholder="Комментарий"></div>
   <div class="modal-acts"><button class="btn-sec" onclick="closeTxnModal()">Отмена</button><button class="btn-add" onclick="saveTxn()"><i class="ti ti-check"></i> Сохранить</button></div>
+</div></div>
+
+<!-- MODAL: cashbox -->
+<div class="modal-bg" id="cashboxModal"><div class="modal">
+  <h2 id="cashboxModalTitle">Новая касса</h2>
+  <div class="field-2">
+    <div class="field-row"><label>Название</label><input id="cb_name" placeholder="Основная касса / mBank"></div>
+    <div class="field-row"><label>Тип</label><select id="cb_kind"><option value="cash">Наличные</option><option value="bank">Банк</option></select></div>
+  </div>
+  <div class="field-2">
+    <div class="field-row"><label>Валюта</label><input id="cb_currency" value="AED" maxlength="4"></div>
+    <div class="field-row"><label>Описание</label><input id="cb_desc" placeholder="напр. счёт mBank"></div>
+  </div>
+  <div class="modal-acts"><button class="btn-sec" onclick="closeCashboxModal()">Отмена</button><button class="btn-add" onclick="saveCashbox()"><i class="ti ti-check"></i> Сохранить</button></div>
 </div></div>
 
 <!-- MODAL: payment link (Nomod) -->
@@ -2583,76 +2601,164 @@ async function saveCarPhoto(dataUrl){
 }
 
 // ─────────── FINANCE ───────────
-var editingTxnId=null;
+var editingTxnId=null, editingCashboxId=null;
+var PURPOSES=['Оплата клиента','Топливо','Электро','Salik','Паркинг','Штрафы','Toll','Мойка','Ремонт','Зарплата','Комиссия','Бонус','Прочее'];
 function finFmt(n){ return fmtNum(n)+' AED'; }
 async function loadTxns(){
   try{ var res=await sb.from('tour_transactions').select('*').order('tx_date',{ascending:false}); window._txns=(res&&!res.error)?(res.data||[]):[]; }
   catch(e){ window._txns=[]; }
+  await loadCashboxes();
+}
+async function loadCashboxes(){
+  try{
+    var res=await sb.from('tour_cashboxes').select('*').order('created_at',{ascending:true});
+    if(res&&!res.error){
+      window._cashboxes=res.data||[];
+      if(!window._cashboxes.length){
+        var defs=[{id:'cb_main',name:'Основная касса',currency:'AED',kind:'cash',description:'Наличные',company_id:'mrride'},
+                  {id:'cb_mbank',name:'mBank',currency:'AED',kind:'bank',description:'Счёт Al Maryah (mBank)',company_id:'mrride'}];
+        await sb.from('tour_cashboxes').insert(defs); window._cashboxes=defs;
+      }
+    } else { window._cashboxes=window._cashboxes||[]; }
+  }catch(e){ window._cashboxes=window._cashboxes||[]; }
+}
+function cbName(id){ var c=(window._cashboxes||[]).find(function(x){return x.id===id;}); return c?c.name:''; }
+function cbBalance(id){ var b=0; (window._txns||[]).forEach(function(t){ if(t.cashbox_id===id){ var a=Number(t.amount)||0; b+=((t.type||'')==='expense'?-a:a); } }); return b; }
+function finTab(t){ window._finTab=t; renderFinance(); }
+function renderFinance(){
+  var tab=window._finTab||'txns';
+  var head='<div class="page-head"><span class="ttl">Финансы</span><span class="spacer"></span>';
+  if(tab==='txns') head+='<button class="btn-sec" onclick="openPayLinkModal()"><i class="ti ti-credit-card"></i> Ссылка на оплату</button> <button class="btn-add" onclick="openTxnModal()"><i class="ti ti-plus"></i> Операция</button>';
+  if(tab==='cashboxes') head+='<button class="btn-add" onclick="openCashboxModal()"><i class="ti ti-plus"></i> Касса</button>';
+  head+='</div>';
+  head+='<div class="tabs" style="margin-bottom:14px">'+
+    '<button class="tab'+(tab==='txns'?' active':'')+'" onclick="finTab(\'txns\')"><i class="ti ti-arrows-exchange"></i> Операции</button>'+
+    '<button class="tab'+(tab==='cashboxes'?' active':'')+'" onclick="finTab(\'cashboxes\')"><i class="ti ti-wallet"></i> Кассы</button>'+
+  '</div>';
+  document.getElementById('page-finance').innerHTML=head+'<div id="finBody"></div>';
+  if(tab==='cashboxes') renderFinCashboxes(); else renderFinTxns();
 }
 function finFiltered(){
-  var f=window._finFilter||{from:'',to:'',type:'all'};
+  var f=window._finFilter||{}, q=(f.q||'').toLowerCase();
   return (window._txns||[]).filter(function(t){
-    if(f.type!=='all' && (t.type||'')!==f.type) return false;
+    if(f.type&&f.type!=='all' && (t.type||'')!==f.type) return false;
     if(f.from && (t.tx_date||'')<f.from) return false;
     if(f.to && (t.tx_date||'')>f.to) return false;
+    if(f.cashbox && (t.cashbox_id||'')!==f.cashbox) return false;
+    if(f.purpose && (t.purpose||'')!==f.purpose) return false;
+    if(q){ var hay=((t.note||'')+' '+(t.client||'')+' '+(t.category||'')).toLowerCase(); if(hay.indexOf(q)<0) return false; }
     return true;
   });
 }
 function applyFinFilter(){
   var g=function(x){var e=document.getElementById(x);return e?e.value:'';};
-  window._finFilter={ from:g('fin_from'), to:g('fin_to'), type:g('fin_type')||'all' };
-  renderFinance();
+  window._finFilter={ from:g('fin_from'), to:g('fin_to'), type:g('fin_type')||'all', cashbox:g('fin_cb'), purpose:g('fin_purpose'), q:g('fin_q') };
+  renderFinTxns();
 }
-function renderFinance(){
-  var f=window._finFilter||{from:'',to:'',type:'all'};
+function renderFinTxns(){
+  var f=window._finFilter||{};
   var list=finFiltered();
   var inc=0,exp=0; list.forEach(function(t){ var a=Number(t.amount)||0; if((t.type||'')==='expense') exp+=a; else inc+=a; });
   function dname(did){ if(!did) return '—'; var d=DRIVERS.find(function(x){return x.id===did;}); return d?esc(d.name):'—'; }
-  var html='<div class="page-head"><span class="ttl">Финансы</span><span class="spacer"></span><button class="btn-sec" onclick="openPayLinkModal()"><i class="ti ti-credit-card"></i> Ссылка на оплату</button> <button class="btn-add" onclick="openTxnModal()"><i class="ti ti-plus"></i> Операция</button></div>';
-  html+='<div class="stats">'+
+  var cbOpts='<option value="">Все кассы</option>'+(window._cashboxes||[]).map(function(c){return '<option value="'+c.id+'"'+(f.cashbox===c.id?' selected':'')+'>'+esc(c.name)+'</option>';}).join('');
+  var puOpts='<option value="">Все назначения</option>'+PURPOSES.map(function(p){return '<option value="'+esc(p)+'"'+(f.purpose===p?' selected':'')+'>'+esc(p)+'</option>';}).join('');
+  var impCbOpts=(window._cashboxes||[]).map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+'</option>';}).join('');
+  var html='<div class="stats">'+
     statCard('Доход', finFmt(inc),'ok','за период')+
     statCard('Расход', finFmt(exp),'warn','за период')+
     statCard('Прибыль', finFmt(inc-exp),(inc-exp)>=0?'ok':'danger','доход − расход')+
     statCard('Операций', String(list.length),'','')+
   '</div>';
-  html+='<div class="action-row">'+
+  html+='<div class="action-row" style="flex-wrap:wrap;gap:10px">'+
     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
-      '<input type="date" id="fin_from" value="'+esc(f.from)+'" onchange="applyFinFilter()" class="df-pick">'+
+      '<input type="date" id="fin_from" value="'+esc(f.from||'')+'" onchange="applyFinFilter()" class="df-pick">'+
       '<span style="color:var(--text3)">—</span>'+
-      '<input type="date" id="fin_to" value="'+esc(f.to)+'" onchange="applyFinFilter()" class="df-pick">'+
-      '<select id="fin_type" onchange="applyFinFilter()" class="df-pick"><option value="all"'+(f.type==='all'?' selected':'')+'>Все типы</option><option value="income"'+(f.type==='income'?' selected':'')+'>Доходы</option><option value="expense"'+(f.type==='expense'?' selected':'')+'>Расходы</option></select>'+
+      '<input type="date" id="fin_to" value="'+esc(f.to||'')+'" onchange="applyFinFilter()" class="df-pick">'+
+      '<select id="fin_type" onchange="applyFinFilter()" class="df-pick"><option value="all">Все типы</option><option value="income"'+(f.type==='income'?' selected':'')+'>Доходы</option><option value="expense"'+(f.type==='expense'?' selected':'')+'>Расходы</option></select>'+
+      '<select id="fin_cb" onchange="applyFinFilter()" class="df-pick">'+cbOpts+'</select>'+
+      '<select id="fin_purpose" onchange="applyFinFilter()" class="df-pick">'+puOpts+'</select>'+
+      '<input id="fin_q" value="'+esc(f.q||'')+'" oninput="applyFinFilter()" placeholder="Поиск..." class="df-pick" style="min-width:130px">'+
     '</div>'+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      '<button class="btn-sec" onclick="document.getElementById(\'finImport\').click()"><i class="ti ti-upload"></i> Загрузить выписку (PDF/CSV)</button>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
+      '<select id="fin_imp_cashbox" class="df-pick" title="В какую кассу импортировать">'+impCbOpts+'</select>'+
+      '<button class="btn-sec" onclick="document.getElementById(\'finImport\').click()"><i class="ti ti-upload"></i> Выписка</button>'+
       '<input type="file" id="finImport" accept=".pdf,.csv,application/pdf,text/csv" style="display:none" onchange="importStatement(this)">'+
+      '<button class="btn-sec" onclick="finTxnsPdf()"><i class="ti ti-file-text"></i> PDF</button>'+
+      '<button class="btn-sec" onclick="exportTxnsXlsx()"><i class="ti ti-table"></i> XLSX</button>'+
       '<button class="btn-sec" onclick="exportTxnsCsv()"><i class="ti ti-download"></i> CSV</button>'+
     '</div>'+
   '</div>';
-  if(!list.length){ html+='<div class="empty-state"><i class="ti ti-cash"></i>Операций нет.<br>Добавьте операцию или загрузите выписку из банка.</div>'; document.getElementById('page-finance').innerHTML=html; return; }
-  html+='<table class="tbl"><thead><tr><th>Дата</th><th>Тип</th><th>Категория</th><th>Клиент</th><th>Водитель</th><th>Способ</th><th>Сумма</th><th>Комментарий</th><th></th></tr></thead><tbody>';
+  if(!list.length){ document.getElementById('finBody').innerHTML=html+'<div class="empty-state"><i class="ti ti-cash"></i>Операций нет.<br>Добавьте операцию или загрузите выписку.</div>'; return; }
+  html+='<div class="table-wrap"><table class="tbl"><thead><tr><th>Дата</th><th>Тип</th><th>Назначение</th><th>Касса</th><th>Клиент</th><th>Водитель</th><th>Способ</th><th>Сумма</th><th>Комментарий</th><th></th></tr></thead><tbody>';
   list.forEach(function(t){
     var isExp=(t.type||'')==='expense';
     var typeBadge=isExp?'<span style="color:var(--warn)">расход</span>':'<span style="color:var(--accent)">доход</span>';
     var amt=(isExp?'−':'+')+fmtNum(t.amount)+' AED';
     var method={cash:'Наличные',card:'Карта',transfer:'Перевод'}[t.method]||'—';
-    html+='<tr><td style="white-space:nowrap">'+fmtDateDMY(t.tx_date)+'</td><td>'+typeBadge+'</td><td>'+esc(t.category||'—')+'</td><td>'+esc(t.client||'—')+'</td><td>'+dname(t.driver_id)+'</td><td>'+method+'</td><td style="white-space:nowrap;font-weight:600;color:'+(isExp?'var(--warn)':'var(--accent)')+'">'+amt+'</td><td style="font-size:12px;color:var(--text2)">'+esc(t.note||'')+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openTxnModal(\''+t.id+'\')">✎</button> <button class="mini-btn" onclick="delTxn(\''+t.id+'\')">×</button></td></tr>';
+    html+='<tr><td style="white-space:nowrap">'+fmtDateDMY(t.tx_date)+'</td><td>'+typeBadge+'</td><td style="font-size:12px">'+esc(t.purpose||t.category||'—')+'</td><td style="font-size:12px">'+esc(cbName(t.cashbox_id)||'—')+'</td><td>'+esc(t.client||'—')+'</td><td>'+dname(t.driver_id)+'</td><td>'+method+'</td><td style="white-space:nowrap;font-weight:600;color:'+(isExp?'var(--warn)':'var(--accent)')+'">'+amt+'</td><td style="font-size:12px;color:var(--text2)">'+esc(t.note||'')+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openTxnModal(\''+t.id+'\')">✎</button> <button class="mini-btn" onclick="delTxn(\''+t.id+'\')">×</button></td></tr>';
   });
-  html+='</tbody></table>';
-  document.getElementById('page-finance').innerHTML=html;
+  html+='</tbody></table></div>';
+  document.getElementById('finBody').innerHTML=html;
+}
+function renderFinCashboxes(){
+  var list=window._cashboxes||[];
+  var cards=list.map(function(c){ var b=cbBalance(c.id); return statCard(esc(c.name), fmtNum(b)+' '+esc(c.currency||'AED'), (b>=0?'ok':'danger'), (c.kind==='bank'?'Банк':'Наличные')); }).join('');
+  var html='<div class="stats">'+(cards||'')+'</div>';
+  if(!list.length){ document.getElementById('finBody').innerHTML=html+'<div class="empty-state"><i class="ti ti-wallet"></i>Касс пока нет.<br>Нажмите «Касса».</div>'; return; }
+  html+='<div class="table-wrap"><table class="tbl"><thead><tr><th>Название</th><th>Тип</th><th>Валюта</th><th>Баланс</th><th>Описание</th><th></th></tr></thead><tbody>';
+  list.forEach(function(c){ var bal=cbBalance(c.id);
+    html+='<tr><td><b>'+esc(c.name)+'</b></td><td>'+(c.kind==='bank'?'Банк':'Наличные')+'</td><td>'+esc(c.currency||'AED')+'</td><td style="font-weight:600;color:'+(bal>=0?'var(--accent)':'var(--danger)')+'">'+fmtNum(bal)+' '+esc(c.currency||'AED')+'</td><td style="font-size:12px;color:var(--text2)">'+esc(c.description||'')+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openCashboxModal(\''+c.id+'\')">✎</button> <button class="mini-btn" onclick="delCashbox(\''+c.id+'\')">×</button></td></tr>';
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('finBody').innerHTML=html;
+}
+function closeCashboxModal(){ document.getElementById('cashboxModal').classList.remove('show'); }
+function openCashboxModal(id){
+  editingCashboxId=id||null;
+  var c=id?(window._cashboxes||[]).find(function(x){return x.id===id;}):null;
+  document.getElementById('cashboxModalTitle').textContent=id?'Редактировать кассу':'Новая касса';
+  document.getElementById('cb_name').value=c?(c.name||''):'';
+  document.getElementById('cb_kind').value=c?(c.kind||'cash'):'cash';
+  document.getElementById('cb_currency').value=c?(c.currency||'AED'):'AED';
+  document.getElementById('cb_desc').value=c?(c.description||''):'';
+  document.getElementById('cashboxModal').classList.add('show');
+}
+async function saveCashbox(){
+  var name=document.getElementById('cb_name').value.trim();
+  if(!name){ alert('Введите название кассы'); return; }
+  var data={ name:name, kind:document.getElementById('cb_kind').value, currency:document.getElementById('cb_currency').value.trim()||'AED', description:document.getElementById('cb_desc').value.trim()||null, company_id:'mrride' };
+  var res = editingCashboxId ? await sb.from('tour_cashboxes').update(data).eq('id',editingCashboxId)
+                             : await sb.from('tour_cashboxes').insert(Object.assign({id:'cb_'+Date.now()},data));
+  if(res.error){ alert('Ошибка сохранения кассы: '+res.error.message); return; }
+  closeCashboxModal(); await loadCashboxes(); renderFinance();
+}
+async function delCashbox(id){
+  if(!confirm('Удалить кассу? Операции останутся, но потеряют привязку.')) return;
+  var res=await sb.from('tour_cashboxes').delete().eq('id',id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  await loadCashboxes(); renderFinance();
 }
 function fillTxnDriverSelect(){
   document.getElementById('tx_driver').innerHTML='<option value="">— водитель —</option>'+(DRIVERS||[]).map(function(d){return '<option value="'+d.id+'">'+esc(d.name)+'</option>';}).join('');
 }
+function fillTxnCashboxSelect(){
+  document.getElementById('tx_cashbox').innerHTML='<option value="">— касса —</option>'+(window._cashboxes||[]).map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+'</option>';}).join('');
+}
+function fillTxnPurposeSelect(){
+  document.getElementById('tx_purpose').innerHTML='<option value="">— назначение —</option>'+PURPOSES.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
+}
 function closeTxnModal(){ document.getElementById('txnModal').classList.remove('show'); }
 function openTxnModal(id){
   editingTxnId=id||null;
-  fillTxnDriverSelect();
+  fillTxnDriverSelect(); fillTxnCashboxSelect(); fillTxnPurposeSelect();
   var x=id?(window._txns||[]).find(function(t){return t.id===id;}):null;
   document.getElementById('txnModalTitle').textContent=id?'Редактировать операцию':'Новая операция';
   document.getElementById('tx_date').value=x?(x.tx_date||''):dateStr(0);
   document.getElementById('tx_type').value=x?(x.type||'income'):'income';
   document.getElementById('tx_amount').value=x&&x.amount!=null?x.amount:'';
   document.getElementById('tx_cat').value=x?(x.category||''):'';
+  document.getElementById('tx_cashbox').value=x?(x.cashbox_id||''):'';
+  document.getElementById('tx_purpose').value=x?(x.purpose||''):'';
   document.getElementById('tx_client').value=x?(x.client||''):'';
   document.getElementById('tx_driver').value=x?(x.driver_id||''):'';
   document.getElementById('tx_method').value=x?(x.method||''):'';
@@ -2664,6 +2770,8 @@ async function saveTxn(){
   if(amt===''){ alert('Введите сумму'); return; }
   var data={ tx_date:document.getElementById('tx_date').value||null, type:document.getElementById('tx_type').value,
     amount:Number(amt), category:document.getElementById('tx_cat').value.trim()||null,
+    purpose:document.getElementById('tx_purpose').value||null,
+    cashbox_id:document.getElementById('tx_cashbox').value||null,
     client:document.getElementById('tx_client').value.trim()||null,
     driver_id:document.getElementById('tx_driver').value||null,
     method:document.getElementById('tx_method').value||null,
@@ -2679,14 +2787,38 @@ async function delTxn(id){
   if(res.error){ alert('Ошибка: '+res.error.message); return; }
   loadTxns().then(renderFinance);
 }
-function exportTxnsCsv(){
+function finImpCashbox(){ var e=document.getElementById('fin_imp_cashbox'); return e?(e.value||null):null; }
+function finExportRows(){
   var list=finFiltered();
   function dname(did){ if(!did) return ''; var d=DRIVERS.find(function(x){return x.id===did;}); return d?d.name:''; }
-  var rows=[['Дата','Тип','Категория','Клиент','Водитель','Способ','Сумма','Комментарий']];
-  list.forEach(function(t){ rows.push([t.tx_date||'', t.type||'', t.category||'', t.client||'', dname(t.driver_id), t.method||'', (t.amount!=null?t.amount:''), (t.note||'')]); });
+  var rows=[['Дата','Тип','Назначение','Касса','Клиент','Водитель','Способ','Сумма','Комментарий']];
+  list.forEach(function(t){ rows.push([t.tx_date||'', (t.type==='expense'?'расход':'доход'), (t.purpose||t.category||''), cbName(t.cashbox_id), (t.client||''), dname(t.driver_id), (t.method||''), (t.amount!=null?t.amount:''), (t.note||'')]); });
+  return rows;
+}
+function exportTxnsCsv(){
+  var rows=finExportRows();
   var csv=rows.map(function(r){ return r.map(function(c){ c=String(c); return /[",\n;]/.test(c)?('"'+c.replace(/"/g,'""')+'"'):c; }).join(','); }).join('\n');
   var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='finance_mrride.csv'; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+}
+function ensureXlsx(cb){ if(window.XLSX){cb();return;} var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload=function(){cb();}; s.onerror=function(){alert('Не удалось загрузить XLSX-движок (проверь интернет).');}; document.head.appendChild(s); }
+function exportTxnsXlsx(){ ensureXlsx(function(){ var rows=finExportRows(); var ws=XLSX.utils.aoa_to_sheet(rows); var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Finance'); XLSX.writeFile(wb,'finance_mrride.xlsx'); }); }
+function finTxnsPdf(){
+  var list=finFiltered();
+  var inc=0,exp=0; list.forEach(function(t){ var a=Number(t.amount)||0; if((t.type||'')==='expense') exp+=a; else inc+=a; });
+  var rowsHtml=list.map(function(t){ var isExp=(t.type||'')==='expense';
+    return '<tr><td>'+esc(fmtDateDMY(t.tx_date))+'</td><td>'+(isExp?'расход':'доход')+'</td><td>'+esc(t.purpose||t.category||'')+'</td><td>'+esc(cbName(t.cashbox_id))+'</td><td>'+esc(t.client||'')+'</td><td style="text-align:right">'+(isExp?'-':'+')+fmtNum(t.amount)+'</td><td>'+esc(t.note||'')+'</td></tr>';
+  }).join('');
+  var f=window._finFilter||{}; var period=((f.from||'…')+' → '+(f.to||'…'));
+  var html='<!doctype html><html><head><meta charset="utf-8"><title>Финансы — отчёт</title>'+
+    '<style>body{font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;padding:28px;font-size:12px}h1{font-size:20px;margin:0 0 2px}.sub{color:#666;margin-bottom:14px}'+
+    '.tot{margin-bottom:14px}.tot b{display:inline-block;min-width:120px;color:#555}table{width:100%;border-collapse:collapse}th,td{border:1px solid #e2e2e2;padding:6px 8px;text-align:left}th{background:#f5f5f5}@media print{body{padding:0}}</style></head><body>'+
+    '<h1>Mr Ride Tourism — Финансы</h1><div class="sub">Период: '+esc(period)+' · сформировано '+dateStr(0)+'</div>'+
+    '<div class="tot"><div><b>Доход</b>'+fmtNum(inc)+' AED</div><div><b>Расход</b>'+fmtNum(exp)+' AED</div><div><b>Прибыль</b>'+fmtNum(inc-exp)+' AED</div></div>'+
+    '<table><thead><tr><th>Дата</th><th>Тип</th><th>Назначение</th><th>Касса</th><th>Клиент</th><th>Сумма</th><th>Комментарий</th></tr></thead><tbody>'+(rowsHtml||'<tr><td colspan="7">Нет операций</td></tr>')+'</tbody></table>'+
+    '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},250);}</scr'+'ipt></body></html>';
+  var w=window.open('','_blank'); if(!w){ alert('Разрешите всплывающие окна для PDF.'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
 }
 function finParseNum(s){ if(s==null) return 0; s=String(s).replace(/[^0-9.\-]/g,''); var n=parseFloat(s); return isNaN(n)?0:n; }
 function finParseDate(s){
@@ -2739,7 +2871,7 @@ function importStatement(input){
       if(ciDeb>=0||ciCr>=0){ var deb=ciDeb>=0?finParseNum(row[ciDeb]):0; var cr=ciCr>=0?finParseNum(row[ciCr]):0;
         if(cr>0){ amount=cr; type='income'; } else if(deb>0){ amount=deb; type='expense'; } else continue; }
       else { var v=finParseNum(row[ciAmt]); if(!v) continue; amount=Math.abs(v); type=v<0?'expense':'income'; }
-      txns.push({id:'tx_'+Date.now()+'_'+r, tx_date:d, type:type, amount:amount, category:'выписка', client:null, driver_id:null, method:'transfer', note:(ciDesc>=0?String(row[ciDesc]||'').slice(0,200):null), company_id:'mrride'});
+      txns.push({id:'tx_'+Date.now()+'_'+r, tx_date:d, type:type, amount:amount, category:'выписка', purpose:'Прочее', cashbox_id:finImpCashbox(), client:null, driver_id:null, method:'transfer', note:(ciDesc>=0?String(row[ciDesc]||'').slice(0,200):null), company_id:'mrride'});
     }
     commitImportedTxns(txns);
   };
@@ -2804,7 +2936,7 @@ async function extractMbankPdf(pdf){
         var pp=pdate.split('/');
         var iso=pp[2]+'-'+('0'+pp[1]).slice(-2)+'-'+('0'+pp[0]).slice(-2);
         var note=buf.concat(det).join(' ').replace(/\s+/g,' ').trim().slice(0,200);
-        txns.push({id:'tx_'+Date.now()+'_'+pn+'_'+k, tx_date:iso, type:(deb>0?'expense':'income'), amount:(deb>0?deb:cr), category:'выписка mBank', client:null, driver_id:null, method:(deb>0?'card':'transfer'), note:note||null, company_id:'mrride'});
+        txns.push({id:'tx_'+Date.now()+'_'+pn+'_'+k, tx_date:iso, type:(deb>0?'expense':'income'), amount:(deb>0?deb:cr), category:'выписка mBank', purpose:'Прочее', cashbox_id:finImpCashbox(), client:null, driver_id:null, method:(deb>0?'card':'transfer'), note:note||null, company_id:'mrride'});
         buf=[];
       });
     }
