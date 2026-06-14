@@ -709,6 +709,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<!-- MODAL: car cost -->
+<div class="modal-bg" id="costModal"><div class="modal">
+  <h2 id="costModalTitle">Новая затрата</h2>
+  <div class="field-2">
+    <div class="field-row"><label>Дата</label><input id="cost_date" type="date"></div>
+    <div class="field-row"><label>Тип</label><select id="cost_type"><option value="operational">Периодическая</option><option value="capital">Капитальная (вложение)</option></select></div>
+  </div>
+  <div class="field-2">
+    <div class="field-row"><label>Сумма (AED)</label><input id="cost_amount" type="number" min="0" step="0.01" placeholder="0"></div>
+    <div class="field-row"><label>Категория</label><input id="cost_cat" placeholder="Топливо / ТО / Мойка..."></div>
+  </div>
+  <div class="field-row"><label>Заметка</label><input id="cost_note" placeholder="Комментарий"></div>
+  <div class="modal-acts"><button class="btn-sec" onclick="closeCostModal()">Отмена</button><button class="btn-add" onclick="saveCost()"><i class="ti ti-check"></i> Сохранить</button></div>
+</div></div>
+
+<!-- MODAL: repair -->
+<div class="modal-bg" id="repairModal"><div class="modal">
+  <h2 id="repairModalTitle">Новый ремонт</h2>
+  <div class="field-2">
+    <div class="field-row"><label>Дата</label><input id="rep_date" type="date"></div>
+    <div class="field-row"><label>Order №</label><input id="rep_order" placeholder="9021"></div>
+  </div>
+  <div class="field-2">
+    <div class="field-row"><label>Сервис / контрагент</label><input id="rep_service" placeholder="Сервис"></div>
+    <div class="field-row"><label>Техник</label><input id="rep_technic" placeholder="Mr Ride"></div>
+  </div>
+  <div class="field-row"><label>Описание</label><input id="rep_desc" placeholder="Что делали"></div>
+  <div class="field-2">
+    <div class="field-row"><label>Стоимость (AED)</label><input id="rep_cost" type="number" min="0" step="0.01" placeholder="0"></div>
+    <div class="field-row"><label>Оплата</label><select id="rep_paid"><option value="awaiting">Ожидает оплаты</option><option value="paid">Оплачено</option></select></div>
+  </div>
+  <div class="modal-acts"><button class="btn-sec" onclick="closeRepairModal()">Отмена</button><button class="btn-add" onclick="saveRepair()"><i class="ti ti-check"></i> Сохранить</button></div>
+</div></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ─────────── SUPABASE (общая база) ───────────
@@ -1958,13 +1992,12 @@ async function delCar(id){
 function fmtNum(n){ return (n==null||n==='')?'—':Number(n).toLocaleString('ru-RU'); }
 function fmtDateDMY(s){ if(!s) return '—'; var p=String(s).slice(0,10).split('-'); return p.length===3?(p[2]+'.'+p[1]+'.'+p[0]):s; }
 function carCardTab(tab){
-  var tr=tab==='trips';
-  document.getElementById('csec-data').style.display=tr?'none':'';
-  document.getElementById('csec-trips').style.display=tr?'':'none';
-  document.getElementById('ctab-data').classList.toggle('active',!tr);
-  document.getElementById('ctab-trips').classList.toggle('active',tr);
+  ['data','trips','costs','repairs'].forEach(function(t){
+    var sec=document.getElementById('csec-'+t); if(sec) sec.style.display=(t===tab)?'':'none';
+    var btn=document.getElementById('ctab-'+t); if(btn) btn.classList.toggle('active',t===tab);
+  });
 }
-function openCarCard(id){
+async function openCarCard(id){
   var c=CARS.find(function(x){return x.id===id;}); if(!c) return;
   window._carCardOpen=id;
   function cell(k,v){ return '<div class="dcard-cell"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
@@ -1994,6 +2027,8 @@ function openCarCard(id){
   h+='<div class="dtabs">'+
        '<button class="tab-btn active" id="ctab-data" onclick="carCardTab(\'data\')"><i class="ti ti-info-circle"></i> Данные</button>'+
        '<button class="tab-btn" id="ctab-trips" onclick="carCardTab(\'trips\')"><i class="ti ti-route"></i> Поездки</button>'+
+       '<button class="tab-btn" id="ctab-costs" onclick="carCardTab(\'costs\')"><i class="ti ti-cash"></i> Затраты</button>'+
+       '<button class="tab-btn" id="ctab-repairs" onclick="carCardTab(\'repairs\')"><i class="ti ti-tools"></i> Ремонты</button>'+
      '</div>';
   h+='<div id="csec-data"><div class="dcols">';
   h+='<div class="dsec"><h3><i class="ti ti-car"></i> Общее</h3>'+
@@ -2016,9 +2051,15 @@ function openCarCard(id){
      '</div>';
   h+='</div>';
   h+='<div class="dsec"><h3><i class="ti ti-photo"></i> Фото машины</h3>';
-  if(c.photo_url){ h+='<img src="'+esc(c.photo_url)+'" style="max-width:100%;border-radius:var(--r);border:1px solid var(--border)" onerror="this.style.display=\'none\'">'; }
-  else { h+='<div style="border:1px dashed var(--border2);border-radius:var(--r);padding:40px;text-align:center;color:var(--text3);font-size:13px"><i class="ti ti-photo" style="font-size:32px;display:block;margin-bottom:8px;opacity:.5"></i>Фото не добавлено.<br>Нажмите «Редактировать» и вставьте ссылку на изображение.</div>'; }
+  if(c.photo_url){ h+='<img src="'+esc(c.photo_url)+'" style="max-width:100%;border-radius:var(--r);border:1px solid var(--border);margin-bottom:10px;display:block" onerror="this.style.display=\'none\'">'; }
+  h+='<div onclick="document.getElementById(\'carPhotoFile\').click()" style="border:1px dashed var(--border2);border-radius:var(--r);padding:24px;text-align:center;color:var(--text3);font-size:13px;cursor:pointer"><i class="ti ti-camera" style="font-size:26px;display:block;margin-bottom:6px;opacity:.6"></i>'+(c.photo_url?'Заменить фото':'Нажмите, чтобы загрузить фото')+'</div>';
+  h+='<input type="file" id="carPhotoFile" accept="image/*" style="display:none" onchange="uploadCarPhoto(this)">';
   h+='</div>';
+  h+='<div class="dsec"><h3><i class="ti ti-gauge"></i> Текущий статус</h3>'+
+       row('Гос. номер', c.plate?esc(c.plate):'—')+
+       row('Пробег', odo)+
+       row('GPS', '<span style="color:var(--text3)">не подключён в туризме</span>')+
+     '</div>';
   h+='</div>';
   h+='<div class="dsec" id="csec-trips" style="display:none"><h3><i class="ti ti-route"></i> Поездки машины</h3>';
   if(!drvIds.length){ h+='<div style="color:var(--text3);font-size:13px">К машине не закреплён водитель — поездки показываются по закреплённому водителю.</div>'; }
@@ -2040,7 +2081,136 @@ function openCarCard(id){
     }
   }
   h+='</div>';
+  // ── Затраты / Ремонты (реальные данные) ──
+  var costs=[], reps=[];
+  try{ var rc=await sb.from('tour_car_costs').select('*').eq('car_id',id).order('cost_date',{ascending:false}); if(!rc.error) costs=rc.data||[]; }catch(e){}
+  try{ var rr=await sb.from('tour_repairs').select('*').eq('car_id',id).order('repair_date',{ascending:false}); if(!rr.error) reps=rr.data||[]; }catch(e){}
+  window._carCosts=costs; window._carReps=reps;
+  var cap=0, op=0; costs.forEach(function(x){ var a=Number(x.amount)||0; if((x.type||'operational')==='capital') cap+=a; else op+=a; });
+  h+='<div class="dsec" id="csec-costs" style="display:none"><h3><i class="ti ti-cash"></i> Затраты по машине</h3>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+     '<div style="font-size:13px;color:var(--text2)">Вложено (капитал): <b style="color:var(--accent)">'+fmtNum(cap)+' AED</b> · Периодические: <b>'+fmtNum(op)+' AED</b></div>'+
+     '<button class="btn-add" onclick="openCostModal()"><i class="ti ti-plus"></i> Добавить затрату</button></div>';
+  if(!costs.length){ h+='<div style="color:var(--text3);font-size:13px">Затрат пока нет.</div>'; }
+  else {
+    h+='<table class="tbl"><thead><tr><th>№</th><th>Дата</th><th>Тип</th><th>Сумма</th><th>Категория</th><th>Заметка</th><th></th></tr></thead><tbody>';
+    costs.forEach(function(x,i){
+      var tb=(x.type==='capital')?'<span class="badge-st warn">КАП</span>':'<span style="color:var(--text3);font-size:12px">период.</span>';
+      h+='<tr><td>'+(i+1)+'</td><td style="white-space:nowrap">'+fmtDateDMY(x.cost_date)+'</td><td>'+tb+'</td><td style="white-space:nowrap"><b>'+fmtNum(x.amount)+' AED</b></td><td>'+esc(x.category||'—')+'</td><td style="font-size:12px;color:var(--text2)">'+esc(x.note||'')+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openCostModal(\''+x.id+'\')">✎</button> <button class="mini-btn" onclick="delCost(\''+x.id+'\')">×</button></td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  h+='</div>';
+  h+='<div class="dsec" id="csec-repairs" style="display:none"><h3><i class="ti ti-tools"></i> Ремонты</h3>';
+  h+='<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn-add" onclick="openRepairModal()"><i class="ti ti-plus"></i> Добавить</button></div>';
+  if(!reps.length){ h+='<div style="color:var(--text3);font-size:13px">Ремонтов пока нет.</div>'; }
+  else {
+    h+='<table class="tbl"><thead><tr><th>№</th><th>Дата</th><th>Order №</th><th>Сервис</th><th>Техник</th><th>Описание</th><th>Стоимость</th><th>Оплата</th><th></th></tr></thead><tbody>';
+    reps.forEach(function(x,i){
+      var pb=(x.paid==='paid')?'<span class="badge-st ok">Оплачено</span>':'<span class="badge-st warn">Ожидает</span>';
+      h+='<tr><td>'+(i+1)+'</td><td style="white-space:nowrap">'+fmtDateDMY(x.repair_date)+'</td><td>'+esc(x.order_no||'—')+'</td><td>'+esc(x.service||'—')+'</td><td>'+esc(x.technic||'—')+'</td><td style="font-size:12px;color:var(--text2)">'+esc(x.description||'')+'</td><td style="white-space:nowrap"><b>'+fmtNum(x.cost)+' AED</b></td><td>'+pb+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openRepairModal(\''+x.id+'\')">✎</button> <button class="mini-btn" onclick="delRepair(\''+x.id+'\')">×</button></td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  h+='</div>';
   document.getElementById('page-cars').innerHTML=h;
+}
+
+// ── Затраты по машине ──
+var editingCostId=null, editingRepairId=null;
+function closeCostModal(){ document.getElementById('costModal').classList.remove('show'); }
+function openCostModal(id){
+  if(!window._carCardOpen){ alert('Откройте карточку машины'); return; }
+  editingCostId=id||null;
+  var x = id ? (window._carCosts||[]).find(function(c){return c.id===id;}) : null;
+  document.getElementById('costModalTitle').textContent=id?'Редактировать затрату':'Новая затрата';
+  document.getElementById('cost_date').value=x?(x.cost_date||''):dateStr(0);
+  document.getElementById('cost_type').value=x?(x.type||'operational'):'operational';
+  document.getElementById('cost_amount').value=x&&x.amount!=null?x.amount:'';
+  document.getElementById('cost_cat').value=x?(x.category||''):'';
+  document.getElementById('cost_note').value=x?(x.note||''):'';
+  document.getElementById('costModal').classList.add('show');
+}
+async function saveCost(){
+  var cid=window._carCardOpen; if(!cid){ return; }
+  var amt=document.getElementById('cost_amount').value;
+  if(amt===''){ alert('Введите сумму'); return; }
+  var data={ car_id:cid, cost_date:document.getElementById('cost_date').value||null,
+    type:document.getElementById('cost_type').value, amount:Number(amt),
+    category:document.getElementById('cost_cat').value.trim()||null,
+    note:document.getElementById('cost_note').value.trim()||null, company_id:'mrride' };
+  var res = editingCostId ? await sb.from('tour_car_costs').update(data).eq('id',editingCostId)
+                          : await sb.from('tour_car_costs').insert(Object.assign({id:'cost_'+Date.now()},data));
+  if(res.error){ alert('Ошибка сохранения затраты: '+res.error.message); return; }
+  closeCostModal(); openCarCard(cid);
+}
+async function delCost(id){
+  if(!confirm('Удалить затрату?')) return;
+  var res=await sb.from('tour_car_costs').delete().eq('id',id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  openCarCard(window._carCardOpen);
+}
+
+// ── Ремонты ──
+function closeRepairModal(){ document.getElementById('repairModal').classList.remove('show'); }
+function openRepairModal(id){
+  if(!window._carCardOpen){ alert('Откройте карточку машины'); return; }
+  editingRepairId=id||null;
+  var x = id ? (window._carReps||[]).find(function(r){return r.id===id;}) : null;
+  document.getElementById('repairModalTitle').textContent=id?'Редактировать ремонт':'Новый ремонт';
+  document.getElementById('rep_date').value=x?(x.repair_date||''):dateStr(0);
+  document.getElementById('rep_order').value=x?(x.order_no||''):'';
+  document.getElementById('rep_service').value=x?(x.service||''):'';
+  document.getElementById('rep_technic').value=x?(x.technic||''):'';
+  document.getElementById('rep_desc').value=x?(x.description||''):'';
+  document.getElementById('rep_cost').value=x&&x.cost!=null?x.cost:'';
+  document.getElementById('rep_paid').value=x?(x.paid||'awaiting'):'awaiting';
+  document.getElementById('repairModal').classList.add('show');
+}
+async function saveRepair(){
+  var cid=window._carCardOpen; if(!cid){ return; }
+  var data={ car_id:cid, repair_date:document.getElementById('rep_date').value||null,
+    order_no:document.getElementById('rep_order').value.trim()||null,
+    service:document.getElementById('rep_service').value.trim()||null,
+    technic:document.getElementById('rep_technic').value.trim()||null,
+    description:document.getElementById('rep_desc').value.trim()||null,
+    cost: document.getElementById('rep_cost').value!==''?Number(document.getElementById('rep_cost').value):null,
+    paid:document.getElementById('rep_paid').value, company_id:'mrride' };
+  var res = editingRepairId ? await sb.from('tour_repairs').update(data).eq('id',editingRepairId)
+                            : await sb.from('tour_repairs').insert(Object.assign({id:'rep_'+Date.now()},data));
+  if(res.error){ alert('Ошибка сохранения ремонта: '+res.error.message); return; }
+  closeRepairModal(); openCarCard(cid);
+}
+async function delRepair(id){
+  if(!confirm('Удалить ремонт?')) return;
+  var res=await sb.from('tour_repairs').delete().eq('id',id);
+  if(res.error){ alert('Ошибка: '+res.error.message); return; }
+  openCarCard(window._carCardOpen);
+}
+
+// ── Загрузка фото машины (файл -> сжатие -> base64) ──
+function uploadCarPhoto(input){
+  if(!input.files||!input.files[0])return;
+  var rdr=new FileReader();
+  rdr.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var max=1100, w=img.width, hh=img.height;
+      if(w>max||hh>max){ var k=Math.min(max/w,max/hh); w=Math.round(w*k); hh=Math.round(hh*k); }
+      var cv=document.createElement('canvas'); cv.width=w; cv.height=hh;
+      cv.getContext('2d').drawImage(img,0,0,w,hh);
+      saveCarPhoto(cv.toDataURL('image/jpeg',0.82));
+    };
+    img.onerror=function(){ alert('Не удалось прочитать изображение'); };
+    img.src=e.target.result;
+  };
+  rdr.readAsDataURL(input.files[0]);
+}
+async function saveCarPhoto(dataUrl){
+  var id=window._carCardOpen; if(!id) return;
+  var res=await sb.from('cars').update({photo_url:dataUrl}).eq('id',id);
+  if(res.error){ alert('Ошибка загрузки фото: '+res.error.message); return; }
+  await loadFleet(); openCarCard(id);
 }
 
 // ─────────── FINANCE ───────────
