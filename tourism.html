@@ -313,6 +313,50 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card-action-btn.del:hover{background:var(--danger);color:#fff}
 .board-add-card{padding:8px 12px;background:transparent;border:1px dashed var(--border2);border-radius:var(--r);cursor:pointer;font-size:12px;color:var(--text3);text-align:center;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px;width:100%}
 .board-add-card:hover{background:var(--bg);color:var(--accent);border-color:var(--accent)}
+/* ── Карточка (стиль как в лимузинной CRM) ── */
+.back-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;font-size:13px;background:var(--bg);color:var(--text2);border:1px solid var(--border2);border-radius:var(--r);cursor:pointer;margin-bottom:12px}
+.car-header{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:14px}
+.car-header-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.car-brand-logo{width:46px;height:46px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--text2);flex-shrink:0}
+.car-hdr-main h2{font-size:16px;font-weight:700}
+.car-hdr-main p{font-size:12px;color:var(--text2)}
+.car-hdr-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.chi{display:flex;flex-direction:column;gap:2px;padding:8px 10px;background:var(--bg2);border-radius:var(--r)}
+.chi-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.3px}
+.chi-val{font-size:13px;font-weight:600}
+.chi-val.online{color:var(--accent)}
+.tabs{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:14px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:12px 16px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;background:transparent;border-top:none;border-left:none;border-right:none;white-space:nowrap;flex-shrink:0}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.details-grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.section-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:12px}
+.section-title{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.section-title i{color:var(--accent);font-size:15px}
+.tag-wrap{padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-height:42px}
+.photo-box{border:2px dashed var(--border2);border-radius:var(--r);width:100%;min-height:100px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);flex-direction:column;gap:6px;padding:16px}
+.photo-box i{font-size:28px}
+.photo-box p{font-size:12px}
+.status-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:12px}
+.status-card-hdr{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.srow{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)}
+.srow:last-child{border-bottom:none}
+.slbl{color:var(--text2)}
+.sval{font-weight:500}
+.save-bar{padding:14px 0 0;display:flex;gap:10px;flex-wrap:wrap}
+.btn-primary{padding:12px 20px;font-size:14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px}
+.btn-primary:hover{background:var(--accent-h)}
+.table-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-wrap table{width:100%;border-collapse:collapse;font-size:13px}
+.table-wrap th{text-align:left;font-size:11px;color:var(--text3);font-weight:600;padding:11px 14px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.table-wrap td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.action-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.fin-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:500;font-family:inherit}
+.fin-btn:hover{background:var(--accent-h)}
+@media(max-width:760px){.details-grid-2col{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1997,120 +2041,152 @@ function carCardTab(tab){
     var btn=document.getElementById('ctab-'+t); if(btn) btn.classList.toggle('active',t===tab);
   });
 }
+function carTab(tab){
+  ['details','trips','costs','repairs'].forEach(function(t){
+    var sec=document.getElementById('tab-'+t); if(sec) sec.classList.toggle('active',t===tab);
+    var btn=document.getElementById('ctab-'+t); if(btn) btn.classList.toggle('active',t===tab);
+  });
+}
+async function saveCarInline(){
+  var id=window._carCardOpen; if(!id) return;
+  var g=function(x){return document.getElementById(x);};
+  var data={
+    status:g('dc-status').value,
+    brand:g('dc-brand').value.trim()||null,
+    model:g('dc-model').value.trim()||null,
+    color:g('dc-color').value.trim()||null,
+    year:g('dc-year').value!==''?Number(g('dc-year').value):null,
+    seats:g('dc-seats').value!==''?Number(g('dc-seats').value):null,
+    transmission:g('dc-trans').value.trim()||null,
+    fuel_type:g('dc-fuel').value.trim()||null,
+    plate:g('dc-plate').value.trim()||null,
+    odometer:g('dc-odo').value!==''?Number(g('dc-odo').value):null,
+    vin:g('dc-vin').value.trim()||null,
+    insurance_number:g('dc-ins').value.trim()||null,
+    insurance_expiry:g('dc-insexp').value||null,
+    acquiring_terminal:g('dc-term').value.trim()||null
+  };
+  if(!data.plate && !data.model){ alert('Укажите номер или модель машины'); return; }
+  if(!data.plate) data.plate=data.model;
+  if(!data.model) data.model=data.plate;
+  var res=await sb.from('cars').update(data).eq('id',id);
+  if(res.error){ alert('Ошибка сохранения: '+res.error.message); return; }
+  await loadFleet(); openCarCard(id);
+}
 async function openCarCard(id){
   var c=CARS.find(function(x){return x.id===id;}); if(!c) return;
   window._carCardOpen=id;
-  function cell(k,v){ return '<div class="dcard-cell"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
-  function row(k,v){ return '<div class="drow"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+  function fr(lbl,inner){ return '<div class="field-row"><label>'+lbl+'</label>'+inner+'</div>'; }
+  function sel(cur,v){ return (cur===v)?' selected':''; }
+  function srow(k,v){ return '<div class="srow"><span class="slbl">'+k+'</span><span class="sval">'+v+'</span></div>'; }
+  var stTxt={use:'В работе',reserve:'Резерв',repair:'Ремонт'}[c.status||'use']||'В работе';
   var drvList=DRIVERS.filter(function(d){return d.car_id===c.id;});
   var drvIds=drvList.map(function(d){return d.id;});
-  var drvNames=drvList.map(function(d){return esc(d.name);}).join(', ')||'<span style="color:var(--text3)">не закреплена</span>';
-  var sub=[c.brand,c.model].filter(Boolean).join(' ')||'Машина';
+  var driverNo1=drvList.length?esc(drvList[0].name):'—';
   var odo=(c.odometer!=null?(fmtNum(c.odometer)+' км'):'—');
-  var ava = c.photo_url
-    ? '<div class="dcard-ava" style="background:var(--bg2);overflow:hidden;padding:0"><img src="'+esc(c.photo_url)+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'"></div>'
-    : '<div class="dcard-ava" style="background:var(--accent)"><i class="ti ti-car"></i></div>';
   var h='';
-  h+='<button class="btn-sec" onclick="renderCars()" style="margin-bottom:16px"><i class="ti ti-arrow-left"></i> Машины</button>';
-  h+='<div class="dcard"><div class="dcard-top">'+ava+
-       '<div style="flex:1;min-width:0"><div class="dcard-name">'+esc(c.plate||c.model||'—')+'</div><div class="dcard-sub">'+esc(sub)+'</div></div>'+
-       '<button class="btn-add" onclick="openCarModal(\''+id+'\')"><i class="ti ti-pencil"></i> Редактировать</button>'+
+  h+='<button class="back-btn" onclick="renderCars()"><i class="ti ti-arrow-left"></i> Машины</button>';
+  h+='<div class="car-header"><div class="car-header-top">'+
+       '<div class="car-brand-logo"><i class="ti ti-car"></i></div>'+
+       '<div class="car-hdr-main"><h2>'+esc(c.plate||c.model||'—')+'</h2><p>'+esc([c.brand,c.model].filter(Boolean).join(' ')||'Машина')+'</p></div>'+
+     '</div>'+
+     '<div class="car-hdr-grid">'+
+       '<div class="chi"><span class="chi-lbl">Статус</span><span class="chi-val">'+stTxt+'</span></div>'+
+       '<div class="chi"><span class="chi-lbl">Пробег</span><span class="chi-val">'+odo+'</span></div>'+
+       '<div class="chi" style="grid-column:1/-1"><span class="chi-lbl">Водитель №1</span><span class="chi-val">'+driverNo1+'</span></div>'+
+     '</div></div>';
+  h+='<div class="tabs">'+
+       '<button class="tab active" id="ctab-details" onclick="carTab(\'details\')">Данные</button>'+
+       '<button class="tab" id="ctab-trips" onclick="carTab(\'trips\')">Поездки</button>'+
+       '<button class="tab" id="ctab-costs" onclick="carTab(\'costs\')">Затраты</button>'+
+       '<button class="tab" id="ctab-repairs" onclick="carTab(\'repairs\')">Ремонты</button>'+
      '</div>';
-  h+= '<div class="dcard-grid">'+
-        cell('Статус', carStatusBadge(c.status))+
-        cell('Закреплена за', drvNames)+
-        cell('Мест', c.seats!=null?String(c.seats):'—')+
-        cell('Пробег', odo)+
-        cell('Год', c.year!=null?String(c.year):'—')+
-        cell('Цвет', c.color?esc(c.color):'—')+
-      '</div></div>';
-  h+='<div class="dtabs">'+
-       '<button class="tab-btn active" id="ctab-data" onclick="carCardTab(\'data\')"><i class="ti ti-info-circle"></i> Данные</button>'+
-       '<button class="tab-btn" id="ctab-trips" onclick="carCardTab(\'trips\')"><i class="ti ti-route"></i> Поездки</button>'+
-       '<button class="tab-btn" id="ctab-costs" onclick="carCardTab(\'costs\')"><i class="ti ti-cash"></i> Затраты</button>'+
-       '<button class="tab-btn" id="ctab-repairs" onclick="carCardTab(\'repairs\')"><i class="ti ti-tools"></i> Ремонты</button>'+
+  // ===== DETAILS =====
+  h+='<div class="tab-content active" id="tab-details"><div class="details-grid-2col">';
+  h+='<div><div class="section-card"><div class="section-title"><i class="ti ti-info-circle"></i> Общее</div>'+
+       fr('Статус','<select id="dc-status"><option value="use"'+sel(c.status,'use')+'>В работе</option><option value="reserve"'+sel(c.status,'reserve')+'>Резерв</option><option value="repair"'+sel(c.status,'repair')+'>Ремонт</option></select>')+
+       fr('Бренд','<input type="text" id="dc-brand" value="'+esc(c.brand||'')+'">')+
+       fr('Модель','<input type="text" id="dc-model" value="'+esc(c.model||'')+'">')+
+       fr('Цвет','<input type="text" id="dc-color" value="'+esc(c.color||'')+'">')+
+       fr('Год','<input type="number" id="dc-year" value="'+(c.year!=null?c.year:'')+'">')+
+       fr('Мест','<input type="number" id="dc-seats" value="'+(c.seats!=null?c.seats:'')+'">')+
+       fr('Коробка','<input type="text" id="dc-trans" value="'+esc(c.transmission||'')+'">')+
+       fr('Топливо','<input type="text" id="dc-fuel" value="'+esc(c.fuel_type||'')+'">')+
+     '</div></div>';
+  h+='<div>';
+  h+='<div class="section-card"><div class="section-title"><i class="ti ti-file-certificate"></i> Документы</div>'+
+       fr('Гос. номер','<input type="text" id="dc-plate" value="'+esc(c.plate||'')+'">')+
+       fr('Пробег (км)','<input type="number" id="dc-odo" value="'+(c.odometer!=null?c.odometer:'')+'">')+
+       fr('VIN','<input type="text" id="dc-vin" value="'+esc(c.vin||'')+'">')+
+       fr('Номер страховки','<input type="text" id="dc-ins" value="'+esc(c.insurance_number||'')+'">')+
+       fr('Срок страховки','<input type="date" id="dc-insexp" value="'+esc(c.insurance_expiry||'')+'">')+
+       fr('Водители','<div class="tag-wrap">'+(drvList.length?drvList.map(function(d){return '<span class="badge-st ok">'+esc(d.name)+'</span>';}).join(' '):'<span style="color:var(--text3);font-size:12px">не закреплены</span>')+'</div>')+
+       fr('Acquiring terminal','<input type="text" id="dc-term" value="'+esc(c.acquiring_terminal||'')+'">')+
      '</div>';
-  h+='<div id="csec-data"><div class="dcols">';
-  h+='<div class="dsec"><h3><i class="ti ti-car"></i> Общее</h3>'+
-       row('Статус', carStatusBadge(c.status))+
-       row('Бренд', c.brand?esc(c.brand):'—')+
-       row('Модель', c.model?esc(c.model):'—')+
-       row('Цвет', c.color?esc(c.color):'—')+
-       row('Год', c.year!=null?String(c.year):'—')+
-       row('Мест', c.seats!=null?String(c.seats):'—')+
-       row('Пробег', odo)+
-       row('Коробка', c.transmission?esc(c.transmission):'—')+
-       row('Топливо', c.fuel_type?esc(c.fuel_type):'—')+
-     '</div>';
-  h+='<div class="dsec"><h3><i class="ti ti-file-text"></i> Документы</h3>'+
-       row('Номер / гос. номер', c.plate?esc(c.plate):'—')+
-       row('VIN', c.vin?esc(c.vin):'—')+
-       row('Номер страховки', c.insurance_number?esc(c.insurance_number):'—')+
-       row('Срок страховки', fmtDateDMY(c.insurance_expiry))+
-       row('Закреплённые водители', drvNames)+
-     '</div>';
+  h+='<div class="section-card"><div class="section-title"><i class="ti ti-photo"></i> Фото машины</div>';
+  if(c.photo_url){ h+='<img src="'+esc(c.photo_url)+'" style="width:100%;border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px;display:block" onerror="this.style.display=\'none\'">'; }
+  h+='<div class="photo-box" onclick="document.getElementById(\'carPhotoFile\').click()"><i class="ti ti-camera"></i><p>'+(c.photo_url?'Заменить фото':'Нажмите, чтобы загрузить')+'</p></div>';
+  h+='<input type="file" id="carPhotoFile" accept="image/*" style="display:none" onchange="uploadCarPhoto(this)"></div>';
   h+='</div>';
-  h+='<div class="dsec"><h3><i class="ti ti-photo"></i> Фото машины</h3>';
-  if(c.photo_url){ h+='<img src="'+esc(c.photo_url)+'" style="max-width:100%;border-radius:var(--r);border:1px solid var(--border);margin-bottom:10px;display:block" onerror="this.style.display=\'none\'">'; }
-  h+='<div onclick="document.getElementById(\'carPhotoFile\').click()" style="border:1px dashed var(--border2);border-radius:var(--r);padding:24px;text-align:center;color:var(--text3);font-size:13px;cursor:pointer"><i class="ti ti-camera" style="font-size:26px;display:block;margin-bottom:6px;opacity:.6"></i>'+(c.photo_url?'Заменить фото':'Нажмите, чтобы загрузить фото')+'</div>';
-  h+='<input type="file" id="carPhotoFile" accept="image/*" style="display:none" onchange="uploadCarPhoto(this)">';
   h+='</div>';
-  h+='<div class="dsec"><h3><i class="ti ti-gauge"></i> Текущий статус</h3>'+
-       row('Гос. номер', c.plate?esc(c.plate):'—')+
-       row('Пробег', odo)+
-       row('GPS', '<span style="color:var(--text3)">не подключён в туризме</span>')+
+  h+='<div class="status-card"><div class="status-card-hdr"><span>Текущий статус</span> <i class="ti ti-chart-bar" style="font-size:15px"></i></div>'+
+       srow('Гос. номер', esc(c.plate||'—'))+
+       srow('Пробег', odo)+
+       srow('GPS','<span style="color:var(--text3)">не подключён в туризме</span>')+
      '</div>';
+  h+='<div class="save-bar"><button class="btn-primary" onclick="saveCarInline()"><i class="ti ti-device-floppy"></i> Сохранить</button><button onclick="delCar(\''+id+'\')" style="background:#fcebeb;color:#a32d2d;border:1px solid #f1c4c4;border-radius:var(--r);padding:9px 16px;cursor:pointer;font-weight:600"><i class="ti ti-trash"></i> Удалить</button></div>';
   h+='</div>';
-  h+='<div class="dsec" id="csec-trips" style="display:none"><h3><i class="ti ti-route"></i> Поездки машины</h3>';
-  if(!drvIds.length){ h+='<div style="color:var(--text3);font-size:13px">К машине не закреплён водитель — поездки показываются по закреплённому водителю.</div>'; }
+  // ===== TRIPS =====
+  h+='<div class="tab-content" id="tab-trips">';
+  if(!drvIds.length){ h+='<div class="section-card" style="color:var(--text3);font-size:13px">К машине не закреплён водитель — поездки показываются по закреплённому водителю.</div>'; }
   else {
     var trips=ORDERS.filter(function(o){ return drvIds.indexOf(o.dM)>=0||drvIds.indexOf(o.dD)>=0||drvIds.indexOf(o.dE)>=0; });
     trips.sort(function(a,b){ return (a.trip_date||'').localeCompare(b.trip_date||''); });
-    if(!trips.length){ h+='<div style="color:var(--text3);font-size:13px">Поездок пока нет.</div>'; }
+    if(!trips.length){ h+='<div class="section-card" style="color:var(--text3);font-size:13px">Поездок пока нет.</div>'; }
     else {
-      h+='<table class="tbl"><thead><tr><th>Дата</th><th>Время</th><th>Клиент</th><th>Маршрут</th><th>Статус</th></tr></thead><tbody>';
-      trips.forEach(function(o){
+      h+='<div class="table-wrap"><div class="tscroll"><table><thead><tr><th>№</th><th>Дата</th><th>Время</th><th>Клиент</th><th>Маршрут</th><th>Статус</th></tr></thead><tbody>';
+      trips.forEach(function(o,i){
         var tl=[];
         if(drvIds.indexOf(o.dM)>=0 && o.morning) tl.push('☀ '+esc(o.morning));
         if(drvIds.indexOf(o.dD)>=0 && o.day) tl.push('⛅ '+esc(o.day));
         if(drvIds.indexOf(o.dE)>=0 && o.evening) tl.push('🌙 '+esc(o.evening));
         var route=(o.from||o.to)?(esc(o.from||'—')+' → '+esc(o.to||'—')):'—';
-        h+='<tr><td style="white-space:nowrap">'+esc(o.trip_date||'—')+'</td><td style="white-space:nowrap">'+(tl.join('<br>')||'—')+'</td><td>'+esc(o.client||'—')+'</td><td style="font-size:12px;color:var(--text2)">'+route+'</td><td>'+tripStatusBadge(o.status)+'</td></tr>';
+        h+='<tr><td>'+(i+1)+'</td><td style="white-space:nowrap">'+esc(o.trip_date||'—')+'</td><td style="white-space:nowrap">'+(tl.join('<br>')||'—')+'</td><td>'+esc(o.client||'—')+'</td><td>'+route+'</td><td>'+tripStatusBadge(o.status)+'</td></tr>';
       });
-      h+='</tbody></table>';
+      h+='</tbody></table></div></div>';
     }
   }
   h+='</div>';
-  // ── Затраты / Ремонты (реальные данные) ──
+  // load costs & repairs
   var costs=[], reps=[];
   try{ var rc=await sb.from('tour_car_costs').select('*').eq('car_id',id).order('cost_date',{ascending:false}); if(!rc.error) costs=rc.data||[]; }catch(e){}
   try{ var rr=await sb.from('tour_repairs').select('*').eq('car_id',id).order('repair_date',{ascending:false}); if(!rr.error) reps=rr.data||[]; }catch(e){}
   window._carCosts=costs; window._carReps=reps;
+  // ===== COSTS =====
   var cap=0, op=0; costs.forEach(function(x){ var a=Number(x.amount)||0; if((x.type||'operational')==='capital') cap+=a; else op+=a; });
-  h+='<div class="dsec" id="csec-costs" style="display:none"><h3><i class="ti ti-cash"></i> Затраты по машине</h3>';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
-     '<div style="font-size:13px;color:var(--text2)">Вложено (капитал): <b style="color:var(--accent)">'+fmtNum(cap)+' AED</b> · Периодические: <b>'+fmtNum(op)+' AED</b></div>'+
-     '<button class="btn-add" onclick="openCostModal()"><i class="ti ti-plus"></i> Добавить затрату</button></div>';
-  if(!costs.length){ h+='<div style="color:var(--text3);font-size:13px">Затрат пока нет.</div>'; }
+  h+='<div class="tab-content" id="tab-costs">';
+  h+='<div class="action-row"><div style="font-size:13px;color:var(--text2)">Вложено (капитал): <b style="color:var(--accent)">'+fmtNum(cap)+' AED</b> · Периодические: <b>'+fmtNum(op)+' AED</b></div><button class="fin-btn" onclick="openCostModal()"><i class="ti ti-plus"></i> Добавить затрату</button></div>';
+  if(!costs.length){ h+='<div class="section-card" style="color:var(--text3);font-size:13px">Затрат пока нет.</div>'; }
   else {
-    h+='<table class="tbl"><thead><tr><th>№</th><th>Дата</th><th>Тип</th><th>Сумма</th><th>Категория</th><th>Заметка</th><th></th></tr></thead><tbody>';
+    h+='<div class="table-wrap"><div class="tscroll"><table><thead><tr><th>№</th><th>Дата</th><th>Тип</th><th>Сумма</th><th>Категория</th><th>Заметка</th><th></th></tr></thead><tbody>';
     costs.forEach(function(x,i){
       var tb=(x.type==='capital')?'<span class="badge-st warn">КАП</span>':'<span style="color:var(--text3);font-size:12px">период.</span>';
-      h+='<tr><td>'+(i+1)+'</td><td style="white-space:nowrap">'+fmtDateDMY(x.cost_date)+'</td><td>'+tb+'</td><td style="white-space:nowrap"><b>'+fmtNum(x.amount)+' AED</b></td><td>'+esc(x.category||'—')+'</td><td style="font-size:12px;color:var(--text2)">'+esc(x.note||'')+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openCostModal(\''+x.id+'\')">✎</button> <button class="mini-btn" onclick="delCost(\''+x.id+'\')">×</button></td></tr>';
+      h+='<tr><td>'+(i+1)+'</td><td style="white-space:nowrap">'+fmtDateDMY(x.cost_date)+'</td><td>'+tb+'</td><td style="white-space:nowrap"><b>'+fmtNum(x.amount)+' AED</b></td><td>'+esc(x.category||'—')+'</td><td style="color:var(--text2)">'+esc(x.note||'')+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openCostModal(\''+x.id+'\')">✎</button> <button class="mini-btn" onclick="delCost(\''+x.id+'\')">×</button></td></tr>';
     });
-    h+='</tbody></table>';
+    h+='</tbody></table></div></div>';
   }
   h+='</div>';
-  h+='<div class="dsec" id="csec-repairs" style="display:none"><h3><i class="ti ti-tools"></i> Ремонты</h3>';
-  h+='<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn-add" onclick="openRepairModal()"><i class="ti ti-plus"></i> Добавить</button></div>';
-  if(!reps.length){ h+='<div style="color:var(--text3);font-size:13px">Ремонтов пока нет.</div>'; }
+  // ===== REPAIRS =====
+  h+='<div class="tab-content" id="tab-repairs">';
+  h+='<div class="action-row"><div></div><button class="fin-btn" onclick="openRepairModal()"><i class="ti ti-plus"></i> Добавить ремонт</button></div>';
+  if(!reps.length){ h+='<div class="section-card" style="color:var(--text3);font-size:13px">Ремонтов пока нет.</div>'; }
   else {
-    h+='<table class="tbl"><thead><tr><th>№</th><th>Дата</th><th>Order №</th><th>Сервис</th><th>Техник</th><th>Описание</th><th>Стоимость</th><th>Оплата</th><th></th></tr></thead><tbody>';
+    h+='<div class="table-wrap"><div class="tscroll"><table><thead><tr><th>№</th><th>Дата</th><th>Order №</th><th>Сервис</th><th>Техник</th><th>Описание</th><th>Стоимость</th><th>Оплата</th><th></th></tr></thead><tbody>';
     reps.forEach(function(x,i){
       var pb=(x.paid==='paid')?'<span class="badge-st ok">Оплачено</span>':'<span class="badge-st warn">Ожидает</span>';
-      h+='<tr><td>'+(i+1)+'</td><td style="white-space:nowrap">'+fmtDateDMY(x.repair_date)+'</td><td>'+esc(x.order_no||'—')+'</td><td>'+esc(x.service||'—')+'</td><td>'+esc(x.technic||'—')+'</td><td style="font-size:12px;color:var(--text2)">'+esc(x.description||'')+'</td><td style="white-space:nowrap"><b>'+fmtNum(x.cost)+' AED</b></td><td>'+pb+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openRepairModal(\''+x.id+'\')">✎</button> <button class="mini-btn" onclick="delRepair(\''+x.id+'\')">×</button></td></tr>';
+      h+='<tr><td>'+(i+1)+'</td><td style="white-space:nowrap">'+fmtDateDMY(x.repair_date)+'</td><td>'+esc(x.order_no||'—')+'</td><td>'+esc(x.service||'—')+'</td><td>'+esc(x.technic||'—')+'</td><td style="color:var(--text2)">'+esc(x.description||'')+'</td><td style="white-space:nowrap"><b>'+fmtNum(x.cost)+' AED</b></td><td>'+pb+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openRepairModal(\''+x.id+'\')">✎</button> <button class="mini-btn" onclick="delRepair(\''+x.id+'\')">×</button></td></tr>';
     });
-    h+='</tbody></table>';
+    h+='</tbody></table></div></div>';
   }
   h+='</div>';
   document.getElementById('page-cars').innerHTML=h;
