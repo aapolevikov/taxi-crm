@@ -272,6 +272,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .dtabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
 .dsec{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:18px;margin-bottom:16px}
 .dsec h3{font-size:14px;margin:0 0 14px;display:flex;align-items:center;gap:8px;color:var(--accent)}
+.dcols{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.dcols>div{flex:1 1 260px;min-width:0}
+.drow{padding:9px 0;border-bottom:1px solid var(--border)}
+.drow:last-child{border-bottom:none}
+.drow .k{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.drow .v{font-size:14px;font-weight:600;margin-top:3px;word-break:break-word}
 .entity-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px}
 .entity-card .ec-top{display:flex;align-items:center;gap:8px}
 .entity-card .ec-name{font-weight:700;font-size:15px}
@@ -684,6 +690,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="field-2">
       <div class="field-row"><label>Мест</label><input id="car_seats" type="number" min="1" step="1" placeholder="4"></div>
       <div class="field-row"><label>Пробег (км)</label><input id="car_odo" type="number" min="0" step="1" placeholder="0"></div>
+    </div>
+    <div class="field-2">
+      <div class="field-row"><label>Коробка</label><input id="car_trans" placeholder="Автомат"></div>
+      <div class="field-row"><label>Топливо</label><input id="car_fuel" placeholder="Бензин / Электро"></div>
     </div>
     <div class="field-row"><label>Статус</label><select id="car_status"><option value="use">В работе</option><option value="reserve">Резерв</option><option value="repair">Ремонт</option></select></div>
     <div class="field-row"><label>VIN</label><input id="car_vin" placeholder="WDB..."></div>
@@ -1903,6 +1913,8 @@ function openCarModal(id){
   document.getElementById('car_year').value=(c.year!=null?c.year:'');
   document.getElementById('car_seats').value=(c.seats!=null?c.seats:'');
   document.getElementById('car_odo').value=(c.odometer!=null?c.odometer:'');
+  document.getElementById('car_trans').value=c.transmission||'';
+  document.getElementById('car_fuel').value=c.fuel_type||'';
   document.getElementById('car_status').value=c.status||'use';
   document.getElementById('car_vin').value=c.vin||'';
   document.getElementById('car_ins_num').value=c.insurance_number||'';
@@ -1921,6 +1933,8 @@ async function saveCar(){
     year: document.getElementById('car_year').value!==''?Number(document.getElementById('car_year').value):null,
     seats: document.getElementById('car_seats').value!==''?Number(document.getElementById('car_seats').value):null,
     odometer: document.getElementById('car_odo').value!==''?Number(document.getElementById('car_odo').value):null,
+    transmission:document.getElementById('car_trans').value.trim()||null,
+    fuel_type:document.getElementById('car_fuel').value.trim()||null,
     vin:document.getElementById('car_vin').value.trim()||null,
     insurance_number:document.getElementById('car_ins_num').value.trim()||null,
     insurance_expiry:document.getElementById('car_ins_exp').value||null,
@@ -1944,17 +1958,20 @@ async function delCar(id){
 function fmtNum(n){ return (n==null||n==='')?'—':Number(n).toLocaleString('ru-RU'); }
 function fmtDateDMY(s){ if(!s) return '—'; var p=String(s).slice(0,10).split('-'); return p.length===3?(p[2]+'.'+p[1]+'.'+p[0]):s; }
 function carCardTab(tab){
-  var ph=tab==='photo';
-  document.getElementById('csec-data').style.display=ph?'none':'';
-  document.getElementById('csec-photo').style.display=ph?'':'none';
-  document.getElementById('ctab-data').classList.toggle('active',!ph);
-  document.getElementById('ctab-photo').classList.toggle('active',ph);
+  var tr=tab==='trips';
+  document.getElementById('csec-data').style.display=tr?'none':'';
+  document.getElementById('csec-trips').style.display=tr?'':'none';
+  document.getElementById('ctab-data').classList.toggle('active',!tr);
+  document.getElementById('ctab-trips').classList.toggle('active',tr);
 }
 function openCarCard(id){
   var c=CARS.find(function(x){return x.id===id;}); if(!c) return;
   window._carCardOpen=id;
   function cell(k,v){ return '<div class="dcard-cell"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
-  var drvNames=DRIVERS.filter(function(d){return d.car_id===c.id;}).map(function(d){return esc(d.name);}).join(', ')||'<span style="color:var(--text3)">не закреплена</span>';
+  function row(k,v){ return '<div class="drow"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+  var drvList=DRIVERS.filter(function(d){return d.car_id===c.id;});
+  var drvIds=drvList.map(function(d){return d.id;});
+  var drvNames=drvList.map(function(d){return esc(d.name);}).join(', ')||'<span style="color:var(--text3)">не закреплена</span>';
   var sub=[c.brand,c.model].filter(Boolean).join(' ')||'Машина';
   var odo=(c.odometer!=null?(fmtNum(c.odometer)+' км'):'—');
   var ava = c.photo_url
@@ -1976,29 +1993,52 @@ function openCarCard(id){
       '</div></div>';
   h+='<div class="dtabs">'+
        '<button class="tab-btn active" id="ctab-data" onclick="carCardTab(\'data\')"><i class="ti ti-info-circle"></i> Данные</button>'+
-       '<button class="tab-btn" id="ctab-photo" onclick="carCardTab(\'photo\')"><i class="ti ti-photo"></i> Фото</button>'+
+       '<button class="tab-btn" id="ctab-trips" onclick="carCardTab(\'trips\')"><i class="ti ti-route"></i> Поездки</button>'+
      '</div>';
-  h+='<div id="csec-data">';
-  h+='<div class="dsec"><h3><i class="ti ti-car"></i> Общее</h3><div class="dcard-grid">'+
-       cell('Бренд', c.brand?esc(c.brand):'—')+
-       cell('Модель', c.model?esc(c.model):'—')+
-       cell('Цвет', c.color?esc(c.color):'—')+
-       cell('Год', c.year!=null?String(c.year):'—')+
-       cell('Мест', c.seats!=null?String(c.seats):'—')+
-       cell('Пробег', odo)+
-       cell('Статус', carStatusBadge(c.status))+
-     '</div></div>';
-  h+='<div class="dsec"><h3><i class="ti ti-file-text"></i> Документы</h3><div class="dcard-grid">'+
-       cell('Номер / название', c.plate?esc(c.plate):'—')+
-       cell('VIN', c.vin?esc(c.vin):'—')+
-       cell('Номер страховки', c.insurance_number?esc(c.insurance_number):'—')+
-       cell('Срок страховки', fmtDateDMY(c.insurance_expiry))+
-       cell('Закреплена за', drvNames)+
-     '</div></div>';
+  h+='<div id="csec-data"><div class="dcols">';
+  h+='<div class="dsec"><h3><i class="ti ti-car"></i> Общее</h3>'+
+       row('Статус', carStatusBadge(c.status))+
+       row('Бренд', c.brand?esc(c.brand):'—')+
+       row('Модель', c.model?esc(c.model):'—')+
+       row('Цвет', c.color?esc(c.color):'—')+
+       row('Год', c.year!=null?String(c.year):'—')+
+       row('Мест', c.seats!=null?String(c.seats):'—')+
+       row('Пробег', odo)+
+       row('Коробка', c.transmission?esc(c.transmission):'—')+
+       row('Топливо', c.fuel_type?esc(c.fuel_type):'—')+
+     '</div>';
+  h+='<div class="dsec"><h3><i class="ti ti-file-text"></i> Документы</h3>'+
+       row('Номер / гос. номер', c.plate?esc(c.plate):'—')+
+       row('VIN', c.vin?esc(c.vin):'—')+
+       row('Номер страховки', c.insurance_number?esc(c.insurance_number):'—')+
+       row('Срок страховки', fmtDateDMY(c.insurance_expiry))+
+       row('Закреплённые водители', drvNames)+
+     '</div>';
   h+='</div>';
-  h+='<div class="dsec" id="csec-photo" style="display:none"><h3><i class="ti ti-photo"></i> Фото машины</h3>';
+  h+='<div class="dsec"><h3><i class="ti ti-photo"></i> Фото машины</h3>';
   if(c.photo_url){ h+='<img src="'+esc(c.photo_url)+'" style="max-width:100%;border-radius:var(--r);border:1px solid var(--border)" onerror="this.style.display=\'none\'">'; }
   else { h+='<div style="border:1px dashed var(--border2);border-radius:var(--r);padding:40px;text-align:center;color:var(--text3);font-size:13px"><i class="ti ti-photo" style="font-size:32px;display:block;margin-bottom:8px;opacity:.5"></i>Фото не добавлено.<br>Нажмите «Редактировать» и вставьте ссылку на изображение.</div>'; }
+  h+='</div>';
+  h+='</div>';
+  h+='<div class="dsec" id="csec-trips" style="display:none"><h3><i class="ti ti-route"></i> Поездки машины</h3>';
+  if(!drvIds.length){ h+='<div style="color:var(--text3);font-size:13px">К машине не закреплён водитель — поездки показываются по закреплённому водителю.</div>'; }
+  else {
+    var trips=ORDERS.filter(function(o){ return drvIds.indexOf(o.dM)>=0||drvIds.indexOf(o.dD)>=0||drvIds.indexOf(o.dE)>=0; });
+    trips.sort(function(a,b){ return (a.trip_date||'').localeCompare(b.trip_date||''); });
+    if(!trips.length){ h+='<div style="color:var(--text3);font-size:13px">Поездок пока нет.</div>'; }
+    else {
+      h+='<table class="tbl"><thead><tr><th>Дата</th><th>Время</th><th>Клиент</th><th>Маршрут</th><th>Статус</th></tr></thead><tbody>';
+      trips.forEach(function(o){
+        var tl=[];
+        if(drvIds.indexOf(o.dM)>=0 && o.morning) tl.push('☀ '+esc(o.morning));
+        if(drvIds.indexOf(o.dD)>=0 && o.day) tl.push('⛅ '+esc(o.day));
+        if(drvIds.indexOf(o.dE)>=0 && o.evening) tl.push('🌙 '+esc(o.evening));
+        var route=(o.from||o.to)?(esc(o.from||'—')+' → '+esc(o.to||'—')):'—';
+        h+='<tr><td style="white-space:nowrap">'+esc(o.trip_date||'—')+'</td><td style="white-space:nowrap">'+(tl.join('<br>')||'—')+'</td><td>'+esc(o.client||'—')+'</td><td style="font-size:12px;color:var(--text2)">'+route+'</td><td>'+tripStatusBadge(o.status)+'</td></tr>';
+      });
+      h+='</tbody></table>';
+    }
+  }
   h+='</div>';
   document.getElementById('page-cars').innerHTML=h;
 }
