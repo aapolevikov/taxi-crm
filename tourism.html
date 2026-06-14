@@ -258,6 +258,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .badge-st.ok{background:var(--accent-l);color:var(--accent)}
 .badge-st.warn{background:var(--warn-l);color:var(--warn)}
 .badge-st.off{background:var(--danger-l);color:var(--danger)}
+.lnk{color:var(--accent);cursor:pointer}
+.lnk:hover{text-decoration:underline}
+.dcard{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:16px}
+.dcard-top{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.dcard-ava{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;flex-shrink:0}
+.dcard-name{font-size:20px;font-weight:700;line-height:1.2}
+.dcard-sub{font-size:13px;color:var(--text3);margin-top:2px}
+.dcard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.dcard-cell{background:var(--bg2);padding:12px 14px}
+.dcard-cell .k{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.dcard-cell .v{font-size:14px;font-weight:600}
+.dtabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.dsec{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:18px;margin-bottom:16px}
+.dsec h3{font-size:14px;margin:0 0 14px;display:flex;align-items:center;gap:8px;color:var(--accent)}
 .entity-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px}
 .entity-card .ec-top{display:flex;align-items:center;gap:8px}
 .entity-card .ec-name{font-weight:700;font-size:15px}
@@ -1672,6 +1686,7 @@ async function generateTrips(id){
 // ─────────── DRIVERS ───────────
 function driverStatusBadge(s){ s=s||'working'; return s==='blocked' ? '<span class="badge-st off">Заблокирован</span>' : '<span class="badge-st ok">Работает</span>'; }
 function renderDrivers(){
+  window._drvCardOpen=null;
   var todayIso=dateStr(0);
   var busyToday={}; ORDERS.forEach(function(o){ if(o.trip_date===todayIso){ if(o.dM)busyToday[o.dM]=1; if(o.dD)busyToday[o.dD]=1; if(o.dE)busyToday[o.dE]=1; } });
   window._drvBusy=busyToday;
@@ -1705,7 +1720,7 @@ function filterDrivers(){
     var trips=ORDERS.filter(function(o){return o.dM===d.id||o.dD===d.id||o.dE===d.id;}).length;
     return '<tr>'+
       '<td>'+(i+1)+'</td>'+
-      '<td><span class="dotc" style="background:'+(d.color||'#888')+'"></span><b>'+esc(d.name)+'</b></td>'+
+      '<td><span class="dotc" style="background:'+(d.color||'#888')+'"></span><b class="lnk" onclick="openDriverCard(\''+d.id+'\')">'+esc(d.name)+'</b></td>'+
       '<td>'+esc(d.phone)+'</td>'+
       '<td>'+(d.car?esc(d.car):'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td>'+driverStatusBadge(d.status)+'</td>'+
@@ -1745,13 +1760,85 @@ async function saveDriver(){
   else { data.id='drv_'+Date.now(); res = await sb.from('drivers').insert(data); }
   if(res.error){ alert('Ошибка сохранения водителя: '+res.error.message); return; }
   closeDriverModal();
-  await loadFleet(); renderDrivers();
+  await loadFleet();
+  if(window._drvCardOpen){ openDriverCard(window._drvCardOpen); } else { renderDrivers(); }
 }
 async function delDriver(id){
   if(!confirm('Удалить водителя? Его уже назначенные поездки останутся, но он пропадёт из списка.')) return;
   var res = await sb.from('drivers').delete().eq('id', id);
   if(res.error){ alert('Ошибка удаления: '+res.error.message); return; }
   await loadFleet(); renderDrivers();
+}
+
+function carNameById(cid){ if(!cid) return null; var c=CARS.find(function(x){return x.id===cid;}); return c?(c.plate||c.model):null; }
+function tripStatusBadge(s){
+  s=s||'new';
+  var m={new:['warn','Без водителя'],assigned:['ok','Назначена'],confirmed:['ok','Подтверждена'],done:['off','Выполнена']}[s]||['warn',s];
+  return '<span class="badge-st '+m[0]+'">'+m[1]+'</span>';
+}
+function driverCardTab(tab){
+  var info = tab==='info';
+  document.getElementById('dsec-trips').style.display = info?'none':'';
+  document.getElementById('dsec-info').style.display = info?'':'none';
+  document.getElementById('dtab-trips').classList.toggle('active',!info);
+  document.getElementById('dtab-info').classList.toggle('active',info);
+}
+function openDriverCard(id){
+  var d=DRIVERS.find(function(x){return x.id===id;}); if(!d) return;
+  window._drvCardOpen=id;
+  function cell(k,v){ return '<div class="dcard-cell"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+  var today=dateStr(0);
+  var trips=ORDERS.filter(function(o){return o.dM===id||o.dD===id||o.dE===id;});
+  trips.sort(function(a,b){ return (a.trip_date||'').localeCompare(b.trip_date||''); });
+  var todayTrips=trips.filter(function(o){return o.trip_date===today;});
+  var carName=carNameById(d.car_id);
+  var initial=esc((d.name||'?').trim().charAt(0).toUpperCase());
+  var h='';
+  h+='<button class="btn-sec" onclick="renderDrivers()" style="margin-bottom:16px"><i class="ti ti-arrow-left"></i> Водители</button>';
+  h+='<div class="dcard">';
+  h+= '<div class="dcard-top">'+
+        '<div class="dcard-ava" style="background:'+(d.color||'#0d9e75')+'">'+initial+'</div>'+
+        '<div style="flex:1;min-width:0"><div class="dcard-name">'+esc(d.name||'—')+'</div><div class="dcard-sub">Водитель</div></div>'+
+        '<button class="btn-add" onclick="openDriverModal(\''+id+'\')"><i class="ti ti-pencil"></i> Редактировать</button>'+
+      '</div>';
+  h+= '<div class="dcard-grid">'+
+        cell('Статус', driverStatusBadge(d.status))+
+        cell('Сегодня', todayTrips.length?('<span style="color:var(--warn)">Занят · '+todayTrips.length+'</span>'):'<span style="color:var(--accent)">Свободен</span>')+
+        cell('Телефон', d.phone?esc(d.phone):'—')+
+        cell('Email', d.email?esc(d.email):'—')+
+        cell('Машина', carName?esc(carName):'<span style="color:var(--text3)">не закреплена</span>')+
+        cell('Всего поездок', String(trips.length))+
+      '</div>';
+  h+='</div>';
+  h+='<div class="dtabs">'+
+       '<button class="tab-btn active" id="dtab-trips" onclick="driverCardTab(\'trips\')"><i class="ti ti-route"></i> Поездки</button>'+
+       '<button class="tab-btn" id="dtab-info" onclick="driverCardTab(\'info\')"><i class="ti ti-info-circle"></i> Данные</button>'+
+     '</div>';
+  h+='<div class="dsec" id="dsec-trips"><h3><i class="ti ti-route"></i> Поездки водителя</h3>';
+  if(!trips.length){ h+='<div style="color:var(--text3);font-size:13px">Поездок пока нет.</div>'; }
+  else {
+    h+='<table class="tbl"><thead><tr><th>Дата</th><th>Время</th><th>Клиент</th><th>Маршрут</th><th>Статус</th></tr></thead><tbody>';
+    trips.forEach(function(o){
+      var tl=[];
+      if(o.dM===id && o.morning) tl.push('☀ '+esc(o.morning));
+      if(o.dD===id && o.day) tl.push('⛅ '+esc(o.day));
+      if(o.dE===id && o.evening) tl.push('🌙 '+esc(o.evening));
+      var route=(o.from||o.to)?(esc(o.from||'—')+' → '+esc(o.to||'—')):'—';
+      h+='<tr><td style="white-space:nowrap">'+esc(o.trip_date||'—')+'</td><td style="white-space:nowrap">'+(tl.join('<br>')||'—')+'</td><td>'+esc(o.client||'—')+'</td><td style="font-size:12px;color:var(--text2)">'+route+'</td><td>'+tripStatusBadge(o.status)+'</td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  h+='</div>';
+  h+='<div class="dsec" id="dsec-info" style="display:none"><h3><i class="ti ti-info-circle"></i> Данные водителя</h3>';
+  h+='<div class="dcard-grid">'+
+       cell('Имя', esc(d.name||'—'))+
+       cell('Телефон', d.phone?esc(d.phone):'—')+
+       cell('Email', d.email?esc(d.email):'—')+
+       cell('Статус', driverStatusBadge(d.status))+
+       cell('Цвет на доске','<span class="dotc" style="background:'+(d.color||'#888')+'"></span>'+esc(d.color||'—'))+
+       cell('Машина', carName?esc(carName):'не закреплена')+
+     '</div></div>';
+  document.getElementById('page-drivers').innerHTML=h;
 }
 
 // ─────────── CARS ───────────
