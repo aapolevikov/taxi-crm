@@ -371,6 +371,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="ni" id="nav-cars" title="Машины" onclick="goPage('cars')"><i class="ti ti-car"></i></button>
   <button class="ni" id="nav-repairs" title="Ремонты (Repair Orders)" onclick="goPage('repairs')"><i class="ti ti-tools"></i></button>
   <button class="ni" id="nav-finance" title="Финансы" onclick="goPage('finance')"><i class="ti ti-cash"></i></button>
+  <button class="ni" id="nav-payments" title="Оплаты (Nomod)" onclick="goPage('payments')"><i class="ti ti-credit-card"></i></button>
   <button class="ni" id="nav-settings" title="Настройки" onclick="goPage('settings')"><i class="ti ti-settings"></i></button>
 </div>
 
@@ -460,6 +461,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <!-- PAGE: FINANCE -->
     <div class="page" id="page-finance" style="display:none"></div>
+    <div class="page" id="page-payments" style="display:none"></div>
 
     <!-- PAGE: SETTINGS -->
     <div class="page" id="page-settings" style="display:none"></div>
@@ -810,6 +812,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="field-row"><label>Способ оплаты</label><select id="tx_method"><option value="">—</option><option value="cash">Наличные</option><option value="card">Карта</option><option value="transfer">Перевод</option></select></div>
   <div class="field-row"><label>Комментарий</label><input id="tx_note" placeholder="Комментарий"></div>
   <div class="modal-acts"><button class="btn-sec" onclick="closeTxnModal()">Отмена</button><button class="btn-add" onclick="saveTxn()"><i class="ti ti-check"></i> Сохранить</button></div>
+</div></div>
+
+<!-- MODAL: payment link (Nomod) -->
+<div class="modal-bg" id="payLinkModal"><div class="modal">
+  <h2>Ссылка на оплату</h2>
+  <div class="field-2">
+    <div class="field-row"><label>Сумма (AED)</label><input id="pl_amount" type="number" min="0" step="0.01" placeholder="0"></div>
+    <div class="field-row"><label>Клиент</label><input id="pl_client" placeholder="Имя клиента"></div>
+  </div>
+  <div class="field-row"><label>Назначение (видит клиент)</label><input id="pl_title" placeholder="Трансфер аэропорт" maxlength="50"></div>
+  <div id="pl_result"></div>
+  <div class="modal-acts"><button class="btn-sec" onclick="closePayLinkModal()">Закрыть</button><button class="btn-add" id="pl_createBtn" onclick="createPayLink()"><i class="ti ti-link"></i> Создать ссылку</button></div>
 </div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1494,7 +1508,7 @@ async function loadClients(){
 }
 
 // ─────────── NAVIGATION ───────────
-var titles={board:['Доска заявок','по водителям'],funnel:['Воронка заявок','входящие'],orders:['Заявки / поездки','все поездки'],dashboard:['Дашборд','сводка дня'],clients:['Клиенты','база клиентов'],drivers:['Водители','команда'],cars:['Машины','автопарк'],repairs:['Ремонты','Repair Orders'],finance:['Финансы','доходы и расходы'],settings:['Настройки','параметры']};
+var titles={board:['Доска заявок','по водителям'],funnel:['Воронка заявок','входящие'],orders:['Заявки / поездки','все поездки'],dashboard:['Дашборд','сводка дня'],clients:['Клиенты','база клиентов'],drivers:['Водители','команда'],cars:['Машины','автопарк'],repairs:['Ремонты','Repair Orders'],finance:['Финансы','доходы и расходы'],payments:['Оплаты','ссылки Nomod'],settings:['Настройки','параметры']};
 function goPage(p){
   currentPage=p;
   window._carCardOpen=null; window._drvCardOpen=null;
@@ -1514,6 +1528,7 @@ function goPage(p){
   if(p==='cars'){ loadFleet().then(renderCars); }
   if(p==='repairs'){ loadFleet().then(function(){ loadAllRepairs().then(renderRepairsPage); }); }
   if(p==='finance'){ loadTxns().then(renderFinance); }
+  if(p==='payments'){ loadPayLinks().then(renderPayments); }
   if(p==='settings') renderSettings();
 }
 
@@ -2349,7 +2364,7 @@ function renderOrders(){
     var tl=[]; if(o.morning)tl.push('☀'+esc(o.morning)); if(o.day)tl.push('⛅'+esc(o.day)); if(o.evening)tl.push('🌙'+esc(o.evening));
     var dr=[dname(o.dM),dname(o.dD),dname(o.dE)].filter(Boolean).join(', ')||'<span style="color:var(--text3)">—</span>';
     var route=(o.from||o.to)?(esc(o.from||'—')+' → '+esc(o.to||'—')):'—';
-    html+='<tr><td style="white-space:nowrap">'+esc(o.trip_date||'—')+'</td><td><b>'+esc(o.client||'—')+'</b></td><td style="font-size:12px;color:var(--text2)">'+route+'</td><td style="white-space:nowrap">'+(tl.join(' ')||'—')+'</td><td>'+dr+'</td><td>'+tripStatusBadge(o.status)+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="openOrderModal(\''+o.id+'\')">✎</button> <button class="mini-btn" onclick="delOrder(\''+o.id+'\')">×</button></td></tr>';
+    html+='<tr><td style="white-space:nowrap">'+esc(o.trip_date||'—')+'</td><td><b>'+esc(o.client||'—')+'</b></td><td style="font-size:12px;color:var(--text2)">'+route+'</td><td style="white-space:nowrap">'+(tl.join(' ')||'—')+'</td><td>'+dr+'</td><td>'+tripStatusBadge(o.status)+'</td><td style="white-space:nowrap;text-align:right"><button class="mini-btn" onclick="payFromOrder(\''+o.id+'\')" title="Ссылка на оплату">💳</button> <button class="mini-btn" onclick="openOrderModal(\''+o.id+'\')">✎</button> <button class="mini-btn" onclick="delOrder(\''+o.id+'\')">×</button></td></tr>';
   });
   html+='</tbody></table>';
   document.getElementById('page-orders').innerHTML=html;
@@ -2406,7 +2421,7 @@ function renderFinance(){
   var list=finFiltered();
   var inc=0,exp=0; list.forEach(function(t){ var a=Number(t.amount)||0; if((t.type||'')==='expense') exp+=a; else inc+=a; });
   function dname(did){ if(!did) return '—'; var d=DRIVERS.find(function(x){return x.id===did;}); return d?esc(d.name):'—'; }
-  var html='<div class="page-head"><span class="ttl">Финансы</span><span class="spacer"></span><button class="btn-add" onclick="openTxnModal()"><i class="ti ti-plus"></i> Операция</button></div>';
+  var html='<div class="page-head"><span class="ttl">Финансы</span><span class="spacer"></span><button class="btn-sec" onclick="openPayLinkModal()"><i class="ti ti-credit-card"></i> Ссылка на оплату</button> <button class="btn-add" onclick="openTxnModal()"><i class="ti ti-plus"></i> Операция</button></div>';
   html+='<div class="stats">'+
     statCard('Доход', finFmt(inc),'ok','за период')+
     statCard('Расход', finFmt(exp),'warn','за период')+
@@ -2608,6 +2623,100 @@ async function extractMbankPdf(pdf){
     }
   } catch(e){ alert('Ошибка разбора PDF: '+(e&&e.message||e)); return; }
   commitImportedTxns(txns);
+}
+// ─────────── ОПЛАТЫ (Nomod) ───────────
+var _payPre=null;
+async function nomodApi(action, params){
+  var r=await fetch('/.netlify/functions/nomod',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:action},params||{}))});
+  var txt=await r.text(); var data={}; try{ data=JSON.parse(txt); }catch(e){}
+  if(!r.ok) throw new Error((data&&(data.error||data.detail||data.message))||('HTTP '+r.status));
+  return data;
+}
+async function loadPayLinks(){
+  try{ var res=await sb.from('tour_payment_links').select('*').order('created_at',{ascending:false}); window._payLinks=(res&&!res.error)?(res.data||[]):[]; }
+  catch(e){ window._payLinks=[]; }
+}
+function closePayLinkModal(){ document.getElementById('payLinkModal').classList.remove('show'); }
+function openPayLinkModal(pre){
+  _payPre=pre||{};
+  document.getElementById('pl_amount').value=(_payPre.amount!=null?_payPre.amount:'');
+  document.getElementById('pl_client').value=_payPre.client||'';
+  document.getElementById('pl_title').value=_payPre.title||'';
+  document.getElementById('pl_result').innerHTML='';
+  document.getElementById('payLinkModal').classList.add('show');
+}
+function payFromOrder(id){
+  var o=(ORDERS||[]).find(function(x){return x.id===id;}); if(!o) return;
+  var route=(o.from||o.to)?(' · '+(o.from||'')+'→'+(o.to||'')):'';
+  openPayLinkModal({ client:o.client||'', title:((o.client||'Клиент')+route).slice(0,50), order_id:id });
+}
+async function createPayLink(){
+  var amount=document.getElementById('pl_amount').value;
+  if(amount===''||Number(amount)<=0){ alert('Введите сумму'); return; }
+  var client=document.getElementById('pl_client').value.trim();
+  var title=document.getElementById('pl_title').value.trim() || (client?('Оплата — '+client):'Оплата Mr Ride Tourism');
+  var btn=document.getElementById('pl_createBtn'); if(btn){ btn.disabled=true; btn.textContent='Создаю...'; }
+  try{
+    var payload={ currency:'AED', title:title.slice(0,50),
+      items:[{ name:(client?('Услуга — '+client):'Услуга').slice(0,50), amount:Number(amount).toFixed(2), quantity:1 }],
+      note:(client?('Клиент: '+client):'') };
+    var data=await nomodApi('create_link',{payload:payload});
+    var url=data.url||''; var lid=data.id||''; var ref=data.reference_id||'';
+    if(!url) throw new Error('Nomod не вернул ссылку');
+    var row={ id:'pl_'+Date.now(), link_id:lid, reference_id:ref, order_id:(_payPre&&_payPre.order_id)||null,
+      client:client||null, title:title, amount:Number(amount), currency:'AED', url:url, status:'pending', company_id:'mrride' };
+    await sb.from('tour_payment_links').insert(row);
+    var safe=url.replace(/'/g,"\\'");
+    document.getElementById('pl_result').innerHTML=
+      '<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">'+
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Ссылка готова — отправь клиенту:</div>'+
+      '<div style="word-break:break-all;font-size:13px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px;margin-bottom:10px">'+esc(url)+'</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn-add" onclick="if(navigator.clipboard)navigator.clipboard.writeText(\''+safe+'\');this.textContent=\'Скопировано ✓\'"><i class="ti ti-copy"></i> Копировать</button>'+
+        '<a class="btn-sec" href="https://wa.me/?text='+encodeURIComponent('Ссылка на оплату: '+url)+'" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>'+
+        '<a class="btn-sec" href="'+esc(url)+'" target="_blank" rel="noopener"><i class="ti ti-external-link"></i> Открыть</a>'+
+      '</div></div>';
+    loadPayLinks().then(function(){ if(currentPage==='payments') renderPayments(); });
+  }catch(e){ alert('Ошибка Nomod: '+(e.message||e)); }
+  if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-link"></i> Создать ссылку'; }
+}
+function payStatusBadge(s){ return (s==='paid')?'<span class="badge-st ok">Оплачено</span>':'<span class="badge-st warn">Ждёт оплаты</span>'; }
+function renderPayments(){
+  var list=window._payLinks||[];
+  var paid=list.filter(function(x){return x.status==='paid';}).reduce(function(s,x){return s+(Number(x.amount)||0);},0);
+  var pend=list.filter(function(x){return x.status!=='paid';}).reduce(function(s,x){return s+(Number(x.amount)||0);},0);
+  var html='<div class="page-head"><span class="ttl">Оплаты (Nomod)</span><span class="spacer"></span>'+
+    '<button class="btn-sec" onclick="refreshPayStatuses()"><i class="ti ti-refresh"></i> Обновить статусы</button> '+
+    '<button class="btn-add" onclick="openPayLinkModal()"><i class="ti ti-plus"></i> Новая ссылка</button></div>';
+  html+='<div class="stats">'+statCard('Оплачено',fmtNum(paid)+' AED','ok','')+statCard('Ждёт оплаты',fmtNum(pend)+' AED','warn','')+statCard('Всего ссылок',String(list.length),'','')+'</div>';
+  if(!list.length){ html+='<div class="empty-state"><i class="ti ti-credit-card"></i>Ссылок пока нет.<br>Нажми «Новая ссылка» или 💳 в заявке.</div>'; document.getElementById('page-payments').innerHTML=html; return; }
+  html+='<table class="tbl"><thead><tr><th>Дата</th><th>Клиент</th><th>Назначение</th><th>Сумма</th><th>Статус</th><th>Ссылка</th></tr></thead><tbody>';
+  list.forEach(function(x){
+    var d=(x.created_at||'').slice(0,10);
+    html+='<tr><td style="white-space:nowrap">'+esc(d)+'</td><td>'+esc(x.client||'—')+'</td><td style="font-size:12px;color:var(--text2)">'+esc(x.title||'')+'</td><td style="white-space:nowrap"><b>'+fmtNum(x.amount)+' '+esc(x.currency||'AED')+'</b></td><td>'+payStatusBadge(x.status)+'</td><td><a class="lnk" href="'+esc(x.url)+'" target="_blank" rel="noopener">открыть</a></td></tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('page-payments').innerHTML=html;
+}
+async function refreshPayStatuses(){
+  var list=(window._payLinks||[]).filter(function(x){return x.status!=='paid' && x.link_id;});
+  if(!list.length){ alert('Нет ссылок в ожидании оплаты.'); return; }
+  var updated=0;
+  for(var i=0;i<list.length;i++){
+    var x=list[i];
+    try{
+      var data=await nomodApi('list_charges',{query:'link_id='+encodeURIComponent(x.link_id)});
+      var arr=(data&&(data.results||data.data||data.charges))||[];
+      var paidCharge=arr.find(function(c){ var st=String((c&&c.status&&(c.status.value||c.status))||(c&&c.state)||'').toLowerCase(); return /succe|paid|captur|complete|success/.test(st); });
+      if(paidCharge){
+        await sb.from('tour_payment_links').update({status:'paid', paid_at:new Date().toISOString()}).eq('id', x.id);
+        await sb.from('tour_transactions').insert({ id:'tx_'+Date.now()+'_'+i, tx_date:dateStr(0), type:'income', amount:Number(x.amount), category:'оплата Nomod', client:x.client||null, driver_id:null, method:'card', note:('Nomod '+(x.title||'')).slice(0,200), company_id:'mrride' });
+        updated++;
+      }
+    }catch(e){}
+  }
+  await loadPayLinks(); renderPayments();
+  alert(updated?('Обновлено: '+updated+' оплачено (доход занесён в Финансы).'):'Новых оплат не найдено.');
 }
 
 // ─────────── SETTINGS ───────────
