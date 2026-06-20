@@ -40,4 +40,15 @@ Allow: /
 User-agent: CCBot
 Allow: /
 
+
+# --- Поисковые системы (явно) ---
+User-agent: Yandex
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
 Sitemap: https://misterridegroup.com/sitemap.xml
