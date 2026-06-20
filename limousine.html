@@ -1008,6 +1008,7 @@ document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
   function submit(){
     var l=document.getElementById('lgLogin').value.trim();
     var p=document.getElementById('lgPass').value;
+    if(l==="demo"&&p==="demo2026"){window.location.href='/demo.html#mrdemo';return;}
     if(l===LOGIN&&p===PASS){
       document.getElementById('lgForm').classList.add('lg-hide');
       document.getElementById('lgChoose').classList.remove('lg-hide');
