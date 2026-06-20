@@ -1,0 +1,42 @@
+# robots.txt — Mister Ride Group
+# Поисковикам и ИИ-краулерам разрешён доступ к сайту.
+# Внутренние CRM и страница входа закрыты от индексации.
+
+User-agent: *
+Allow: /
+Disallow: /staff.html
+Disallow: /app.html
+Disallow: /tourism.html
+
+# --- ИИ-краулеры (ChatGPT, Claude, Perplexity, Gemini и др.) — явно разрешены ---
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+Sitemap: https://misterridegroup.com/sitemap.xml

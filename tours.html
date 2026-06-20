@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tourism — Mister Ride Group</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%231B9E63'/%3E%3Ctext x='24' y='33' font-family='Georgia,serif' font-size='21' font-weight='700' text-anchor='middle' fill='white'%3EMR%3C/text%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mister Ride Group">
+<meta property="og:title" content="Tourism — Mister Ride Group">
+<meta property="og:description" content="Mr Ride Tourism — airport transfers, city tours and day trips for families and visitors across Dubai and the UAE.">
+<meta property="og:image" content="https://misterridegroup.com/og-image.png">
+<meta property="og:url" content="https://misterridegroup.com/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="Mr Ride Tourism — airport transfers, city tours and day trips for families and visitors across Dubai and the UAE.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#F6F9F6;--ink2:#FFFFFF;--ink3:#EDF3EE;--line:#E1E8E2;--gold:#1B9E63;--gold-soft:#33B97B;--sand:#5E6F64;--text:#15211B;--text2:#4C5A52;--text3:#8A968E;--maxw:1180px;--r:14px;--serif:'Fraunces',Georgia,serif;--sans:'Manrope',-apple-system,system-ui,sans-serif;--mono:'Space Mono',ui-monospace,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:26px;height:1px;background:var(--gold);opacity:.7}
+h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.08;letter-spacing:-.01em}
+.btn{display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:15px;padding:13px 22px;border-radius:999px;border:1px solid transparent;cursor:pointer;transition:.25s}
+.btn-gold{background:linear-gradient(180deg,var(--gold-soft),var(--gold));color:#fff}
+.btn-gold:hover{filter:brightness(1.04);transform:translateY(-1px)}
+.btn-ghost{border-color:var(--line);color:var(--text)}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;backdrop-filter:blur(10px);background:rgba(246,249,246,.9);border-bottom:1px solid transparent;transition:.3s}
+.nav.scrolled{border-bottom-color:var(--line)}
+.topbar{border-bottom:1px solid var(--line);background:#fff}
+.topbar-in{max-width:var(--maxw);margin:0 auto;padding:8px 24px;display:flex;align-items:center;justify-content:space-between}
+.tb-links{display:flex;gap:20px;flex-wrap:wrap}
+.tb-links a{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);transition:.2s}
+.tb-links a:hover,.tb-links a.on{color:var(--gold)}
+.tb-right{display:flex;align-items:center;gap:16px}
+.tb-right>a{font-size:12.5px;color:var(--text2)}.tb-right>a:hover{color:var(--gold)}
+.nav-in{max-width:var(--maxw);margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:12px;font-family:var(--serif);font-size:20px;font-weight:600}
+.mono-badge{font-family:var(--serif);font-weight:600;width:38px;height:38px;border:1px solid var(--gold);border-radius:9px;display:grid;place-items:center;color:var(--gold);font-size:15px}
+.nav-right{display:flex;align-items:center;gap:18px}
+.nav-links{display:flex;gap:24px;align-items:center}
+.nav-links a{font-size:14.5px;color:var(--text2);transition:.2s}
+.nav-links a:hover{color:var(--text)}
+.langtog{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.langtog button{background:none;border:none;color:var(--text3);font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:7px 11px;cursor:pointer;transition:.2s}
+html[lang="en"] .langtog [data-l="en"],html[lang="ru"] .langtog [data-l="ru"]{background:var(--gold);color:#fff}
+.burger{display:none;background:none;border:none;color:var(--text);font-size:26px;cursor:pointer}
+.login-wrap{position:relative}
+.login-btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:#fff;background:linear-gradient(180deg,var(--gold-soft),var(--gold));border:none;border-radius:999px;padding:9px 18px;cursor:pointer}
+.login-btn .chev{width:8px;height:8px;border-right:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(45deg);margin-top:-3px;transition:.25s}
+.login-wrap.open .login-btn .chev{transform:rotate(-135deg);margin-top:2px}
+.login-menu{position:absolute;top:calc(100% + 10px);right:0;width:288px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 44px rgba(21,33,27,.14);padding:8px;opacity:0;visibility:hidden;transform:translateY(-6px);transition:.22s;z-index:60}
+.login-wrap.open .login-menu{opacity:1;visibility:visible;transform:none}
+.login-menu a{display:flex;gap:13px;align-items:center;padding:12px;border-radius:10px;transition:.18s}
+.login-menu a:hover{background:var(--ink3)}
+.login-menu .lm-ic{flex:0 0 40px;height:40px;border-radius:10px;background:var(--ink3);display:grid;place-items:center;color:var(--gold);font-size:20px}
+.login-menu b{display:block;font-weight:600;font-size:14.5px;color:var(--text)}
+.login-menu em{display:block;font-style:normal;font-size:12.5px;color:var(--text3);margin-top:1px}
+.hero{position:relative;padding:184px 0 76px;overflow:hidden;background:linear-gradient(180deg,#FFFFFF,#EAF3EC)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(700px 380px at 82% 14%,rgba(27,158,99,.10),transparent 60%)}
+.hero-in{position:relative;max-width:760px;z-index:2}
+.crumb{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:18px}
+.crumb a:hover{color:var(--gold)}
+.hero h1{font-size:clamp(38px,5.4vw,64px);margin:16px 0 20px}
+.hero h1 em{font-style:italic;color:var(--gold)}
+.hero p.lead{font-size:18.5px;color:var(--text2);max-width:560px;margin-bottom:28px}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.sec{padding:74px 0}
+.sec-head{max-width:700px;margin-bottom:40px}
+.sec-head h2{font-size:clamp(27px,3.4vw,40px);margin:14px 0 13px}
+.sec-head p{color:var(--text2);font-size:17px}
+.band{background:linear-gradient(170deg,#EAF3EC,#F6F9F6);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.svc{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.scard{border:1px solid var(--line);border-radius:var(--r);background:var(--ink2);padding:28px 24px;transition:.3s;box-shadow:0 1px 3px rgba(21,33,27,.05)}
+.scard:hover{border-color:var(--gold);transform:translateY(-4px)}
+.scard i{font-size:26px;color:var(--gold)}
+.scard h3{font-size:19px;margin:14px 0 8px}
+.scard p{color:var(--text2);font-size:14.5px}
+.fleet{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.fcard{border:1px solid var(--line);border-radius:var(--r);background:var(--ink2);padding:22px;box-shadow:0 1px 3px rgba(21,33,27,.05)}
+.fcard .cls{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gold)}
+.fcard h3{font-size:17px;margin:10px 0 6px}
+.fcard p{color:var(--text3);font-size:13px}
+.book-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.book-step{border:1px solid var(--line);border-radius:var(--r);padding:26px;background:var(--ink2)}
+.book-step .n{font-family:var(--mono);color:var(--gold);font-size:13px;letter-spacing:.18em}
+.book-step h3{font-size:19px;margin:12px 0 8px}
+.book-step p{color:var(--text2);font-size:14.5px}
+.cta-box{border:1px solid var(--line);border-radius:18px;background:linear-gradient(165deg,#FFFFFF,#F1F6F2);padding:44px;text-align:center;box-shadow:0 1px 3px rgba(21,33,27,.05)}
+.cta-box h2{font-size:clamp(26px,3.2vw,38px);margin-bottom:14px}
+.cta-box p{color:var(--text2);max-width:540px;margin:0 auto 26px}
+.bigfoot{background:linear-gradient(180deg,#0f2a20,#0b211a);color:#cfe3d8}
+.bigfoot a{color:#cfe3d8}
+.bigfoot-top{max-width:var(--maxw);margin:0 auto;padding:56px 24px 30px;display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;gap:34px}
+.bf-brand .bf-logo{display:flex;align-items:center;gap:12px;font-family:var(--serif);font-size:22px;font-weight:600;color:#fff}
+.bf-brand .bf-badge{width:40px;height:40px;border:1px solid var(--gold-soft);border-radius:9px;display:grid;place-items:center;color:var(--gold-soft);font-size:15px}
+.bf-brand p{font-size:13.5px;color:#9fbcae;margin-top:16px;max-width:300px;line-height:1.7}
+.bf-soc{display:flex;gap:10px;margin-top:20px}
+.bf-soc a{width:38px;height:38px;border:1px solid rgba(255,255,255,.18);border-radius:9px;display:grid;place-items:center;color:#cfe3d8;font-size:18px;transition:.2s}
+.bf-soc a:hover{background:var(--gold);border-color:var(--gold);color:#fff}
+.bf-col h4{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:16px}
+.bf-col ul{list-style:none;display:grid;gap:11px}
+.bf-col li a{font-size:14px;color:#bcd3c8;transition:.18s}.bf-col li a:hover{color:#fff}
+.bf-contact div{display:flex;gap:10px;font-size:14px;color:#bcd3c8;margin-bottom:12px;align-items:flex-start}
+.bf-contact .ck{color:var(--gold-soft);flex:0 0 auto;font-size:16px;margin-top:1px}.bf-contact a:hover{color:#fff}
+.bigfoot-bottom{border-top:1px solid rgba(255,255,255,.1)}
+.bf-bottom-in{max-width:var(--maxw);margin:0 auto;padding:20px 24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;font-size:12.5px;color:#8fb0a2}
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s,transform .7s}
+.reveal.in{opacity:1;transform:none}
+@media (max-width:900px){.topbar{display:none}.nav-links{display:none}.burger{display:block}.nav-links.open{display:flex;position:absolute;top:62px;left:0;right:0;flex-direction:column;background:var(--ink2);border-bottom:1px solid var(--line);padding:18px 24px;gap:16px}.svc,.book-grid{grid-template-columns:1fr}.fleet{grid-template-columns:1fr 1fr}.bigfoot-top{grid-template-columns:1fr 1fr}.hero{padding:150px 0 54px}}
+@media (max-width:560px){.bigfoot-top{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
+
+/* ===== inline svg icons (no CDN) ===== */
+.ti{display:inline-flex;align-items:center;justify-content:center;line-height:0}
+.tic{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.125em}
+/* floating whatsapp */
+.wa-float{position:fixed;right:18px;bottom:18px;z-index:80;width:56px;height:56px;border-radius:50%;background:#25D366;color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:30px;transition:.2s}
+.wa-float:hover{transform:translateY(-2px) scale(1.05)}
+@media(max-width:560px){.wa-float{right:14px;bottom:14px;width:52px;height:52px;font-size:27px}}
+
+/* ===== chat widget ===== */
+.chatw{position:fixed;right:18px;bottom:18px;z-index:90;font-family:var(--sans)}
+.chatw-btn{width:60px;height:60px;border-radius:50%;background:#25D366;color:#fff;border:none;cursor:pointer;display:grid;place-items:center;box-shadow:0 10px 28px rgba(0,0,0,.2);transition:.2s}
+.chatw-btn:hover{transform:translateY(-2px) scale(1.04)}
+.chatw-btn svg{width:30px;height:30px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chatw-btn .ic-close{display:none}
+.chatw.open .chatw-btn .ic-chat{display:none}
+.chatw.open .chatw-btn .ic-close{display:block}
+.chatw-panel{position:absolute;right:0;bottom:74px;width:320px;max-width:calc(100vw - 36px);background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 50px rgba(21,33,27,.2);overflow:hidden;opacity:0;visibility:hidden;transform:translateY(10px) scale(.98);transform-origin:bottom right;transition:.22s}
+.chatw.open .chatw-panel{opacity:1;visibility:visible;transform:none}
+.chatw-head{background:linear-gradient(135deg,var(--gold),var(--gold-soft));color:#fff;padding:18px}
+.chatw-head .ct{display:flex;align-items:center;gap:11px}
+.chatw-head .av{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;font-family:var(--serif);font-weight:600;font-size:15px}
+.chatw-head b{font-size:15px;display:block}
+.chatw-head em{font-style:normal;font-size:12px;opacity:.92;display:flex;align-items:center;gap:6px;margin-top:2px}
+.chatw-head em::before{content:"";width:7px;height:7px;border-radius:50%;background:#9dffc4;display:inline-block}
+.chatw-body{padding:18px}
+.chatw-greet{background:var(--ink3);border-radius:12px;padding:13px 15px;font-size:14px;color:var(--text2);line-height:1.55}
+.chatw-cta{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;margin-top:14px;background:#25D366;color:#fff;border-radius:12px;padding:13px;font-weight:600;font-size:15px;transition:.2s}
+.chatw-cta:hover{filter:brightness(1.05)}
+.chatw-cta svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2}
+@media(max-width:560px){.chatw{right:14px;bottom:14px}.chatw-btn{width:56px;height:56px}}
+
+/* ===== FAQ ===== */
+.faq{max-width:820px;margin:0 auto}
+.faq-item{border:1px solid var(--line);border-radius:14px;background:var(--ink2);margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(21,33,27,.05)}
+.faq-item summary{list-style:none;cursor:pointer;padding:18px 22px;font-family:var(--serif),Georgia,serif;font-weight:500;font-size:18px;color:var(--text);display:flex;justify-content:space-between;align-items:center;gap:16px}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary::after{content:"+";color:var(--gold);font-size:26px;font-weight:400;line-height:1;transition:transform .2s;flex:0 0 auto}
+.faq-item[open] summary::after{transform:rotate(45deg)}
+.faq-a{padding:0 22px 20px;color:var(--text2);font-size:15.5px;line-height:1.65}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "TravelAgency",
+      "@id": "https://misterridegroup.com/tours.html#business",
+      "name": "Mr Ride Tourism",
+      "url": "https://misterridegroup.com/tours.html",
+      "image": "https://misterridegroup.com/og-image.png",
+      "parentOrganization": {
+        "@id": "https://misterridegroup.com/#org"
+      },
+      "description": "Tourism transfers and tours in Dubai and the UAE: airport pickups, family transfers, school runs and sightseeing trips.",
+      "areaServed": {
+        "@type": "Place",
+        "name": "Dubai, United Arab Emirates"
+      },
+      "priceRange": "$$",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "White Swan Building",
+        "addressLocality": "Dubai",
+        "addressCountry": "AE"
+      },
+      "telephone": "+971 5X XXX XXXX",
+      "availableLanguage": [
+        "en",
+        "ru",
+        "ar"
+      ]
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What transfer services do you offer for tourists?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We provide airport pickups, hotel and city transfers, day trips and sightseeing tours across Dubai and the UAE, with English- and Russian-speaking drivers available."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you provide child seats for family transfers?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Child and booster seats are available on request, just tell us the children's ages when you book."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can you arrange regular school-run transfers?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. We set up recurring morning and evening school transfers on a fixed weekly schedule, with the same trusted driver where possible."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which languages do your drivers speak?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Our drivers speak English and Russian, and we can match the language you prefer when arranging your transfer."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How far in advance should I book?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "For airport pickups and tours we recommend booking at least a day ahead, though we do our best to accommodate same-day requests."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="chatw" id="chatw">
+  <div class="chatw-panel" id="chatwPanel" role="dialog" aria-label="Chat with us">
+    <div class="chatw-head"><div class="ct">
+      <div class="av">MR</div>
+      <div><b>Mister Ride Group</b><em data-i18n="chat_sub">Online · we reply fast</em></div>
+    </div></div>
+    <div class="chatw-body">
+      <div class="chatw-greet" data-i18n="chat_greet">Hi 👋 How can we help? Message us on WhatsApp and we'll reply right away.</div>
+      <a class="chatw-cta" href="https://wa.me/9715XXXXXXXX?text=Hello%2C%20Mister%20Ride%20Group" target="_blank" rel="noopener">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><use href="#tic-brand-whatsapp"></use></svg>
+        <span data-i18n="chat_btn">Write on WhatsApp</span>
+      </a>
+    </div>
+  </div>
+  <button class="chatw-btn" id="chatwBtn" aria-label="Chat with us">
+    <svg class="ic-chat" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 9h8M8 13h6M21 12a8 8 0 0 1-8 8H7l-4 3v-4.5A8 8 0 1 1 21 12z"/></svg>
+    <svg class="ic-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  </button>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"><symbol id="tic-apps" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M14 7l6 0" />
+  <path d="M17 4l0 6" /></symbol><symbol id="tic-award" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M6 9a6 6 0 1 0 12 0a6 6 0 1 0 -12 0" />
+  <path d="M12 15l3.4 5.89l1.598 -3.233l3.598 .232l-3.4 -5.889" />
+  <path d="M6.802 12l-3.4 5.89l3.598 -.233l1.598 3.232l3.4 -5.889" /></symbol><symbol id="tic-brand-facebook" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M7 10v4h3v7h4v-7h3l1 -4h-4v-2a1 1 0 0 1 1 -1h3v-4h-3a5 5 0 0 0 -5 5v2h-3" /></symbol><symbol id="tic-brand-instagram" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 8a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4l0 -8" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+  <path d="M16.5 7.5v.01" /></symbol><symbol id="tic-brand-linkedin" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M8 11v5" />
+  <path d="M8 8v.01" />
+  <path d="M12 16v-5" />
+  <path d="M16 16v-3a2 2 0 1 0 -4 0" />
+  <path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4l0 -10" /></symbol><symbol id="tic-brand-whatsapp" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
+  <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" /></symbol><symbol id="tic-briefcase" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M3 9a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -9" />
+  <path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" />
+  <path d="M12 12l0 .01" />
+  <path d="M3 13a20 20 0 0 0 18 0" /></symbol><symbol id="tic-building-monument" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M8 18l2 -13l2 -2l2 2l2 13" />
+  <path d="M5 21v-3h14v3" />
+  <path d="M3 21l18 0" /></symbol><symbol id="tic-building-skyscraper" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M3 21l18 0" />
+  <path d="M5 21v-14l8 -4v18" />
+  <path d="M19 21v-10l-6 -4" />
+  <path d="M9 9l0 .01" />
+  <path d="M9 12l0 .01" />
+  <path d="M9 15l0 .01" />
+  <path d="M9 18l0 .01" /></symbol><symbol id="tic-businessplan" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M11 6a5 3 0 1 0 10 0a5 3 0 1 0 -10 0" />
+  <path d="M11 6v4c0 1.657 2.239 3 5 3s5 -1.343 5 -3v-4" />
+  <path d="M11 10v4c0 1.657 2.239 3 5 3s5 -1.343 5 -3v-4" />
+  <path d="M11 14v4c0 1.657 2.239 3 5 3s5 -1.343 5 -3v-4" />
+  <path d="M7 9h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5" />
+  <path d="M5 15v1m0 -8v1" /></symbol><symbol id="tic-calendar" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12" />
+  <path d="M16 3v4" />
+  <path d="M8 3v4" />
+  <path d="M4 11h16" />
+  <path d="M11 15h1" />
+  <path d="M12 15v3" /></symbol><symbol id="tic-calendar-month" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12" />
+  <path d="M16 3v4" />
+  <path d="M8 3v4" />
+  <path d="M4 11h16" />
+  <path d="M8 14v4" />
+  <path d="M12 14v4" />
+  <path d="M16 14v4" /></symbol><symbol id="tic-car" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+  <path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+  <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" /></symbol><symbol id="tic-cash" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M7 15h-3a1 1 0 0 1 -1 -1v-8a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v3" />
+  <path d="M7 10a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v8a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1l0 -8" />
+  <path d="M12 14a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /></symbol><symbol id="tic-chart-bar" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -6" />
+  <path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -10" />
+  <path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -14" />
+  <path d="M4 20h14" /></symbol><symbol id="tic-clock-hour-4" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+  <path d="M12 12l3 2" />
+  <path d="M12 7v5" /></symbol><symbol id="tic-device-desktop-analytics" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M3 5a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1l0 -10" />
+  <path d="M7 20h10" />
+  <path d="M9 16v4" />
+  <path d="M15 16v4" />
+  <path d="M9 12v-4" />
+  <path d="M12 12v-1" />
+  <path d="M15 12v-2" />
+  <path d="M12 12v-1" /></symbol><symbol id="tic-file-export" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+  <path d="M11.5 21h-4.5a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v5m-5 6h7m-3 -3l3 3l-3 3" /></symbol><symbol id="tic-headset" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 14v-3a8 8 0 1 1 16 0v3" />
+  <path d="M18 19c0 1.657 -2.686 3 -6 3" />
+  <path d="M4 14a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2v-3" />
+  <path d="M15 14a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2v-3" /></symbol><symbol id="tic-id-badge-2" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M7 12h3v4h-3l0 -4" />
+  <path d="M10 6h-6a1 1 0 0 0 -1 1v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1 -1v-12a1 1 0 0 0 -1 -1h-6" />
+  <path d="M10 4a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v3a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -3" />
+  <path d="M14 16h2" />
+  <path d="M14 12h4" /></symbol><symbol id="tic-key" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0" />
+  <path d="M15 9h.01" /></symbol><symbol id="tic-mail" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10" />
+  <path d="M3 7l9 6l9 -6" /></symbol><symbol id="tic-map-2" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3l6 -3v7.5" />
+  <path d="M9 4v13" />
+  <path d="M15 7v5.5" />
+  <path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 -1.516 2.121 -1.879" />
+  <path d="M19 18v.01" /></symbol><symbol id="tic-map-pin" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+  <path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0" /></symbol><symbol id="tic-map-pin-star" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M15 11a3 3 0 1 0 -3.908 2.86" />
+  <path d="M11.059 21.25a2 2 0 0 1 -.472 -.35l-4.244 -4.243a8 8 0 1 1 13.646 -6.079" />
+  <path d="M17.8 20.817l-2.172 1.138a.392 .392 0 0 1 -.568 -.41l.415 -2.411l-1.757 -1.707a.389 .389 0 0 1 .217 -.665l2.428 -.352l1.086 -2.193a.392 .392 0 0 1 .702 0l1.086 2.193l2.428 .352a.39 .39 0 0 1 .217 .665l-1.757 1.707l.414 2.41a.39 .39 0 0 1 -.567 .411l-2.172 -1.138" /></symbol><symbol id="tic-plane-arrival" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M15.157 11.81l4.83 1.295a2 2 0 1 1 -1.036 3.863l-14.489 -3.882l-1.345 -6.572l2.898 .776l1.414 2.45l2.898 .776l-.12 -7.279l2.898 .777l2.052 7.797" />
+  <path d="M3 21h18" /></symbol><symbol id="tic-plane-departure" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M14.639 10.258l4.83 -1.294a2 2 0 1 1 1.035 3.863l-14.489 3.883l-4.45 -5.02l2.897 -.776l2.45 1.414l2.897 -.776l-3.743 -6.244l2.898 -.777l5.675 5.727" />
+  <path d="M3 21h18" /></symbol><symbol id="tic-route" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M3 19a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+  <path d="M19 7a2 2 0 1 0 0 -4a2 2 0 0 0 0 4" />
+  <path d="M11 19h5.5a3.5 3.5 0 0 0 0 -7h-8a3.5 3.5 0 0 1 0 -7h4.5" /></symbol><symbol id="tic-shield-check" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M11.46 20.846a12 12 0 0 1 -7.96 -14.846a12 12 0 0 0 8.5 -3a12 12 0 0 0 8.5 3a12 12 0 0 1 -.09 7.06" />
+  <path d="M15 19l2 2l4 -4" /></symbol><symbol id="tic-steering-wheel" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+  <path d="M10 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+  <path d="M12 14l0 7" />
+  <path d="M10 12l-6.75 -2" />
+  <path d="M14 12l6.75 -2" /></symbol><symbol id="tic-tent" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M11 14l4 6h6l-9 -16l-9 16h6l4 -6" /></symbol><symbol id="tic-trending-up" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M3 17l6 -6l4 4l8 -8" />
+  <path d="M14 7l7 0l0 7" /></symbol><symbol id="tic-truck-delivery" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+  <path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+  <path d="M5 17h-2v-4m-1 -8h11v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5" />
+  <path d="M3 9l4 0" /></symbol><symbol id="tic-users" viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+  <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></symbol></svg>
+<nav class="nav" id="nav">
+  <div class="topbar">
+    <div class="topbar-in">
+      <div class="tb-links">
+        <a href="/limousine.html" data-i18n="tb_lim">Limousine</a>
+        <a href="/carlift.html" data-i18n="tb_rent">Car Rental</a>
+        <a href="/tours.html" class="on" data-i18n="tb_tour">Tourism</a>
+        <a href="/crm.html" data-i18n="tb_crm">Ride CRM</a>
+        <a href="/investors.html" data-i18n="tb_inv">Investment</a>
+      </div>
+      <div class="tb-right">
+        <a href="#contact" data-i18n="tb_care">Customer Care</a>
+        <div class="langtog"><button data-l="en" onclick="setLang('en')">EN</button><button data-l="ru" onclick="setLang('ru')">RU</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-in">
+    <a href="/" class="brand"><span class="mono-badge">MR</span> Mister Ride <span style="color:var(--gold)">Group</span></a>
+    <div class="nav-right">
+      <div class="nav-links" id="navLinks">
+        <a href="/#companies" data-i18n="n_comp">Companies</a>
+        <a href="/investors.html" data-i18n="n_inv">Investors</a>
+        <a href="#book" data-i18n="n_book">Booking</a>
+      </div>
+      <div class="login-wrap" id="loginWrap">
+        <button class="login-btn" id="loginBtn" aria-haspopup="true" aria-expanded="false"><span data-i18n="n_login">Log in</span> <i class="chev"></i></button>
+        <div class="login-menu" id="loginMenu" role="menu">
+          <a href="https://crm.misterridegroup.com/" target="_blank" rel="noopener" role="menuitem"><span class="lm-ic"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-device-desktop-analytics"></use></svg></i></span><span><b data-i18n="lm1t">Ride CRM</b><em data-i18n="lm1s">Manage your fleet</em></span></a>
+          <a href="/investors.html#deck" role="menuitem"><span class="lm-ic"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-trending-up"></use></svg></i></span><span><b data-i18n="lm2t">Investor cabinet</b><em data-i18n="lm2s">Reports &amp; programs</em></span></a>
+          <a href="https://crm.misterridegroup.com/" target="_blank" rel="noopener" role="menuitem"><span class="lm-ic"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-id-badge-2"></use></svg></i></span><span><b data-i18n="lm3t">Staff login</b><em data-i18n="lm3s">For employees</em></span></a>
+        </div>
+      </div>
+      <button class="burger" id="burger" aria-label="Menu">&#9776;</button>
+    </div>
+  </div>
+</nav>
+<header class="hero">
+  <div class="wrap hero-in">
+    <div class="crumb"><a href="/">Mister Ride Group</a> · <span data-i18n="crumb">Tourism</span></div>
+    <span class="eyebrow" data-i18n="h_eyebrow">Mister Ride · Tourism</span>
+    <h1 data-i18n="h_title">Discover <em>Dubai</em> with us.</h1>
+    <p class="lead" data-i18n="h_lead">Airport transfers, city tours and day trips for families and visitors — arranged end to end with professional drivers.</p>
+    <div class="hero-cta">
+      <a href="#book" class="btn btn-gold" data-i18n="h_cta1">Plan my trip →</a>
+      <a href="#services" class="btn btn-ghost" data-i18n="h_cta2">See tours</a>
+    </div>
+  </div>
+</header>
+<section class="sec" id="services">
+  <div class="wrap">
+    <div class="sec-head reveal"><span class="eyebrow" data-i18n="s_eye">What we offer</span><h2 data-i18n="s_title">Dubai, the easy way.</h2><p data-i18n="s_sub">Transfers and guided tours arranged from start to finish.</p></div>
+    <div class="svc"><div class="scard reveal"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-plane-arrival"></use></svg></i><h3 data-i18n="sv1h">Airport transfers</h3><p data-i18n="sv1p">Meet &amp; greet at DXB and DWC, on time.</p></div><div class="scard reveal"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-building-monument"></use></svg></i><h3 data-i18n="sv2h">City tours</h3><p data-i18n="sv2p">Dubai &amp; Abu Dhabi with a driver who knows the city.</p></div><div class="scard reveal"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-tent"></use></svg></i><h3 data-i18n="sv3h">Desert safari</h3><p data-i18n="sv3p">Dunes, sunset and traditional experiences.</p></div><div class="scard reveal"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-users"></use></svg></i><h3 data-i18n="sv4h">Family trips</h3><p data-i18n="sv4p">Comfortable, safe outings for the whole family.</p></div><div class="scard reveal"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-route"></use></svg></i><h3 data-i18n="sv5h">Intercity</h3><p data-i18n="sv5p">Smooth transfers between the Emirates.</p></div><div class="scard reveal"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-map-pin-star"></use></svg></i><h3 data-i18n="sv6h">Custom packages</h3><p data-i18n="sv6p">We build the itinerary around you.</p></div></div>
+  </div>
+</section>
+<section class="sec band" id="fleet">
+  <div class="wrap">
+    <div class="sec-head reveal"><span class="eyebrow" data-i18n="f_eye">Popular tours</span><h2 data-i18n="f_title">Where you can go.</h2><p data-i18n="f_sub">Our most-booked experiences across the UAE.</p></div>
+    <div class="fleet"><div class="fcard reveal"><div class="cls" data-i18n="fc1c">Half day</div><h3>Dubai City Tour</h3><p data-i18n="fc1p">Burj Khalifa, Marina, old town</p></div><div class="fcard reveal"><div class="cls" data-i18n="fc2c">Full day</div><h3>Abu Dhabi Tour</h3><p data-i18n="fc2p">Grand Mosque &amp; the corniche</p></div><div class="fcard reveal"><div class="cls" data-i18n="fc3c">Evening</div><h3>Desert Safari</h3><p data-i18n="fc3p">Dunes, BBQ &amp; show</p></div><div class="fcard reveal"><div class="cls" data-i18n="fc4c">Leisure</div><h3>Marina &amp; Beaches</h3><p data-i18n="fc4p">Relax along the waterfront</p></div><div class="fcard reveal"><div class="cls" data-i18n="fc5c">Bespoke</div><h3>Custom Package</h3><p data-i18n="fc5p">Your own itinerary</p></div></div>
+  </div>
+</section>
+<section class="sec" id="book">
+  <div class="wrap">
+    <div class="sec-head reveal"><span class="eyebrow" data-i18n="b_eye">How it works</span><h2 data-i18n="b_title">Plan your trip in 3 steps.</h2><p data-i18n="b_sub">Tell us your plan, we arrange it, you enjoy.</p></div>
+    <div class="book-grid"><div class="book-step reveal"><div class="n">STEP 01</div><h3 data-i18n="b1h">Tell us your plan</h3><p data-i18n="b1p">Dates, group size and what you want to see.</p></div><div class="book-step reveal"><div class="n">STEP 02</div><h3 data-i18n="b2h">We arrange it</h3><p data-i18n="b2p">Driver, vehicle and route — all booked for you.</p></div><div class="book-step reveal"><div class="n">STEP 03</div><h3 data-i18n="b3h">Enjoy the trip</h3><p data-i18n="b3p">Sit back and explore — we handle the rest.</p></div></div>
+  </div>
+</section>
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow" data-i18n="faq_eye">FAQ</span>
+      <h2 data-i18n="faq_title">Frequently asked questions</h2>
+    </div>
+    <div class="faq">
+      <details class="faq-item reveal"><summary data-i18n="faqq1">What transfer services do you offer for tourists?</summary><div class="faq-a" data-i18n="faqa1">We provide airport pickups, hotel and city transfers, day trips and sightseeing tours across Dubai and the UAE, with English- and Russian-speaking drivers available.</div></details>
+      <details class="faq-item reveal"><summary data-i18n="faqq2">Do you provide child seats for family transfers?</summary><div class="faq-a" data-i18n="faqa2">Yes. Child and booster seats are available on request, just tell us the children's ages when you book.</div></details>
+      <details class="faq-item reveal"><summary data-i18n="faqq3">Can you arrange regular school-run transfers?</summary><div class="faq-a" data-i18n="faqa3">Yes. We set up recurring morning and evening school transfers on a fixed weekly schedule, with the same trusted driver where possible.</div></details>
+      <details class="faq-item reveal"><summary data-i18n="faqq4">Which languages do your drivers speak?</summary><div class="faq-a" data-i18n="faqa4">Our drivers speak English and Russian, and we can match the language you prefer when arranging your transfer.</div></details>
+      <details class="faq-item reveal"><summary data-i18n="faqq5">How far in advance should I book?</summary><div class="faq-a" data-i18n="faqa5">For airport pickups and tours we recommend booking at least a day ahead, though we do our best to accommodate same-day requests.</div></details>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap"><div class="cta-box reveal">
+    <span class="eyebrow" style="justify-content:center" data-i18n="cta_eye">Ready to explore</span>
+    <h2 style="margin-top:16px" data-i18n="cta_title">Plan your Dubai trip.</h2>
+    <p data-i18n="cta_sub">Tell us your dates and interests — we'll put together the perfect plan.</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+      <a href="https://wa.me/9715XXXXXXXX" target="_blank" rel="noopener" class="btn btn-gold" data-i18n="cta_wa">Plan on WhatsApp →</a>
+      <a href="tel:+9715XXXXXXXX" class="btn btn-ghost">+971 5X XXX XXXX</a>
+    </div>
+  </div></div>
+</section>
+<a id="contact"></a>
+<footer class="bigfoot">
+  <div class="bigfoot-top">
+    <div class="bf-brand">
+      <div class="bf-logo"><span class="bf-badge">MR</span> Mister Ride <span style="color:var(--gold-soft)">Group</span></div>
+      <p data-i18n="bf_about">A Dubai group of companies with 10+ years in premium mobility — limousine, car rental, tourism, fleet technology and investment.</p>
+      <div class="bf-soc">
+        <a href="https://wa.me/9715XXXXXXXX" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-brand-whatsapp"></use></svg></i></a>
+        <a href="#" aria-label="Instagram"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-brand-instagram"></use></svg></i></a>
+        <a href="#" aria-label="Facebook"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-brand-facebook"></use></svg></i></a>
+        <a href="#" aria-label="LinkedIn"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-brand-linkedin"></use></svg></i></a>
+      </div>
+    </div>
+    <div class="bf-col"><h4 data-i18n="bf_comp">Companies</h4><ul>
+      <li><a href="/limousine.html" data-i18n="bf_lim">Limousine</a></li>
+      <li><a href="/carlift.html" data-i18n="bf_rent">Car Rental</a></li>
+      <li><a href="/tours.html" data-i18n="bf_tour">Tourism</a></li>
+      <li><a href="/crm.html" data-i18n="bf_crm">Ride CRM</a></li>
+      <li><a href="/investors.html" data-i18n="bf_inv">Investment</a></li>
+    </ul></div>
+    <div class="bf-col"><h4 data-i18n="bf_group">Group</h4><ul>
+      <li><a href="/#companies" data-i18n="bf_about2">About us</a></li>
+      <li><a href="/investors.html" data-i18n="bf_invrel">Investor relations</a></li>
+      <li><a href="https://crm.misterridegroup.com/" target="_blank" rel="noopener" data-i18n="bf_login">Staff login</a></li>
+      <li><a href="#contact" data-i18n="bf_contactl">Contact</a></li>
+    </ul></div>
+    <div class="bf-col bf-contact"><h4 data-i18n="bf_contact">Contact</h4>
+      <div><span class="ck"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-brand-whatsapp"></use></svg></i></span><a href="https://wa.me/9715XXXXXXXX" target="_blank" rel="noopener">+971 5X XXX XXXX</a></div>
+      <div><span class="ck"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-mail"></use></svg></i></span><a href="mailto:info@misterridegroup.com">info@misterridegroup.com</a></div>
+      <div><span class="ck"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-map-pin"></use></svg></i></span><span data-i18n="bf_addr">White Swan Building, Dubai, UAE</span></div>
+    </div>
+  </div>
+  <div class="bigfoot-bottom"><div class="bf-bottom-in">
+    <div>&copy; <span class="yrf"></span> Mister Ride Group · Dubai, UAE</div>
+    <div><span data-i18n="bf_rights">All rights reserved.</span></div>
+  </div></div>
+</footer>
+<script>
+var I18N_RU={
+ chat_sub:"На связи · отвечаем быстро",
+ chat_greet:"Здравствуйте 👋 Чем помочь? Напишите нам в WhatsApp — ответим сразу.",
+ chat_btn:"Написать в WhatsApp",
+
+ tb_lim:"Лимузин",
+ tb_rent:"Аренда",
+ tb_tour:"Туризм",
+ tb_crm:"Ride CRM",
+ tb_inv:"Инвестиции",
+ tb_care:"Поддержка",
+ n_comp:"Компании",
+ n_inv:"Инвесторам",
+ n_book:"Заказать",
+ n_login:"Вход",
+ lm1t:"Ride CRM",
+ lm1s:"Управление парком",
+ lm2t:"Кабинет инвестора",
+ lm2s:"Отчёты и программы",
+ lm3t:"Вход для сотрудников",
+ lm3s:"Для сотрудников",
+ bf_about:"Группа компаний из Дубая с опытом 10+ лет в премиум-перевозках — лимузин, аренда авто, туризм, технологии для автопарков и инвестиции.",
+ bf_comp:"Компании",
+ bf_lim:"Лимузин",
+ bf_rent:"Аренда авто",
+ bf_tour:"Туризм",
+ bf_crm:"Ride CRM",
+ bf_inv:"Инвестиции",
+ bf_group:"Группа",
+ bf_about2:"О нас",
+ bf_invrel:"Инвесторам",
+ bf_login:"Вход для сотрудников",
+ bf_contactl:"Контакты",
+ bf_contact:"Контакты",
+ bf_addr:"White Swan Building, Дубай, ОАЭ",
+ bf_rights:"Все права защищены.",
+ crumb:"Туризм",
+ h_eyebrow:"Mister Ride · Туризм",
+ h_title:"Откройте <em>Дубай</em> с нами.",
+ h_lead:"Трансферы из аэропорта, экскурсии по городу и поездки на день для семей и туристов — под ключ, с профессиональными водителями.",
+ h_cta1:"Спланировать поездку →",
+ h_cta2:"Смотреть туры",
+ s_eye:"Что мы предлагаем",
+ s_title:"Дубай — без забот.",
+ s_sub:"Трансферы и экскурсии под ключ, от начала до конца.",
+ sv1h:"Трансфер из аэропорта",
+ sv1p:"Встреча в DXB и DWC, точно вовремя.",
+ sv2h:"Экскурсии по городу",
+ sv2p:"Дубай и Абу-Даби с водителем, знающим город.",
+ sv3h:"Сафари в пустыне",
+ sv3p:"Дюны, закат и традиционные впечатления.",
+ sv4h:"Семейные поездки",
+ sv4p:"Комфортные и безопасные выезды всей семьёй.",
+ sv5h:"Между городами",
+ sv5p:"Удобные трансферы между эмиратами.",
+ sv6h:"Туры под заказ",
+ sv6p:"Составим маршрут под вас.",
+ f_eye:"Популярные туры",
+ f_title:"Куда можно поехать.",
+ f_sub:"Самые востребованные маршруты по ОАЭ.",
+ fc1c:"Полдня",
+ fc1p:"Бурдж-Халифа, Марина, старый город",
+ fc2c:"Целый день",
+ fc2p:"Мечеть шейха Зайда и корниш",
+ fc3c:"Вечер",
+ fc3p:"Дюны, барбекю и шоу",
+ fc4c:"Отдых",
+ fc4p:"Прогулка вдоль набережной",
+ fc5c:"Под заказ",
+ fc5p:"Ваш собственный маршрут",
+ b_eye:"Как это работает",
+ b_title:"Поездка — в 3 шага.",
+ b_sub:"Расскажите план, мы организуем, вы отдыхаете.",
+ b1h:"Расскажите план",
+ b1p:"Даты, размер группы и что хотите увидеть.",
+ b2h:"Мы организуем",
+ b2p:"Водитель, машина и маршрут — всё забронировано.",
+ b3h:"Наслаждайтесь",
+ b3p:"Отдыхайте и смотрите — остальное на нас.",
+ cta_eye:"Готовы открывать",
+ cta_title:"Спланируйте поездку по Дубаю.",
+ cta_sub:"Скажите даты и интересы — соберём идеальный план.",
+ cta_wa:"План в WhatsApp →",
+  faq_eye:"Вопросы",faq_title:"Частые вопросы",faqq1:"Какие трансферы вы предлагаете туристам?",faqa1:"Встреча в аэропорту, трансферы до отеля и по городу, однодневные поездки и экскурсии по Дубаю и ОАЭ — с водителями со знанием английского и русского.",faqq2:"Есть детские кресла для семейных трансферов?",faqa2:"Да. Детские кресла и бустеры — по запросу, просто укажите возраст детей при заказе.",faqq3:"Можно организовать регулярную развозку в школу?",faqa3:"Да. Настраиваем постоянные утренние и вечерние поездки в школу по фиксированному недельному графику, по возможности с одним и тем же проверенным водителем.",faqq4:"На каких языках говорят водители?",faqa4:"Наши водители говорят на английском и русском; подберём водителя на удобном вам языке.",faqq5:"За сколько лучше бронировать?",faqa5:"Для встреч в аэропорту и экскурсий советуем бронировать хотя бы за день, но по возможности берём и заказы день в день."
+};
+var _orig={};
+function setLang(l){
+  document.documentElement.lang=l;
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    var k=el.getAttribute('data-i18n');
+    if(!(k in _orig)) _orig[k]=el.innerHTML;
+    el.innerHTML=(l==='ru'&&I18N_RU[k]!=null)?I18N_RU[k]:_orig[k];
+  });
+  try{localStorage.setItem('mrg_lang',l)}catch(e){}
+}
+(function(){
+  document.querySelectorAll('[data-i18n]').forEach(function(el){_orig[el.getAttribute('data-i18n')]=el.innerHTML;});
+  var l='en';try{l=localStorage.getItem('mrg_lang')||'en'}catch(e){}
+  setLang(l);
+  var y=new Date().getFullYear();document.querySelectorAll('.yrf').forEach(function(e){e.textContent=y;});
+})();
+var nav=document.getElementById('nav');
+addEventListener('scroll',function(){nav.classList.toggle('scrolled',scrollY>20)});
+var burger=document.getElementById('burger'),links=document.getElementById('navLinks');
+burger.addEventListener('click',function(){links.classList.toggle('open')});
+links.addEventListener('click',function(e){if(e.target.tagName==='A')links.classList.remove('open')});
+(function(){var w=document.getElementById('loginWrap'),b=document.getElementById('loginBtn');if(!w||!b)return;
+ b.addEventListener('click',function(e){e.stopPropagation();var o=w.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false');});
+ document.addEventListener('click',function(e){if(!w.contains(e.target)){w.classList.remove('open');}});
+ document.addEventListener('keydown',function(e){if(e.key==='Escape'){w.classList.remove('open');}});})();
+var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target)}})},{threshold:.14});
+document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
+</script>
+<script>
+(function(){var c=document.getElementById('chatw'),b=document.getElementById('chatwBtn');if(!c||!b)return;
+ b.addEventListener('click',function(e){e.stopPropagation();c.classList.toggle('open');});
+ document.addEventListener('click',function(e){if(!c.contains(e.target))c.classList.remove('open');});
+ document.addEventListener('keydown',function(e){if(e.key==='Escape')c.classList.remove('open');});})();
+</script>
+</body>
+</html>

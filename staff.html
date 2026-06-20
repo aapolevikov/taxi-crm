@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Staff access — Mister Ride Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#F6F9F6;--ink2:#FFFFFF;--line:#E1E8E2;--gold:#1B9E63;--gold-soft:#33B97B;--text:#15211B;--text2:#4C5A52;--text3:#8A968E;--danger:#d98a8a;--serif:'Fraunces',Georgia,serif;--sans:'Manrope',system-ui,sans-serif;--mono:'Space Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--text);font-family:var(--sans);min-height:100vh;display:grid;place-items:center;padding:24px;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(700px 420px at 50% 0,rgba(27,158,99,.13),transparent 60%);pointer-events:none}
+.card{position:relative;width:100%;max-width:420px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(165deg,#FFFFFF,#F1F6F2);padding:40px 34px;text-align:center}
+.badge{font-family:var(--serif);font-weight:600;width:52px;height:52px;border:1px solid var(--gold);border-radius:12px;display:grid;place-items:center;color:var(--gold-soft);font-size:20px;margin:0 auto 22px}
+h1{font-family:var(--serif);font-weight:500;font-size:25px;margin-bottom:8px}
+.sub{color:var(--text2);font-size:14.5px;margin-bottom:26px}
+input{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:16px;letter-spacing:.1em;padding:14px 16px;text-align:center;outline:none;transition:.2s}
+input:focus{border-color:var(--gold)}
+.btn{width:100%;margin-top:14px;background:linear-gradient(180deg,var(--gold-soft),var(--gold));color:#ffffff;border:none;border-radius:999px;font-family:var(--sans);font-weight:700;font-size:15px;padding:14px;cursor:pointer;transition:.2s}
+.btn:hover{filter:brightness(1.06)}
+.err{color:var(--danger);font-size:13px;margin-top:14px;min-height:18px}
+.crm{display:grid;gap:12px;margin-top:6px}
+.crm a{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;background:var(--ink);padding:18px 20px;text-decoration:none;color:var(--text);transition:.25s}
+.crm a:hover{border-color:var(--gold);transform:translateY(-2px)}
+.crm .t{font-family:var(--serif);font-size:18px}
+.crm .d{font-size:12.5px;color:var(--text3);margin-top:2px;text-align:left}
+.crm .arr{color:var(--gold-soft);font-size:20px}
+.hidden{display:none}
+.foot{margin-top:24px;font-size:12px;color:var(--text3)}
+.foot a{color:var(--text3)}
+.langtog{position:fixed;top:20px;right:20px;display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:rgba(20,26,33,.8)}
+.langtog button{background:none;border:none;color:var(--text3);font-family:var(--mono);font-size:11px;padding:7px 11px;cursor:pointer}
+html[lang="en"] .langtog [data-l="en"],html[lang="ru"] .langtog [data-l="ru"]{background:var(--gold);color:#ffffff}
+
+/* ===== light green theme overrides ===== */
+.nav{background:rgba(246,249,246,.82)}
+.nav.scrolled{background:rgba(246,249,246,.96);border-bottom-color:var(--line)}
+.invest,.band{background:linear-gradient(170deg,#EAF3EC,#F6F9F6)}
+.hero-card,.cta-box{background:linear-gradient(165deg,#FFFFFF,#F1F6F2)}
+.invest-card{background:#fff}
+.bar.dim span{background:#D8DFDA}
+.div-card,.scard,.fcard,.book-step,.prog,.car,.invest-card,.hero-card,.cta-box,.proof,.why,.tablewrap,.rstep,.chip{box-shadow:0 1px 3px rgba(21,33,27,.05)}
+</style>
+</head>
+<body>
+<div class="langtog"><button data-l="en" onclick="setLang('en')">EN</button><button data-l="ru" onclick="setLang('ru')">RU</button></div>
+
+<div class="card">
+  <div class="badge">MR</div>
+
+  <div id="gate">
+    <h1 data-i18n="title">Staff access</h1>
+    <p class="sub" data-i18n="sub">Enter the access code to open the management system.</p>
+    <input id="pw" type="password" autocomplete="off" data-i18n-ph="ph" placeholder="Access code" onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="btn" onclick="checkPw()" data-i18n="enter">Enter</button>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div id="chooser" class="hidden">
+    <h1 data-i18n="choose">Choose a system</h1>
+    <p class="sub" data-i18n="chooseSub">You're signed in. Open the system you need.</p>
+    <div class="crm">
+      <a href="/app.html"><span><span class="t">Limousine CRM</span><div class="d" data-i18n="limDesc">Mister Ride Limousine</div></span><span class="arr">→</span></a>
+      <a href="/tourism.html"><span><span class="t">Tourism CRM</span><div class="d" data-i18n="tourDesc">Mr Ride Tourism — transfers</div></span><span class="arr">→</span></a>
+    </div>
+  </div>
+
+  <div class="foot"><a href="/" data-i18n="back">← Back to website</a></div>
+</div>
+
+<script>
+/* ====== СМЕНИТЬ ПАРОЛЬ ЗДЕСЬ ====== */
+var ACCESS_CODE="mrride2026";
+/* ================================== */
+
+var I18N_RU={
+ title:"Вход для сотрудников",
+ sub:"Введите код доступа, чтобы открыть систему управления.",
+ ph:"Код доступа",
+ enter:"Войти",
+ choose:"Выберите систему",
+ chooseSub:"Вы вошли. Откройте нужную систему.",
+ limDesc:"Mister Ride Limousine",
+ tourDesc:"Mr Ride Tourism — трансферы",
+ back:"← На сайт",
+ errWrong:"Неверный код. Попробуйте ещё раз."
+};
+var I18N_EN={errWrong:"Wrong code. Please try again."};
+var _orig={};
+function setLang(l){
+  document.documentElement.lang=l;
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    var k=el.getAttribute('data-i18n');
+    if(!(k in _orig)) _orig[k]=el.innerHTML;
+    el.innerHTML=(l==='ru'&&I18N_RU[k]!=null)?I18N_RU[k]:_orig[k];
+  });
+  var ph=document.getElementById('pw');
+  ph.placeholder=(l==='ru')?I18N_RU.ph:"Access code";
+  try{localStorage.setItem('mrg_lang',l)}catch(e){}
+}
+function checkPw(){
+  var v=document.getElementById('pw').value.trim();
+  var l=document.documentElement.lang;
+  if(v===ACCESS_CODE){
+    document.getElementById('gate').classList.add('hidden');
+    document.getElementById('chooser').classList.remove('hidden');
+  } else {
+    document.getElementById('err').textContent=(l==='ru')?I18N_RU.errWrong:I18N_EN.errWrong;
+    document.getElementById('pw').value="";
+  }
+}
+(function(){
+  document.querySelectorAll('[data-i18n]').forEach(function(el){_orig[el.getAttribute('data-i18n')]=el.innerHTML;});
+  var l='en';try{l=localStorage.getItem('mrg_lang')||'en'}catch(e){}
+  setLang(l);
+  document.getElementById('pw').focus();
+})();
+</script>
+</body>
+</html>
