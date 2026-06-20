@@ -277,6 +277,7 @@ footer{border-top:1px solid var(--line);padding:46px 0 34px;color:var(--text3);f
   ]
 }
 </script>
+<link rel="preload" as="image" href="/video/hero-poster.jpg">
 </head>
 <body>
 <div class="chatw" id="chatw">
@@ -460,8 +461,7 @@ footer{border-top:1px solid var(--line);padding:46px 0 34px;color:var(--text3);f
 </nav>
 <a id="top"></a>
 <header class="hero-video" id="heroVideo">
-  <svg class="hero-fallback" viewBox="0 0 1440 200" preserveAspectRatio="xMidYEnd slice" aria-hidden="true"><g fill="currentColor"><rect x="0" y="147" width="30" height="53"/><rect x="36" y="83" width="32" height="117"/><rect x="74" y="157" width="21" height="43"/><rect x="101" y="98" width="46" height="102"/><rect x="153" y="120" width="23" height="80"/><rect x="182" y="159" width="38" height="41"/><rect x="226" y="139" width="36" height="61"/><rect x="268" y="155" width="21" height="45"/><rect x="295" y="113" width="33" height="87"/><rect x="334" y="136" width="22" height="64"/><rect x="362" y="96" width="22" height="104"/><rect x="390" y="159" width="33" height="41"/><rect x="429" y="94" width="46" height="106"/><rect x="481" y="138" width="23" height="62"/><rect x="510" y="86" width="40" height="114"/><rect x="556" y="159" width="38" height="41"/><rect x="600" y="92" width="38" height="108"/><rect x="644" y="160" width="32" height="40"/><rect x="682" y="161" width="27" height="39"/><rect x="715" y="149" width="37" height="51"/><rect x="758" y="113" width="29" height="87"/><rect x="793" y="97" width="24" height="103"/><rect x="823" y="93" width="23" height="107"/><rect x="852" y="95" width="29" height="105"/><rect x="887" y="143" width="46" height="57"/><rect x="939" y="92" width="23" height="108"/><rect x="968" y="85" width="38" height="115"/><rect x="1012" y="119" width="26" height="81"/><rect x="1044" y="96" width="23" height="104"/><rect x="1073" y="158" width="42" height="42"/><rect x="1121" y="159" width="38" height="41"/><rect x="1165" y="140" width="39" height="60"/><rect x="1210" y="98" width="35" height="102"/><rect x="1251" y="126" width="33" height="74"/><rect x="1290" y="92" width="34" height="108"/><rect x="1330" y="120" width="34" height="80"/><rect x="1370" y="135" width="29" height="65"/><rect x="1405" y="143" width="45" height="57"/><rect x="748" y="28" width="14" height="172"/><polygon points="755,8 748,28 762,28"/></g></svg>
-  <video class="hero-vid" autoplay muted loop playsinline poster="/video/hero-poster.jpg">
+  <video class="hero-vid" autoplay muted loop playsinline preload="auto" poster="/video/hero-poster.jpg">
     <source src="/video/hero.mp4" type="video/mp4">
   </video>
   <div class="hero-vid-overlay"></div>
