@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Ride CRM — демо</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#F6F9F6;--ink2:#FFFFFF;--line:#E1E8E2;--gold:#1B9E63;--gold-soft:#33B97B;--text:#15211B;--text2:#4C5A52;--text3:#8A968E;--serif:'Fraunces',Georgia,serif;--sans:'Manrope',system-ui,sans-serif;--mono:'Space Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+/* sidebar */
+.side{background:var(--ink2);border-right:1px solid var(--line);padding:22px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 20px;font-family:var(--serif);font-size:19px}
+.brand .mb{width:34px;height:34px;border:1px solid var(--gold);border-radius:9px;display:grid;place-items:center;color:var(--gold-soft);font-weight:600;font-size:14px}
+.nav-i{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;color:var(--text2);font-size:14.5px;font-weight:600;cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:.15s}
+.nav-i svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7}
+.nav-i:hover{background:var(--ink);color:var(--text)}
+.nav-i.on{background:var(--gold);color:#fff}
+.side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:14px}
+.side-foot a{font-size:13px;color:var(--text3);text-decoration:none}
+.side-foot a:hover{color:var(--gold)}
+/* topbar */
+.top{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--line);background:var(--ink2);position:sticky;top:0;z-index:5}
+.top h1{font-family:var(--serif);font-weight:500;font-size:22px}
+.demo-badge{background:#FDF3D6;color:#9A7B16;border:1px solid #EFD98A;border-radius:999px;font-size:11.5px;font-weight:700;padding:5px 11px;letter-spacing:.03em}
+.user{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text2)}
+.user .av{width:32px;height:32px;border-radius:50%;background:var(--gold-soft);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+.main{padding:26px 28px 60px}
+.tab{display:none}.tab.on{display:block}
+/* cards */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:22px}
+.kpi{background:var(--ink2);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.kpi .lbl{font-size:12.5px;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.kpi .lbl svg{width:16px;height:16px;stroke:var(--gold-soft);fill:none;stroke-width:1.8}
+.kpi .val{font-family:var(--serif);font-weight:600;font-size:28px}
+.kpi .val small{font-size:14px;color:var(--text3);font-family:var(--sans);font-weight:600}
+.kpi .delta{font-size:12px;margin-top:5px;font-weight:600}
+.delta.up{color:var(--gold)}.delta.down{color:#c87a7a}
+.row{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;margin-bottom:22px}
+@media(max-width:900px){.app{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;overflow:auto}.row{grid-template-columns:1fr}}
+.panel{background:var(--ink2);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+.panel h2{font-family:var(--serif);font-weight:500;font-size:17px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.panel h2 .mut{font-size:12px;color:var(--text3);font-weight:400;font-family:var(--sans)}
+/* chart */
+.chart{display:flex;align-items:flex-end;gap:10px;height:160px;padding-top:10px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end}
+.bar i{width:100%;max-width:30px;background:linear-gradient(180deg,var(--gold-soft),var(--gold));border-radius:6px 6px 0 0;display:block;transition:.4s}
+.bar span{font-size:11px;color:var(--text3)}
+/* table */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;color:var(--text3);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;padding:0 12px 12px;border-bottom:1px solid var(--line)}
+td{padding:13px 12px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:none}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:3px;vertical-align:middle}
+.dY{background:#F5C518}.dU{background:#111}.dB{background:#34D186}
+.pill{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px}
+.pill.ok{background:#E6F4EC;color:#1B7E50}.pill.off{background:#F3E7E7;color:#b06a6a}.pill.warn{background:#FDF3D6;color:#9A7B16}
+.alert{display:flex;gap:11px;align-items:flex-start;padding:12px 14px;background:#FDF6E8;border:1px solid #F0E2BC;border-radius:11px;margin-bottom:10px;font-size:13.5px}
+.alert svg{width:18px;height:18px;flex:none;stroke:#C79A2B;fill:none;stroke-width:1.8;margin-top:1px}
+.plat{display:flex;gap:14px;margin-top:6px}
+.plat .pi{flex:1;text-align:center;background:var(--ink);border:1px solid var(--line);border-radius:12px;padding:14px 8px}
+.plat .pi b{display:block;font-family:var(--serif);font-size:20px;font-weight:600}
+.plat .pi span{font-size:12px;color:var(--text3)}
+/* map */
+.map{position:relative;background:#0E1A14;border-radius:14px;height:380px;overflow:hidden}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.carmk{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid #0E1A14;box-shadow:0 0 0 2px var(--gold-soft);display:grid;place-items:center;transition:all 3s linear}
+.carmk svg{position:static;width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2}
+.legend{position:absolute;left:14px;bottom:14px;background:rgba(14,26,20,.8);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 13px;color:#cfe3d6;font-size:12px}
+.live-list .lr{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.live-list .lr:last-child{border:none}
+.live-list .nm{display:flex;align-items:center;gap:9px}
+.live-list .ld{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(27,158,99,.18)}
+</style>
+</head>
+<body>
+<div id="demoGate" style="position:fixed;inset:0;z-index:9999;background:var(--ink);display:grid;place-items:center;padding:24px">
+  <div style="width:min(400px,92vw);background:linear-gradient(165deg,#FFFFFF,#F1F6F2);border:1px solid var(--line);border-radius:20px;padding:38px 32px;text-align:center">
+    <div style="font-family:var(--serif);font-weight:600;width:52px;height:52px;border:1px solid var(--gold);border-radius:13px;display:grid;place-items:center;color:var(--gold-soft);font-size:20px;margin:0 auto 18px">MR</div>
+    <h2 style="font-family:var(--serif);font-weight:500;font-size:23px;margin-bottom:6px">Демо-доступ Ride CRM</h2>
+    <p style="color:var(--text2);font-size:14px;margin-bottom:22px">Логин и пароль предоставляются по запросу. <a href="/" style="color:var(--gold);text-decoration:none">Запросить демо &rarr;</a></p>
+    <input id="dgLogin" type="text" placeholder="Логин" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-family:var(--sans);font-size:15px;color:var(--text);outline:none;margin-bottom:12px">
+    <input id="dgPass" type="password" placeholder="Пароль" onkeydown="if(event.key==='Enter')dgCheck()" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-family:var(--sans);font-size:15px;color:var(--text);outline:none;margin-bottom:12px">
+    <button onclick="dgCheck()" style="width:100%;background:linear-gradient(180deg,var(--gold-soft),var(--gold));color:#fff;border:none;border-radius:999px;font-family:var(--sans);font-weight:700;font-size:15px;padding:14px;cursor:pointer">Войти в демо</button>
+    <div id="dgErr" style="color:#d98a8a;font-size:13px;min-height:18px;margin-top:12px"></div>
+  </div>
+</div>
+<script>
+/* демо-гейт (логин/пароль выдаёшь клиентам). Сменить здесь: */
+var DEMO_LOGIN="demo", DEMO_PASS="demo2026";
+function dgCheck(){
+  var l=document.getElementById('dgLogin').value.trim();
+  var p=document.getElementById('dgPass').value;
+  if(l===DEMO_LOGIN&&p===DEMO_PASS){document.getElementById('demoGate').style.display='none';}
+  else{document.getElementById('dgErr').textContent='Неверный логин или пароль.';document.getElementById('dgPass').value='';}
+}
+</script>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand"><span class="mb">MR</span> Ride CRM</div>
+    <button class="nav-i on" data-tab="dash"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg> Дашборд</button>
+    <button class="nav-i" data-tab="drivers"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-1a6 6 0 0112 0v1"/><path d="M16 3.5a3 3 0 010 7"/></svg> Водители</button>
+    <button class="nav-i" data-tab="trips"><svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg> Поездки</button>
+    <button class="nav-i" data-tab="finance"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Финансы</button>
+    <button class="nav-i" data-tab="gps"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg> GPS-трекинг</button>
+    <div class="side-foot"><a href="/">&larr; На сайт Mister Ride</a></div>
+  </aside>
+
+  <!-- CONTENT -->
+  <div>
+    <div class="top">
+      <h1 id="ttl">Дашборд</h1>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="demo-badge">ДЕМО · данные вымышленные</span>
+        <div class="user"><span class="av">АП</span> Александр П.</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- DASHBOARD -->
+      <section class="tab on" id="dash">
+        <div class="kpis">
+          <div class="kpi"><div class="lbl"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Доход сегодня</div><div class="val">4 820 <small>AED</small></div><div class="delta up">▲ 12% к вчера</div></div>
+          <div class="kpi"><div class="lbl"><svg viewBox="0 0 24 24"><path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11M5 11h14v6H5zM7 17v2M17 17v2"/></svg>Поездок сегодня</div><div class="val">137</div><div class="delta up">▲ 8 поездок</div></div>
+          <div class="kpi"><div class="lbl"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-1a6 6 0 0112 0v1"/></svg>Активные водители</div><div class="val">9 <small>/ 11</small></div><div class="delta down">2 не на линии</div></div>
+          <div class="kpi"><div class="lbl"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>Кэш на руках</div><div class="val">2 340 <small>AED</small></div><div class="delta up">собрать с 3 водителей</div></div>
+        </div>
+
+        <div class="row">
+          <div class="panel">
+            <h2>Доход за неделю <span class="mut">AED</span></h2>
+            <div class="chart" id="chart"></div>
+          </div>
+          <div class="panel">
+            <h2>По платформам <span class="mut">сегодня</span></h2>
+            <div class="plat">
+              <div class="pi"><b style="color:#C9A300">58</b><span><span class="dot dY"></span>Yango</span></div>
+              <div class="pi"><b>44</b><span><span class="dot dU"></span>Uber</span></div>
+              <div class="pi"><b style="color:#1B9E63">35</b><span><span class="dot dB"></span>Bolt</span></div>
+            </div>
+            <h2 style="margin-top:20px">Требует внимания</h2>
+            <div class="alert"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>Рашид К. — кэш на руках 980 AED, пора инкассировать</div>
+            <div class="alert"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>Toyota Highlander — страховка истекает через 6 дней</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Последние поездки <span class="mut">все платформы</span></h2>
+          <table><thead><tr><th>Время</th><th>Водитель</th><th>Маршрут</th><th>Платформа</th><th>Сумма</th></tr></thead><tbody id="recent"></tbody></table>
+        </div>
+      </section>
+
+      <!-- DRIVERS -->
+      <section class="tab" id="drivers">
+        <div class="panel">
+          <h2>Водители <span class="mut">11 всего · 9 на линии</span></h2>
+          <table><thead><tr><th>Водитель</th><th>Машина</th><th>Платформы</th><th>Рейтинг</th><th>Поездок</th><th>Доход (мес)</th><th>Статус</th></tr></thead><tbody id="drvRows"></tbody></table>
+        </div>
+      </section>
+
+      <!-- TRIPS -->
+      <section class="tab" id="trips">
+        <div class="panel">
+          <h2>Поездки <span class="mut">за сегодня</span></h2>
+          <table><thead><tr><th>Время</th><th>Водитель</th><th>Откуда → Куда</th><th>Платформа</th><th>Клиент</th><th>Водителю</th></tr></thead><tbody id="tripRows"></tbody></table>
+        </div>
+      </section>
+
+      <!-- FINANCE -->
+      <section class="tab" id="finance">
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">Доход (месяц)</div><div class="val">128 400 <small>AED</small></div><div class="delta up">▲ 9%</div></div>
+          <div class="kpi"><div class="lbl">Расходы (месяц)</div><div class="val">74 900 <small>AED</small></div><div class="delta down">топливо, лизинг, комиссии</div></div>
+          <div class="kpi"><div class="lbl">Прибыль (месяц)</div><div class="val" style="color:var(--gold)">53 500 <small>AED</small></div><div class="delta up">маржа 41,7%</div></div>
+        </div>
+        <div class="panel">
+          <h2>P&amp;L по машинам <span class="mut">текущий месяц</span></h2>
+          <table><thead><tr><th>Машина</th><th>Доход</th><th>Расход</th><th>Прибыль</th><th>Маржа</th></tr></thead><tbody id="pnlRows"></tbody></table>
+        </div>
+      </section>
+
+      <!-- GPS -->
+      <section class="tab" id="gps">
+        <div class="row">
+          <div class="panel">
+            <h2>Карта · живой трекинг <span class="mut">9 машин на линии</span></h2>
+            <div class="map" id="map">
+              <svg viewBox="0 0 600 380" preserveAspectRatio="none">
+                <rect width="600" height="380" fill="#0E1A14"/>
+                <g stroke="#1d2f25" stroke-width="2" fill="none">
+                  <path d="M0 90 H600 M0 200 H600 M0 300 H600"/>
+                  <path d="M120 0 V380 M300 0 V380 M460 0 V380"/>
+                  <path d="M0 0 L600 380 M600 0 L0 380" stroke="#172419"/>
+                </g>
+              </svg>
+              <div class="legend"><span class="dot dB"></span> зелёная точка — машина онлайн, обновление каждую минуту</div>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>Машины на линии</h2>
+            <div class="live-list" id="live"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====== ДЕМО-ДАННЫЕ (вымышленные) ====== */
+var WEEK=[3200,4100,3800,4600,5200,6100,4820];
+var DAYS=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+var DRIVERS=[
+ {n:"Рашид Каримов",car:"Mercedes S-Class",p:"YUB",r:4.9,t:412,inc:14200,st:["ok","На линии"]},
+ {n:"Имран Шах",car:"Tesla Model Y",p:"YU",r:4.8,t:388,inc:12100,st:["ok","На линии"]},
+ {n:"Самир Алиев",car:"Cadillac Escalade",p:"UB",r:4.95,t:301,inc:15800,st:["ok","На линии"]},
+ {n:"Дауд Хан",car:"Lexus ES 350",p:"Y",r:4.7,t:356,inc:9800,st:["off","Выходной"]},
+ {n:"Фарид Юсуф",car:"GMC Yukon XL",p:"YUB",r:4.85,t:277,inc:13400,st:["ok","На линии"]},
+ {n:"Билал Реза",car:"Toyota Highlander",p:"YB",r:4.6,t:402,inc:10100,st:["warn","Перерыв"]},
+ {n:"Карим Насер",car:"Tesla Model 3",p:"YU",r:4.9,t:431,inc:11600,st:["ok","На линии"]},
+ {n:"Адель Мансур",car:"Mercedes Vito",p:"UB",r:4.75,t:198,inc:12900,st:["ok","На линии"]},
+ {n:"Тарек Сулейман",car:"Maybach S-Class",p:"U",r:5.0,t:142,inc:18900,st:["ok","На линии"]},
+ {n:"Юсеф Амин",car:"BMW 7 Series",p:"YUB",r:4.8,t:289,inc:12200,st:["ok","На линии"]},
+ {n:"Назир Кадри",car:"Citroen SpaceTourer",p:"YB",r:4.65,t:233,inc:9400,st:["off","Не на линии"]}
+];
+var TRIPS=[
+ ["19:42","Рашид Каримов","DXB T3 → Downtown","U",128,96],
+ ["19:35","Тарек Сулейман","Palm Jumeirah → DIFC","U",210,168],
+ ["19:28","Карим Насер","Marina → Mall of Emirates","Y",54,40],
+ ["19:21","Самир Алиев","Business Bay → DXB T1","B",112,88],
+ ["19:14","Имран Шах","JBR → Deira","Y",61,46],
+ ["19:03","Фарид Юсуф","Al Barsha → Sharjah","B",145,112],
+ ["18:55","Юсеф Амин","DIFC → Jumeirah","U",73,57],
+ ["18:47","Адель Мансур","Airport → Hotel Atlantis","B",190,150]
+];
+var PNL=[
+ ["Mercedes S-Class",16800,7200,9600],
+ ["Cadillac Escalade",18200,8900,9300],
+ ["Tesla Model Y",13100,3800,9300],
+ ["Maybach S-Class",21400,9100,12300],
+ ["GMC Yukon XL",15600,7800,7800]
+];
+var P={Y:'<span class="dot dY"></span>',U:'<span class="dot dU"></span>',B:'<span class="dot dB"></span>'};
+function dots(s){return s.split('').map(function(c){return P[c];}).join('');}
+function fmt(n){return n.toLocaleString('ru-RU');}
+
+/* график */
+var mx=Math.max.apply(null,WEEK);
+document.getElementById('chart').innerHTML=WEEK.map(function(v,i){
+  return '<div class="bar"><i style="height:'+(v/mx*100)+'%"></i><span>'+DAYS[i]+'</span></div>';
+}).join('');
+
+/* последние поездки (дашборд) */
+document.getElementById('recent').innerHTML=TRIPS.slice(0,5).map(function(t){
+  return '<tr><td>'+t[0]+'</td><td>'+t[1]+'</td><td>'+t[2]+'</td><td>'+dots(t[3])+'</td><td><b>'+t[4]+' AED</b></td></tr>';
+}).join('');
+
+/* водители */
+document.getElementById('drvRows').innerHTML=DRIVERS.map(function(d){
+  return '<tr><td><b>'+d.n+'</b></td><td>'+d.car+'</td><td>'+dots(d.p)+'</td><td>★ '+d.r.toFixed(2)+'</td><td>'+d.t+'</td><td>'+fmt(d.inc)+' AED</td><td><span class="pill '+d.st[0]+'">'+d.st[1]+'</span></td></tr>';
+}).join('');
+
+/* поездки */
+document.getElementById('tripRows').innerHTML=TRIPS.map(function(t){
+  return '<tr><td>'+t[0]+'</td><td>'+t[1]+'</td><td>'+t[2]+'</td><td>'+dots(t[3])+'</td><td>'+t[4]+' AED</td><td>'+t[5]+' AED</td></tr>';
+}).join('');
+
+/* P&L */
+document.getElementById('pnlRows').innerHTML=PNL.map(function(r){
+  var m=Math.round(r[3]/r[1]*100);
+  return '<tr><td><b>'+r[0]+'</b></td><td>'+fmt(r[1])+'</td><td>'+fmt(r[2])+'</td><td style="color:var(--gold);font-weight:700">'+fmt(r[3])+'</td><td>'+m+'%</td></tr>';
+}).join('');
+
+/* GPS — машины онлайн + анимация маркеров */
+var onlineDrivers=DRIVERS.filter(function(d){return d.st[0]!=='off';});
+document.getElementById('live').innerHTML=onlineDrivers.map(function(d){
+  var spd=Math.round(20+Math.random()*60);
+  return '<div class="lr"><span class="nm"><span class="ld"></span>'+d.n.split(' ')[0]+' · '+d.car.split(' ')[0]+'</span><span style="color:var(--text2)">'+spd+' км/ч</span></div>';
+}).join('');
+var map=document.getElementById('map');
+var marks=[];
+onlineDrivers.forEach(function(){
+  var m=document.createElement('div');m.className='carmk';
+  m.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 11l1.5-4.5h11L19 11M5 11h14v5H5zM7 16v2M17 16v2"/></svg>';
+  map.appendChild(m);marks.push(m);
+});
+function moveMarks(){
+  marks.forEach(function(m){
+    m.style.left=(8+Math.random()*84)+'%';
+    m.style.top=(8+Math.random()*78)+'%';
+  });
+}
+moveMarks();setInterval(moveMarks,3200);
+
+/* вкладки */
+document.querySelectorAll('.nav-i').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.nav-i').forEach(function(x){x.classList.remove('on');});
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    document.getElementById(b.dataset.tab).classList.add('on');
+    document.getElementById('ttl').textContent=b.textContent.trim();
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>

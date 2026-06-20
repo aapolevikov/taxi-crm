@@ -156,6 +156,31 @@ html[lang="en"] .langtog [data-l="en"],html[lang="ru"] .langtog [data-l="ru"]{ba
 .faq-item summary::after{content:"+";color:var(--gold);font-size:26px;font-weight:400;line-height:1;transition:transform .2s;flex:0 0 auto}
 .faq-item[open] summary::after{transform:rotate(45deg)}
 .faq-a{padding:0 22px 20px;color:var(--text2);font-size:15.5px;line-height:1.65}
+
+/* ===== Login modal ===== */
+.lgmodal{position:fixed;inset:0;z-index:300;display:none}
+.lgmodal.open{display:block}
+.lg-bd{position:absolute;inset:0;background:rgba(15,30,22,.5);backdrop-filter:blur(4px)}
+.lg-box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(400px,92vw);background:linear-gradient(165deg,#FFFFFF,#F1F6F2);border:1px solid var(--line);border-radius:20px;padding:38px 32px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.3)}
+.lg-x{position:absolute;top:14px;right:16px;width:34px;height:34px;border:none;border-radius:50%;background:rgba(20,33,27,.06);font-size:20px;color:var(--text2);cursor:pointer}
+.lg-x:hover{background:rgba(20,33,27,.12)}
+.lg-badge{font-family:var(--serif),Georgia,serif;font-weight:600;width:52px;height:52px;border:1px solid var(--gold);border-radius:13px;display:grid;place-items:center;color:var(--gold-soft);font-size:20px;margin:0 auto 18px}
+.lg-box h3{font-family:var(--serif),Georgia,serif;font-weight:500;font-size:23px;margin-bottom:6px}
+.lg-box p.sub{color:var(--text2);font-size:14px;margin-bottom:22px}
+.lg-box input{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-family:var(--sans);font-size:15px;color:var(--text);outline:none;margin-bottom:12px}
+.lg-box input:focus{border-color:var(--gold)}
+.lg-btn{width:100%;background:linear-gradient(180deg,var(--gold-soft),var(--gold));color:#fff;border:none;border-radius:999px;font-family:var(--sans);font-weight:700;font-size:15px;padding:14px;cursor:pointer;transition:.2s}
+.lg-btn:hover{filter:brightness(1.06)}
+.lg-err{color:#d98a8a;font-size:13px;min-height:18px;margin-top:10px}
+.lg-div{display:flex;align-items:center;gap:12px;color:var(--text3);font-size:12px;margin:18px 0}
+.lg-div::before,.lg-div::after{content:"";flex:1;height:1px;background:var(--line)}
+.lg-demo{width:100%;background:none;border:1px solid var(--line);border-radius:999px;color:var(--text);font-family:var(--sans);font-weight:600;font-size:14.5px;padding:13px;cursor:pointer;transition:.2s;text-decoration:none;display:block}
+.lg-demo:hover{border-color:var(--gold);color:var(--gold)}
+.lg-choose a{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;background:var(--ink);padding:16px 18px;text-decoration:none;color:var(--text);margin-bottom:10px;transition:.2s}
+.lg-choose a:hover{border-color:var(--gold);transform:translateY(-2px)}
+.lg-choose .t{font-family:var(--serif),Georgia,serif;font-size:17px}
+.lg-choose .arr{color:var(--gold-soft);font-size:18px}
+.lg-hide{display:none}
 </style>
 <script type="application/ld+json">
 {
@@ -412,9 +437,9 @@ html[lang="en"] .langtog [data-l="en"],html[lang="ru"] .langtog [data-l="ru"]{ba
       <div class="login-wrap" id="loginWrap">
         <button class="login-btn" id="loginBtn" aria-haspopup="true" aria-expanded="false"><span data-i18n="n_login">Log in</span> <i class="chev"></i></button>
         <div class="login-menu" id="loginMenu" role="menu">
-          <a href="https://crm.misterridegroup.com/" target="_blank" rel="noopener" role="menuitem"><span class="lm-ic"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-device-desktop-analytics"></use></svg></i></span><span><b data-i18n="lm1t">Ride CRM</b><em data-i18n="lm1s">Manage your fleet</em></span></a>
+          <a href="#" onclick="MRLogin.open();return false;" role="menuitem"><span class="lm-ic"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-device-desktop-analytics"></use></svg></i></span><span><b data-i18n="lm1t">Ride CRM</b><em data-i18n="lm1s">Manage your fleet</em></span></a>
           <a href="/investors.html#deck" role="menuitem"><span class="lm-ic"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-trending-up"></use></svg></i></span><span><b data-i18n="lm2t">Investor cabinet</b><em data-i18n="lm2s">Reports &amp; programs</em></span></a>
-          <a href="https://crm.misterridegroup.com/" target="_blank" rel="noopener" role="menuitem"><span class="lm-ic"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-id-badge-2"></use></svg></i></span><span><b data-i18n="lm3t">Staff login</b><em data-i18n="lm3s">For employees</em></span></a>
+          <a href="#" onclick="MRLogin.open();return false;" role="menuitem"><span class="lm-ic"><i class="ti"><svg class="tic" aria-hidden="true"><use href="#tic-id-badge-2"></use></svg></i></span><span><b data-i18n="lm3t">Staff login</b><em data-i18n="lm3s">For employees</em></span></a>
         </div>
       </div>
       <button class="burger" id="burger" aria-label="Menu">&#9776;</button>
@@ -635,5 +660,157 @@ document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
  document.addEventListener('click',function(e){if(!c.contains(e.target))c.classList.remove('open');});
  document.addEventListener('keydown',function(e){if(e.key==='Escape')c.classList.remove('open');});})();
 </script>
-</body>
+
+<div class="lgmodal" id="lgModal" aria-hidden="true">
+  <div class="lg-bd" onclick="MRLogin.close()"></div>
+  <div class="lg-box" role="dialog" aria-modal="true">
+    <button class="lg-x" onclick="MRLogin.close()" aria-label="Close">&times;</button>
+    <div class="lg-badge">MR</div>
+    <div id="lgForm">
+      <h3 id="lgTitle">Вход в систему</h3>
+      <p class="sub" id="lgSub">Введите логин и пароль для доступа.</p>
+      <input id="lgLogin" type="text" autocomplete="username" placeholder="Логин">
+      <input id="lgPass" type="password" autocomplete="current-password" placeholder="Пароль" onkeydown="if(event.key==='Enter')MRLogin.submit()">
+      <button class="lg-btn" onclick="MRLogin.submit()" id="lgBtn">Войти</button>
+      <div class="lg-err" id="lgErr"></div>
+      <div class="lg-div" id="lgOr">или</div>
+      <button type="button" class="lg-demo" id="lgDemo" onclick="MRLogin.close();MRDemo.open()">Запросить демо</button>
+    </div>
+    <div id="lgChoose" class="lg-choose lg-hide">
+      <h3 id="lgChooseTitle" style="margin-bottom:18px">Выберите систему</h3>
+      <a href="/app.html"><span class="t" id="lgC1">Лимузин-CRM</span><span class="arr">&rarr;</span></a>
+      <a href="/tourism.html"><span class="t" id="lgC2">Туризм-CRM</span><span class="arr">&rarr;</span></a>
+    </div>
+  </div>
+</div>
+
+<script>
+/* окно входа — косметический замок (пароль в коде; реальная защита = Supabase Auth позже) */
+(function(){
+  var LOGIN="admin";          /* ← логин */
+  var PASS="mrride2026";      /* ← пароль (сменить здесь) */
+  var TXT={
+    ru:{title:"Вход в систему",sub:"Введите логин и пароль для доступа.",login:"Логин",pass:"Пароль",btn:"Войти",or:"или",demo:"Запросить демо",choose:"Выберите систему",c1:"Лимузин-CRM",c2:"Туризм-CRM",err:"Неверный логин или пароль."},
+    en:{title:"Sign in",sub:"Enter your login and password to continue.",login:"Login",pass:"Password",btn:"Sign in",or:"or",demo:"Request a demo",choose:"Choose a system",c1:"Limousine CRM",c2:"Tourism CRM",err:"Wrong login or password."}
+  };
+  function lng(){return document.documentElement.lang==='ru'?'ru':'en';}
+  function paint(){
+    var t=TXT[lng()];
+    document.getElementById('lgTitle').textContent=t.title;
+    document.getElementById('lgSub').textContent=t.sub;
+    document.getElementById('lgLogin').placeholder=t.login;
+    document.getElementById('lgPass').placeholder=t.pass;
+    document.getElementById('lgBtn').textContent=t.btn;
+    document.getElementById('lgOr').textContent=t.or;
+    document.getElementById('lgDemo').textContent=t.demo;
+    document.getElementById('lgChooseTitle').textContent=t.choose;
+    document.getElementById('lgC1').textContent=t.c1;
+    document.getElementById('lgC2').textContent=t.c2;
+  }
+  function open(){
+    document.getElementById('lgForm').classList.remove('lg-hide');
+    document.getElementById('lgChoose').classList.add('lg-hide');
+    document.getElementById('lgErr').textContent='';
+    document.getElementById('lgPass').value='';
+    paint();
+    document.getElementById('lgModal').classList.add('open');
+    document.body.style.overflow='hidden';
+    setTimeout(function(){document.getElementById('lgLogin').focus();},50);
+  }
+  function close(){document.getElementById('lgModal').classList.remove('open');document.body.style.overflow='';}
+  function submit(){
+    var l=document.getElementById('lgLogin').value.trim();
+    var p=document.getElementById('lgPass').value;
+    if(l===LOGIN&&p===PASS){
+      document.getElementById('lgForm').classList.add('lg-hide');
+      document.getElementById('lgChoose').classList.remove('lg-hide');
+    }else{
+      document.getElementById('lgErr').textContent=TXT[lng()].err;
+      document.getElementById('lgPass').value='';
+    }
+  }
+  window.MRLogin={open:open,close:close,submit:submit};
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+})();
+</script>
+
+<div class="lgmodal" id="reqModal" aria-hidden="true">
+  <div class="lg-bd" onclick="MRDemo.close()"></div>
+  <div class="lg-box" role="dialog" aria-modal="true">
+    <button class="lg-x" onclick="MRDemo.close()" aria-label="Close">&times;</button>
+    <div class="lg-badge">MR</div>
+    <h3 id="rqTitle">Запросить демо</h3>
+    <p class="sub" id="rqSub">Оставьте контакты — пришлём доступ к демо Ride CRM.</p>
+    <form name="demo-request" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="rqForm" onsubmit="return MRDemo.send(event)">
+      <input type="hidden" name="form-name" value="demo-request">
+      <p style="display:none"><label>Не заполнять: <input name="bot-field"></label></p>
+      <input name="name" id="rqName" type="text" placeholder="Имя" required>
+      <input name="email" id="rqEmail" type="email" placeholder="Email" required>
+      <input name="phone" id="rqPhone" type="text" placeholder="Телефон / WhatsApp" required>
+      <input name="company" id="rqCompany" type="text" placeholder="Компания (необязательно)">
+      <button class="lg-btn" type="submit" id="rqBtn">Отправить заявку</button>
+    </form>
+    <div class="lg-err" id="rqErr"></div>
+    <div id="rqOk" class="lg-hide" style="margin-top:14px;color:var(--gold);font-weight:700;font-size:15px"></div>
+    <div class="lg-div" id="rqOr">или</div>
+    <button type="button" class="lg-demo" id="rqWa" onclick="MRDemo.wa()">Написать в WhatsApp</button>
+  </div>
+</div>
+<script>
+(function(){
+  var WA="9715XXXXXXXX";
+  var TXT={
+    ru:{title:"Запросить демо",sub:"Оставьте контакты — пришлём доступ к демо Ride CRM.",name:"Имя",email:"Email",phone:"Телефон / WhatsApp",company:"Компания (необязательно)",btn:"Отправить заявку",or:"или",wa:"Написать в WhatsApp",err:"Заполните имя, email и телефон.",ok:"Спасибо! Заявка отправлена — мы свяжемся с вами."},
+    en:{title:"Request a demo",sub:"Leave your contacts — we will send Ride CRM demo access.",name:"Name",email:"Email",phone:"Phone / WhatsApp",company:"Company (optional)",btn:"Send request",or:"or",wa:"Message on WhatsApp",err:"Please fill in name, email and phone.",ok:"Thank you! Your request has been sent — we will get in touch."}
+  };
+  function lng(){return document.documentElement.lang==='ru'?'ru':'en';}
+  function paint(){var t=TXT[lng()];
+    document.getElementById('rqTitle').textContent=t.title;
+    document.getElementById('rqSub').textContent=t.sub;
+    document.getElementById('rqName').placeholder=t.name;
+    document.getElementById('rqEmail').placeholder=t.email;
+    document.getElementById('rqPhone').placeholder=t.phone;
+    document.getElementById('rqCompany').placeholder=t.company;
+    document.getElementById('rqBtn').textContent=t.btn;
+    document.getElementById('rqOr').textContent=t.or;
+    document.getElementById('rqWa').textContent=t.wa;}
+  function open(){paint();
+    document.getElementById('rqErr').textContent='';
+    document.getElementById('rqOk').classList.add('lg-hide');
+    document.getElementById('rqForm').style.display='';
+    document.getElementById('reqModal').classList.add('open');
+    document.body.style.overflow='hidden';
+    setTimeout(function(){document.getElementById('rqName').focus();},50);}
+  function close(){document.getElementById('reqModal').classList.remove('open');document.body.style.overflow='';}
+  function send(e){
+    e.preventDefault();
+    var f=document.getElementById('rqForm');
+    var data=new URLSearchParams(new FormData(f)).toString();
+    document.getElementById('rqErr').textContent='';
+    fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:data})
+      .then(function(){
+        f.style.display='none';
+        var ok=document.getElementById('rqOk');
+        ok.textContent=TXT[lng()].ok; ok.classList.remove('lg-hide');
+      })
+      .catch(function(){ document.getElementById('rqErr').textContent=lng()==='ru'?'Ошибка отправки — напишите в WhatsApp.':'Send error — please use WhatsApp.'; });
+    return false;
+  }
+  function wa(){
+    var n=document.getElementById('rqName').value.trim();
+    var p=document.getElementById('rqPhone').value.trim();
+    var em=document.getElementById('rqEmail').value.trim();
+    var c=document.getElementById('rqCompany').value.trim();
+    var ru=lng()==='ru';
+    var msg=(ru?'Запрос демо Ride CRM':'Ride CRM demo request')
+      +(n?'%0A'+(ru?'Имя':'Name')+': '+encodeURIComponent(n):'')
+      +(em?'%0AEmail: '+encodeURIComponent(em):'')
+      +(p?'%0A'+(ru?'Телефон':'Phone')+': '+encodeURIComponent(p):'')
+      +(c?'%0A'+(ru?'Компания':'Company')+': '+encodeURIComponent(c):'');
+    window.open('https://wa.me/'+WA+'?text='+msg,'_blank');
+  }
+  window.MRDemo={open:open,close:close,send:send,wa:wa};
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+})();
+</script></body>
 </html>

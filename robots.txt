@@ -5,6 +5,7 @@
 User-agent: *
 Allow: /
 Disallow: /staff.html
+Disallow: /demo.html
 Disallow: /app.html
 Disallow: /tourism.html
 
