@@ -212,7 +212,7 @@ footer{border-top:1px solid var(--line);padding:40px 0 32px;color:var(--text3);f
 /* modal */
 .carmodal{position:fixed;inset:0;z-index:200;display:none}
 .carmodal.open{display:block}
-.cm-backdrop{position:absolute;inset:0;background:rgba(15,30,22,.45);backdrop-filter:blur(3px)}
+.cm-backdrop{position:absolute;inset:0;background:rgba(13,24,18,.88)}
 .cm-box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(880px,94vw);max-height:92vh;overflow:auto;background:var(--ink2);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.3)}
 .cm-x{position:absolute;top:14px;right:16px;z-index:3;width:38px;height:38px;border-radius:50%;border:none;background:rgba(20,33,27,.06);font-size:22px;line-height:1;color:var(--text2);cursor:pointer}
 .cm-x:hover{background:rgba(20,33,27,.12)}
@@ -246,7 +246,7 @@ footer{border-top:1px solid var(--line);padding:40px 0 32px;color:var(--text3);f
 /* ===== Login modal ===== */
 .lgmodal{position:fixed;inset:0;z-index:300;display:none}
 .lgmodal.open{display:block}
-.lg-bd{position:absolute;inset:0;background:rgba(15,30,22,.5);backdrop-filter:blur(4px)}
+.lg-bd{position:absolute;inset:0;background:rgba(13,24,18,.9)}
 .lg-box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(400px,92vw);background:linear-gradient(165deg,#FFFFFF,#F1F6F2);border:1px solid var(--line);border-radius:20px;padding:38px 32px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.3)}
 .lg-x{position:absolute;top:14px;right:16px;width:34px;height:34px;border:none;border-radius:50%;background:rgba(20,33,27,.06);font-size:20px;color:var(--text2);cursor:pointer}
 .lg-x:hover{background:rgba(20,33,27,.12)}
@@ -1098,6 +1098,18 @@ document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
   }
   window.MRDemo={open:open,close:close,send:send,wa:wa};
   document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+})();
+</script><script>
+/* пауза hero-видео при открытии модалок + без лагов */
+(function(){
+  var v=document.querySelector('.hero-vid');
+  function pause(){if(v){try{v.pause();}catch(e){}}}
+  function play(){if(v){try{v.play().catch(function(){});}catch(e){}}}
+  ['MRLogin','MRDemo','MRF'].forEach(function(k){
+    var o=window[k]; if(!o)return;
+    if(typeof o.open==='function'){var oo=o.open;o.open=function(){pause();return oo.apply(o,arguments);};}
+    if(typeof o.close==='function'){var oc=o.close;o.close=function(){play();return oc.apply(o,arguments);};}
+  });
 })();
 </script></body>
 </html>
