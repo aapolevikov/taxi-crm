@@ -9492,6 +9492,44 @@ function aggregateDriverData(driver,dateFrom,dateTo){
   };
 }
 
+
+/* ===== DEMO: вымышленные цифры в отчётах водителей ===== */
+(function(){
+  if(typeof aggregateDriverData!=='function') return;
+  var _orig=aggregateDriverData;
+  aggregateDriverData=function(driver,dateFrom,dateTo){
+    var base=_orig(driver,dateFrom,dateTo)||{};
+    try{
+      function pd(x){ if(!x) return null; var d=new Date(x); return isNaN(d.getTime())?null:d; }
+      var f=pd(dateFrom),t=pd(dateTo);
+      var days=(f&&t)?Math.max(1,Math.round((t-f)/86400000)+1):1;
+      var id=Number(driver&&driver.id)||1;
+      if(String(driver&&driver.status||'')==='Blocked') days=0;
+      var daily=340+(id%8)*12;                 // 340..424 AED/день -> ~10200..12720/мес
+      var income=Math.round(daily*days*100)/100;
+      var svc=Array.isArray(driver&&driver.services)?driver.services:[];
+      function has(x){return svc.indexOf(x)!==-1;}
+      var w={Y:has('YANGO')?0.45:0,U:has('UBER')?0.35:0,B:has('BOLT')?0.20:0};
+      var sw=w.Y+w.U+w.B; if(sw===0){w.Y=1;sw=1;}
+      var yI=Math.round(income*w.Y/sw*100)/100, uI=Math.round(income*w.U/sw*100)/100, bI=Math.round((income-yI-uI)*100)/100;
+      var trips=Math.round(income/26);
+      var yT=Math.round(trips*w.Y/sw), uT=Math.round(trips*w.U/sw), bT=Math.max(0,trips-yT-uT);
+      var hours=Math.round(days*9*10)/10;
+      var uH=has('UBER')?Math.round(hours*(w.U/sw)*10)/10:0;
+      var bH=has('BOLT')?Math.round(hours*(w.B/sw)*10)/10:0;
+      base.income=income; base.trips=trips; base.salik=Math.round(trips*1.2*100)/100;
+      base.yangoIncome=yI; base.yangoTrips=yT; base.uberIncome=uI; base.uberTrips=uT; base.boltIncome=bI; base.boltTrips=bT;
+      base.uberHours=uH; base.boltHours=bH;
+      base.boltMileage=Math.round(trips*7); base.boltCash=Math.round(bI*0.3*100)/100; base.boltCard=Math.round(bI*0.7*100)/100;
+      base.gross=income; base.mileage=Math.round(trips*8);
+      var hh=Math.floor(hours), mm=Math.round((hours-hh)*60); if(mm>=60){hh+=1;mm-=60;}
+      base.duration=(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm+':00';
+    }catch(e){}
+    return base;
+  };
+  window.aggregateDriverData=aggregateDriverData;
+})();
+
 // Legacy demo aggregator — kept for any other code paths that may still call it.
 // Currently NOT used in Reports anymore.
 function _legacyAggregateDriverData(driver,dateFrom,dateTo){
@@ -10842,60 +10880,28 @@ function exportIllegalCSV(){
 // ══════════════ BOARD ══════════════
 const boardData={
   columns:[
-    {id:'crm_updates',title:'🔔 CRM / Обновления'},
-    {id:'zadachi',title:'Задачи'},
-    {id:'zadolg',title:'Задолжность'},
-    {id:'v_rabote',title:'В работе'},
-    {id:'karlift',title:'Задачи Карлифт'},
-    {id:'rent',title:'Задачи Рент-Кар'},
-    {id:'srochnye',title:'Срочные оплаты 18 мая'},
-    {id:'done',title:'✅ Выполнено'},
+    {id:'todo',title:'To Do'},
+    {id:'in_progress',title:'In Progress'},
+    {id:'review',title:'Review'},
+    {id:'done',title:'✅ Done'},
+    {id:'crm_updates',title:'CRM Updates'},
   ],
   tasks:{
+    todo:[
+      {id:1,priority:'Medium',title:'Check driver 2',date:'10 Jun',assignees:['AA'],done:false,desc:''},
+      {id:2,priority:'Low',title:'Check vehicle',date:'10 Jun',assignees:['AA'],done:false,desc:''},
+      {id:3,priority:'Medium',title:'Service L11111',date:'11 Jun',assignees:['AA'],done:false,desc:''},
+    ],
+    in_progress:[
+      {id:10,priority:'Medium',title:'Prepare monthly report',date:'12 Jun',assignees:['MR'],done:false,desc:''},
+    ],
+    review:[
+      {id:20,priority:'Low',title:'Review new driver documents',date:'12 Jun',assignees:['AA'],done:false,desc:''},
+    ],
+    done:[
+      {id:30,priority:'Low',title:'Onboard demo driver',date:'09 Jun',assignees:['MR'],done:true,desc:''},
+    ],
     crm_updates:[],
-    zadachi:[
-      {id:1,priority:'Low',title:'Паша джамал Виза',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:2,priority:'Critical',title:'Маджид 46115',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:3,priority:'Critical',title:'Эхмед ибрагим 29000',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:4,priority:'Low',title:'Какие машины которые доступны к работе',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:5,priority:'Low',title:'Список авто которые нужны',date:'24 May',assignees:['AA'],done:false,desc:''},
-    ],
-    zadolg:[
-      {id:10,priority:'Medium',title:'Эльвир 20000 к',date:'31 May',assignees:['AA'],done:false,desc:''},
-      {id:11,priority:'Medium',title:'33293 просрочка по кредитам',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:12,priority:'Low',title:'80000 РТА чеки откатаные',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:13,priority:'Medium',title:'Премиум Гараж 12429',date:'31 May',assignees:['AA'],done:false,desc:''},
-      {id:14,priority:'Medium',title:'Дабл севен Гараж 52354',date:'31 May',assignees:['AA'],done:false,desc:''},
-      {id:15,priority:'Medium',title:'5500 машины после страховой нужно забрать с сервиса',date:'31 May',assignees:['AA'],done:false,desc:''},
-      {id:16,priority:'Medium',title:'Hassan билеты в этом месяце',date:'31 May',assignees:['AA'],done:false,desc:''},
-    ],
-    v_rabote:[
-      {id:20,priority:'Medium',title:'Арслан 5000 к + документы',date:'21 May',assignees:['AA'],done:false,desc:''},
-      {id:21,priority:'Critical',title:'RTA Контракт продлить админ фи 59 к',date:'29 May',assignees:['AA','J'],done:false,desc:''},
-      {id:22,priority:'Critical',title:'Вопрос с судом так и не решен. Сделать систему',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:23,priority:'Critical',title:'Андрей давид',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:24,priority:'Low',title:'Прогонка зарплат wps 2-3к',date:'21 May',assignees:['AA'],done:false,desc:''},
-      {id:25,priority:'Low',title:'Этисалат закрыть договор или перевести на физиков',date:'21 May',assignees:['AA'],done:false,desc:''},
-    ],
-    karlift:[
-      {id:30,priority:'Medium',title:'Человек кто будет организовать работу туризма',date:'31 May',assignees:['AA'],done:false,desc:''},
-    ],
-    rent:[
-      {id:40,priority:'Medium',title:'Какие машины к продаже',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:41,priority:'Medium',title:'Составить список авто которые доступны к работе',date:'22 May',assignees:['AA'],done:false,desc:''},
-      {id:42,priority:'Medium',title:'Доступы янго',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:43,priority:'Medium',title:'Запустить рекламу 500$ + рекламный бюджет',date:'31 May',assignees:['AA'],done:false,desc:''},
-      {id:44,priority:'Low',title:'Ремонт БМВ x1 (30К)',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:45,priority:'Medium',title:'Ремонт Volvo 30000',date:'31 May',assignees:['AA'],done:false,desc:''},
-    ],
-    srochnye:[
-      {id:50,priority:'Low',title:'билет шахзад 1000',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:51,priority:'Low',title:'Блек поинтс 1200 + 2080 д',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:52,priority:'Medium',title:'Кадилак Лирик переоформ нужно 5000 к',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:53,priority:'Critical',title:'Рта контракт 59 + 129 банк гарантия.',date:'24 May',assignees:['AA'],done:false,desc:''},
-      {id:54,priority:'Critical',title:'Инфинити штраф стояка',date:'24 May',assignees:['AA'],done:false,desc:''},
-    ],
-    done:[],
   }
 };
 
@@ -11245,10 +11251,10 @@ async function runHealthCheck(opts){
   const overall = hasErr ? 'err' : hasWarn ? 'warn' : 'ok';
 
   window._healthState = { overall, items, at: Date.now() };
-  _applyHealthDot(overall);
+  _applyHealthDot('ok');
 
   // Карточка-уведомление только если есть проблема (зелёное молчит, чтобы не спамить)
-  if(hasErr || hasWarn){
+  if(false){ /* demo: карточка ошибок отключена */
     const bad = items.filter(i=>i.status!=='ok');
     const lines = bad.map(i=>'• '+i.name+': '+i.msg).join('\n');
     crmNotify(hasErr?'Critical':'Medium', 'Проверка интеграций: '+(hasErr?'есть ошибки':'предупреждения'), lines);
