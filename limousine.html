@@ -904,7 +904,10 @@ document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
 
   /* ===== Фото машин (по slug). Порядок: экстерьеры, салон, коллаж. Первый = главное фото карточки ===== */
   var PHOTOS={
-    'gmc-yukon':['gmc-yukon-1.jpg','gmc-yukon-2.jpg','gmc-yukon-3.jpg','gmc-yukon-int-1.jpg','gmc-yukon-collage-1.jpg']
+    'gmc-yukon':['gmc-yukon-1.jpg','gmc-yukon-2.jpg','gmc-yukon-3.jpg','gmc-yukon-int-1.jpg','gmc-yukon-collage-1.jpg'],
+    'bmw-7':['bmw-7-1.jpg','bmw-7-int-1.jpg','bmw-7-collage-1.jpg'],
+    'mercedes-maybach':['mercedes-maybach-1.jpg','mercedes-maybach-2.jpg','mercedes-maybach-int-1.jpg','mercedes-maybach-collage-1.jpg'],
+    'cadillac-escalade':['cadillac-escalade-1.jpg','cadillac-escalade-collage-1.jpg']
   };
   function carPhotos(slug){return PHOTOS[slug]||[];}
   function mainPhoto(slug){var p=carPhotos(slug);return p.length?p[0]:null;}
