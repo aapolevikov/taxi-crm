@@ -208,6 +208,7 @@ footer{border-top:1px solid var(--line);padding:40px 0 32px;color:var(--text3);f
 .car-img .silh svg{width:80%;height:80%}
 .car-img.has-photo .silh{display:none}
 .car-img img{position:relative;z-index:1;width:100%;height:100%;object-fit:contain;padding:14px 18px}
+.car-img.has-photo img{object-fit:cover;padding:0}
 .car-body{padding:18px 20px 20px;display:flex;flex-direction:column;flex:1}
 .car-cls{font-family:var(--mono),monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
 .car-name{font-family:var(--serif),Georgia,serif;font-weight:500;font-size:21px;margin:4px 0 14px;line-height:1.15}
@@ -232,6 +233,13 @@ footer{border-top:1px solid var(--line);padding:40px 0 32px;color:var(--text3);f
 .cm-in{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .cm-left{padding:30px 28px}
 .cm-left .car-img{aspect-ratio:16/11;border-radius:14px;border:1px solid var(--line)}
+.cm-gal{display:flex;flex-direction:column;gap:10px}
+.cm-gal-main{position:relative;aspect-ratio:16/10;border-radius:14px;border:1px solid var(--line);overflow:hidden;background:linear-gradient(160deg,#EAF3EC,#F6F9F6)}
+.cm-gal-main img{width:100%;height:100%;object-fit:cover;display:block}
+.cm-gal-thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.cm-gal-thumbs img{width:66px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer;opacity:.6;transition:.18s}
+.cm-gal-thumbs img:hover{opacity:1}
+.cm-gal-thumbs img.active{opacity:1;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft)}
 .cm-cls{font-family:var(--mono),monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
 .cm-name{font-family:var(--serif),Georgia,serif;font-weight:500;font-size:30px;margin:6px 0 18px}
 .cm-right{padding:30px 28px;border-left:1px solid var(--line)}
@@ -894,10 +902,28 @@ document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
     driver:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0114 0"/></svg>'
   };
 
+  /* ===== Фото машин (по slug). Порядок: экстерьеры, салон, коллаж. Первый = главное фото карточки ===== */
+  var PHOTOS={
+    'gmc-yukon':['gmc-yukon-1.jpg','gmc-yukon-2.jpg','gmc-yukon-3.jpg','gmc-yukon-int-1.jpg','gmc-yukon-collage-1.jpg']
+  };
+  function carPhotos(slug){return PHOTOS[slug]||[];}
+  function mainPhoto(slug){var p=carPhotos(slug);return p.length?p[0]:null;}
+  function galleryHTML(c){
+    var ph=carPhotos(c.slug);
+    if(!ph.length){return '<div class="car-img">'+silh(c.slug)+'</div>';}
+    var thumbs=ph.map(function(f,idx){
+      return '<img src="img/cars/'+f+'" alt="'+c.name+'" class="'+(idx===0?'active':'')+'" onclick="MRF.gal(this,\''+f+'\')">';
+    }).join('');
+    return '<div class="cm-gal">'
+      +'<div class="cm-gal-main"><img id="cmGalMain" src="img/cars/'+ph[0]+'" alt="'+c.name+'"></div>'
+      +'<div class="cm-gal-thumbs">'+thumbs+'</div>'
+    +'</div>';
+  }
+
   function cardHTML(c,i){
     var t=L();
     return '<div class="car-card">'
-      +'<div class="car-img">'+silh(c.slug)+'<img src="img/cars/'+c.slug+'.png" alt="'+c.name+'" loading="lazy" onload="this.parentNode.classList.add(\'has-photo\')" onerror="this.style.display=\'none\'"></div>'
+      +'<div class="car-img">'+silh(c.slug)+(mainPhoto(c.slug)?'<img src="img/cars/'+mainPhoto(c.slug)+'" alt="'+c.name+'" loading="lazy" onload="this.parentNode.classList.add(\'has-photo\')">':'')+'</div>'
       +'<div class="car-body">'
         +'<div class="car-cls">'+cl(c.cls)+'</div>'
         +'<h3 class="car-name">'+c.name+'</h3>'
@@ -927,7 +953,7 @@ document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
       '<div class="cm-left">'
         +'<div class="cm-cls">'+cl(c.cls)+'</div>'
         +'<div class="cm-name">'+c.name+'</div>'
-        +'<div class="car-img">'+silh(c.slug)+'<img src="img/cars/'+c.slug+'.png" alt="'+c.name+'" onload="this.parentNode.classList.add(\'has-photo\')" onerror="this.style.display=\'none\'"></div>'
+        +galleryHTML(c)
       +'</div>'
       +'<div class="cm-right">'
         +specRow(SVG.seats,t.sSeats,c.seats)
@@ -960,7 +986,13 @@ document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
     window.open('https://wa.me/'+WA+'?text='+msg,'_blank');
   }
 
-  window.MRF={open:openCar,close:closeCar,book:book,_cur:0};
+  window.MRF={open:openCar,close:closeCar,book:book,_cur:0,
+    gal:function(el,f){
+      var m=document.getElementById('cmGalMain'); if(m)m.src='img/cars/'+f;
+      var th=el.parentNode.querySelectorAll('img');
+      for(var k=0;k<th.length;k++)th[k].classList.remove('active');
+      el.classList.add('active');
+    }};
   document.addEventListener('keydown',function(e){if(e.key==='Escape')closeCar();});
 
   /* первый рендер + перерисовка при смене языка (без правки setLang) */
