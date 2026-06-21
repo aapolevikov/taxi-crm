@@ -879,12 +879,7 @@ document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
     {slug:"bmw-7",                 cls:["Luxury","Люкс"],            name:"BMW 7 Series",                  seats:3,  luggage:3, price:100, pkg:[[3,300],[6,550],[12,1000]]},
     {slug:"cadillac-escalade",     cls:["Premium SUV","Премиум SUV"],name:"Cadillac Escalade",             seats:7,  luggage:6, price:100, pkg:[[3,300],[6,550],[12,1000]]},
     {slug:"gmc-yukon",             cls:["Premium SUV","Премиум SUV"],name:"GMC Yukon XL",                  seats:7,  luggage:6, price:100, pkg:[[3,300],[6,550],[12,1000]]},
-    {slug:"lexus-es",              cls:["Business","Бизнес"],        name:"Lexus ES 350",                  seats:4,  luggage:3, price:100, pkg:[[3,300],[6,550],[12,1000]]},
-    {slug:"toyota-highlander",     cls:["Business SUV","Бизнес SUV"],name:"Toyota Highlander",             seats:6,  luggage:5, price:100, pkg:[[3,300],[6,550],[12,1000]]},
-    {slug:"tesla-y",               cls:["Electric","Электро"],       name:"Tesla Model Y",                 seats:4,  luggage:3, price:100, pkg:[[3,300],[6,550],[12,1000]]},
-    {slug:"citroen-spacetourer",   cls:["Group & van","Минивэн"],    name:"Citroen SpaceTourer",           seats:7,  luggage:6, price:100, pkg:[[3,300],[6,550],[12,1000]]},
-    {slug:"mercedes-sprinter-16",  cls:["Minibus","Микроавтобус"],   name:"Mercedes-Benz Sprinter 16",     seats:16, luggage:8, price:100, pkg:[[3,300],[6,550],[12,1000]]},
-    {slug:"mercedes-sprinter-19",  cls:["Minibus","Микроавтобус"],   name:"Mercedes-Benz Sprinter 19",     seats:19, luggage:6, price:100, pkg:[[3,300],[6,550],[12,1000]]}
+    {slug:"citroen-spacetourer",   cls:["Group & van","Минивэн"],    name:"Citroen SpaceTourer",           seats:7,  luggage:6, price:100, pkg:[[3,300],[6,550],[12,1000]]}
   ];
 
   var T={
@@ -910,6 +905,12 @@ document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
 
   /* ===== Фото машин (по slug). Порядок: экстерьеры, салон, коллаж. Первый = главное фото карточки ===== */
   var PHOTOS={
+    'mercedes-s-class':['mercedes-s-class-1.jpg','mercedes-s-class-2.jpg','mercedes-s-class-3.jpg','mercedes-s-class-int-1.jpg','mercedes-s-class-int-2.jpg','mercedes-s-class-collage-1.jpg'],
+    'mercedes-eqs':['mercedes-eqs-1.jpg','mercedes-eqs-2.jpg','mercedes-eqs-3.jpg','mercedes-eqs-int-1.jpg','mercedes-eqs-collage-1.jpg'],
+    'mercedes-eqe':['mercedes-eqe-1.jpg','mercedes-eqe-2.jpg','mercedes-eqe-int-1.jpg','mercedes-eqe-collage-1.jpg'],
+    'mercedes-vito':['mercedes-vito-1.jpg','mercedes-vito-2.jpg','mercedes-vito-3.jpg','mercedes-vito-int-1.jpg'],
+    'mercedes-vito-maybach':['mercedes-vito-maybach-1.jpg','mercedes-vito-maybach-2.jpg','mercedes-vito-maybach-collage-1.jpg'],
+    'citroen-spacetourer':['citroen-spacetourer-1.jpg','citroen-spacetourer-2.jpg','citroen-spacetourer-collage-1.jpg'],
     'gmc-yukon':['gmc-yukon-1.jpg','gmc-yukon-2.jpg','gmc-yukon-3.jpg','gmc-yukon-int-1.jpg','gmc-yukon-collage-1.jpg'],
     'bmw-7':['bmw-7-1.jpg','bmw-7-int-1.jpg','bmw-7-collage-1.jpg'],
     'mercedes-maybach':['mercedes-maybach-1.jpg','mercedes-maybach-2.jpg','mercedes-maybach-int-1.jpg','mercedes-maybach-collage-1.jpg'],
