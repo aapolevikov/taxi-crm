@@ -2924,7 +2924,14 @@ body.no-icons .ti-external-link::before{content:"↗"}
           <div class="field-row" style="margin:0"><label data-i18n="gpsTo">To</label>
             <input type="date" id="gpsHistTo">
           </div>
+          <div class="field-row" style="margin:0"><label data-i18n="gpsFromTime">Time from</label>
+            <input type="time" id="gpsHistFromTime" style="min-width:104px">
+          </div>
+          <div class="field-row" style="margin:0"><label data-i18n="gpsToTime">Time to</label>
+            <input type="time" id="gpsHistToTime" style="min-width:104px">
+          </div>
           <button class="fin-btn" onclick="gpsLoadHistory()"><i class="ti ti-search"></i> <span data-i18n="gpsShowRoute">Show route</span></button>
+          <button class="fin-btn" onclick="gpsClearTime()" title="Сбросить время — весь день" style="padding:8px 10px"><i class="ti ti-clock-off"></i></button>
           <div style="flex:1"></div>
           <div id="gpsHistStats" style="font-size:12px;color:var(--text2)"></div>
         </div>
@@ -4224,7 +4231,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-23.27';
+window.APP_VERSION = '2026-06-23.28';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -9403,11 +9410,25 @@ function _gpsBuildSegments(pts){
   return {segs:segs, stops:stops};
 }
 
+// Дубайское настенное время (UTC+4) → epoch ms в UTC
+function _gpsDubaiToUtcMs(dateStr, timeStr){
+  var d=String(dateStr||'').split('-'), t=String(timeStr||'').split(':');
+  if(d.length<3||t.length<2) return NaN;
+  return Date.UTC(+d[0], +d[1]-1, +d[2], +t[0], +t[1]) - 4*3600000;
+}
+function gpsClearTime(){
+  var a=document.getElementById('gpsHistFromTime'), b=document.getElementById('gpsHistToTime');
+  if(a) a.value=''; if(b) b.value='';
+  gpsLoadHistory();
+}
+
 async function gpsLoadHistory(){
   gpsEnsureHistMap();
   var vehicle=document.getElementById('gpsHistVehicle').value;
   var from=document.getElementById('gpsHistFrom').value;
   var to=document.getElementById('gpsHistTo').value;
+  var ft=document.getElementById('gpsHistFromTime'), tt=document.getElementById('gpsHistToTime');
+  var fromTime=ft?ft.value:'', toTime=tt?tt.value:'';
   var rep=document.getElementById('gpsHistReport');
   if(!vehicle||!from||!to){ showToast('Выберите машину и даты'); return; }
   document.getElementById('gpsHistStats').textContent='Загрузка…';
@@ -9425,16 +9446,28 @@ async function gpsLoadHistory(){
       if(isFinite(la)&&isFinite(lo)&&isFinite(t)) pts.push({lat:la,lng:lo,t:t,odo:_gpsPOdo(p)});
     });
     pts.sort(function(a,b){return a.t-b.t;});
+    // ── фильтр по времени (вводится в дубайском времени) ──
+    var winLabel='';
+    if(fromTime||toTime){
+      var startMs=_gpsDubaiToUtcMs(from, fromTime||'00:00');
+      var endMs  =_gpsDubaiToUtcMs(to,   toTime||'23:59');
+      if(isFinite(startMs)&&isFinite(endMs)&&endMs>startMs){
+        pts=pts.filter(function(p){ return p.t>=startMs && p.t<=endMs; });
+        winLabel=(fromTime||'00:00')+'–'+(toTime||'23:59');
+      }
+    }
     if(pts.length<2){
-      document.getElementById('gpsHistStats').textContent='Нет данных за период (сбор только начался).';
+      document.getElementById('gpsHistStats').textContent= winLabel
+        ? ('В интервале '+winLabel+' точек нет (или их мало).')
+        : 'Нет данных за период (сбор только начался).';
       return;
     }
     var built=_gpsBuildSegments(pts);
-    _gpsRenderHistory(pts, built, vehicle);
+    _gpsRenderHistory(pts, built, vehicle, winLabel);
   }catch(e){ showToast('Не удалось загрузить историю'); document.getElementById('gpsHistStats').textContent=''; }
 }
 
-function _gpsRenderHistory(pts, built, vehicle){
+function _gpsRenderHistory(pts, built, vehicle, winLabel){
   var segs=built.segs, stops=built.stops;
   var grp=L.layerGroup();
   var allLL=pts.map(function(p){return [p.lat,p.lng];});
@@ -9482,7 +9515,7 @@ function _gpsRenderHistory(pts, built, vehicle){
     '</div>';
   };
   var html='';
-  html+='<div style="font-size:14px;font-weight:700;margin-bottom:8px">Отчёт за день · '+escHtml(vehicle)+(drv?' — '+escHtml(drv):'')+'</div>';
+  html+='<div style="font-size:14px;font-weight:700;margin-bottom:8px">Отчёт за день · '+escHtml(vehicle)+(drv?' — '+escHtml(drv):'')+(winLabel?' · интервал '+winLabel:'')+'</div>';
   html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">';
   html+=card('Смена', _gpsFmtTime(firstT)+'–'+_gpsFmtTime(lastT), _gpsFmtDur(spanMs)+' всего', null);
   html+=card('В движении', _gpsFmtDur(moveMs), movePct+'% времени', '#0d9e75');
@@ -16478,7 +16511,7 @@ document.head.appendChild(spinStyle);
 const LANGS={
 en:{flag:'🇬🇧',code:'EN',dir:'ltr',
   dashboard:'Dashboard',cars:'Cars',drivers:'Drivers',online:'Online',
-  reports:'Drivers report',carsReport:'Cars report',bestCar:'Best car',gpsTracking:'GPS tracking',gpsLive:'Live map',gpsHistory:'Route history',gpsVehicles:'Vehicles',gpsRefresh:'Refresh',gpsPickVehicle:'Vehicle',gpsFrom:'From',gpsTo:'To',gpsShowRoute:'Show route',illegal:'Illegal trips',orders:'Orders',
+  reports:'Drivers report',carsReport:'Cars report',bestCar:'Best car',gpsTracking:'GPS tracking',gpsLive:'Live map',gpsHistory:'Route history',gpsVehicles:'Vehicles',gpsRefresh:'Refresh',gpsPickVehicle:'Vehicle',gpsFrom:'From',gpsTo:'To',gpsFromTime:'Time from',gpsToTime:'Time to',gpsShowRoute:'Show route',illegal:'Illegal trips',orders:'Orders',
   repairs:'Repair Orders',board:'Board',settings:'Settings',more:'More',
   add:'Add',save:'Save',cancel:'Cancel',edit:'Edit',delete:'Delete',deleteDriverQ:'Delete this driver?',deleteCarQ:'Delete this car?',
   export:'XLSX',back:'Back',search:'Search...',searchCar:'Search car...',searchDriver:'Driver name...',
@@ -16762,7 +16795,7 @@ en:{flag:'🇬🇧',code:'EN',dir:'ltr',
   onlineDuration:'Online duration',
 ar:{flag:'🇦🇪',code:'عر',dir:'rtl',
   dashboard:'لوحة التحكم',cars:'السيارات',drivers:'السائقون',online:'متصل',
-  reports:'تقارير',carsReport:'تقرير السيارات',bestCar:'أفضل سيارة',gpsTracking:'تتبع GPS',gpsLive:'خريطة مباشرة',gpsHistory:'سجل المسار',gpsVehicles:'المركبات',gpsRefresh:'تحديث',gpsPickVehicle:'المركبة',gpsFrom:'من',gpsTo:'إلى',gpsShowRoute:'عرض المسار',illegal:'مخالفات',orders:'الطلبات',
+  reports:'تقارير',carsReport:'تقرير السيارات',bestCar:'أفضل سيارة',gpsTracking:'تتبع GPS',gpsLive:'خريطة مباشرة',gpsHistory:'سجل المسار',gpsVehicles:'المركبات',gpsRefresh:'تحديث',gpsPickVehicle:'المركبة',gpsFrom:'من',gpsTo:'إلى',gpsFromTime:'الوقت من',gpsToTime:'الوقت إلى',gpsShowRoute:'عرض المسار',illegal:'مخالفات',orders:'الطلبات',
   repairs:'الصيانة',board:'المهام',settings:'الإعدادات',more:'المزيد',
   add:'إضافة',save:'حفظ',cancel:'إلغاء',edit:'تعديل',delete:'حذف',
   export:'تصدير',back:'رجوع',search:'بحث...',searchCar:'بحث عن سيارة...',searchDriver:'اسم السائق...',
@@ -16867,7 +16900,7 @@ ar:{flag:'🇦🇪',code:'عر',dir:'rtl',
   twoDrivers:'سائقان',
 },ru:{flag:'🇷🇺',code:'RU',dir:'ltr',
   dashboard:'Дашборд',cars:'Автомобили',drivers:'Водители',online:'Онлайн',
-  reports:'Отчёт водителей',carsReport:'Отчёт по автомобилям',bestCar:'Лучшая машина',gpsTracking:'GPS-трекинг',gpsLive:'Карта онлайн',gpsHistory:'История маршрутов',gpsVehicles:'Машины',gpsRefresh:'Обновить',gpsPickVehicle:'Машина',gpsFrom:'С',gpsTo:'По',gpsShowRoute:'Показать маршрут',illegal:'Нарушения',orders:'Заказы',
+  reports:'Отчёт водителей',carsReport:'Отчёт по автомобилям',bestCar:'Лучшая машина',gpsTracking:'GPS-трекинг',gpsLive:'Карта онлайн',gpsHistory:'История маршрутов',gpsVehicles:'Машины',gpsRefresh:'Обновить',gpsPickVehicle:'Машина',gpsFrom:'С',gpsTo:'По',gpsFromTime:'Время с',gpsToTime:'Время по',gpsShowRoute:'Показать маршрут',illegal:'Нарушения',orders:'Заказы',
   repairs:'Ремонт',board:'Доска задач',settings:'Настройки',more:'Ещё',
   add:'Добавить',save:'Сохранить',cancel:'Отмена',edit:'Изменить',delete:'Удалить',deleteDriverQ:'Удалить этого водителя?',deleteCarQ:'Удалить эту машину?',
   export:'XLSX',back:'Назад',search:'Поиск...',searchCar:'Поиск авто...',searchDriver:'Имя водителя...',
