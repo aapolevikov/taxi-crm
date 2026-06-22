@@ -53,6 +53,19 @@ html[lang="en"] .langtog [data-l="en"],html[lang="ru"] .langtog [data-l="ru"]{ba
 .hero h1 em{font-style:italic;color:var(--gold)}
 .hero p.lead{font-size:18.5px;color:var(--text2);max-width:620px;margin-bottom:28px}
 .hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.hero{min-height:78vh;background:linear-gradient(180deg,#0e2a1f,#15211B)}
+.hero-bgvid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;transform:translateZ(0);backface-visibility:hidden;will-change:transform}
+.hero-veil{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(8,14,11,.5) 0%,rgba(8,14,11,.22) 40%,rgba(8,14,11,.66) 100%)}
+.hero::before{z-index:1}
+.hero-in{z-index:2}
+.hero .eyebrow{color:#ffe9b0}
+.hero .eyebrow::before{background:#ffe9b0}
+.hero h1{color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.45)}
+.hero h1 em{color:#7fe3b0}
+.hero p.lead{color:rgba(255,255,255,.92);text-shadow:0 2px 18px rgba(0,0,0,.4)}
+.hero .note{color:rgba(255,255,255,.72)}
+.hero .btn-ghost{border-color:rgba(255,255,255,.55);color:#fff}
+.hero .btn-ghost:hover{border-color:#fff;background:rgba(255,255,255,.12)}
 .note{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--text3);margin-top:16px}
 .sec{padding:74px 0}
 .sec-head{max-width:720px;margin-bottom:40px}
@@ -453,6 +466,10 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 </nav>
 
 <header class="hero">
+  <video class="hero-bgvid" autoplay muted loop playsinline preload="auto" poster="/video/investors-poster.jpg">
+    <source src="/video/investors.mp4" type="video/mp4">
+  </video>
+  <div class="hero-veil"></div>
   <div class="wrap hero-in">
     <span class="eyebrow" data-i18n="h_eyebrow">Investor relations · Mister Ride Group</span>
     <h1 data-i18n="h_title">Invest in Dubai mobility, <em>backed by real assets</em>.</h1>
@@ -1062,7 +1079,7 @@ document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
 </script><script>
 /* пауза hero-видео при открытии модалок + без лагов */
 (function(){
-  var v=document.querySelector('.hero-vid');
+  var v=document.querySelector('.hero-bgvid');
   function pause(){if(v){try{v.pause();}catch(e){}}}
   function play(){if(v){try{v.play().catch(function(){});}catch(e){}}}
   ['MRLogin','MRDemo','MRF'].forEach(function(k){
