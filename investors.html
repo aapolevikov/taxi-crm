@@ -93,7 +93,11 @@ html[lang="en"] .langtog [data-l="en"],html[lang="ru"] .langtog [data-l="ru"]{ba
 .prog li b{color:var(--text)}
 .prog li::before{content:"";flex:0 0 7px;height:7px;margin-top:8px;background:var(--gold);border-radius:2px;transform:rotate(45deg)}
 .cars{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.car{border:1px solid var(--line);border-radius:14px;background:var(--ink2);padding:26px;box-shadow:0 1px 3px rgba(21,33,27,.05)}
+.car{border:1px solid var(--line);border-radius:14px;background:var(--ink2);padding:26px;box-shadow:0 1px 3px rgba(21,33,27,.05);overflow:hidden}
+.car-photo{margin:-26px -26px 18px -26px;height:150px;overflow:hidden;background:var(--ink)}
+.car-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.car-photo.ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#EAF5EF;color:#9DBFAE}
+.car-photo.ph span{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase}
 .car .seg{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
 .car h3{font-size:19px;margin:10px 0 16px}
 .car .row{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
@@ -482,38 +486,6 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   </div>
 </header>
 
-<section class="sec">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow" data-i18n="tr_eye">Track record</span>
-      <h2 data-i18n="tr_title">A team that has already built this — at scale.</h2>
-      <p data-i18n="tr_sub">Mister Ride Group brings a decade of fleet operations into Dubai, with its own technology running the business end to end.</p>
-    </div>
-    <div class="proof reveal">
-      <div><div class="num">10+</div><div class="cap" data-i18n="tr1">Years in the industry</div></div>
-      <div><div class="num">1,200+</div><div class="cap" data-i18n="tr2">Vehicles · 12 cities</div></div>
-      <div><div class="num">100+</div><div class="cap" data-i18n="tr3">Vehicles in Dubai</div></div>
-      <div><div class="num">1,500+</div><div class="cap" data-i18n="tr4">Cars on our own CRM</div></div>
-    </div>
-  </div>
-</section>
-
-<section class="sec band">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow" data-i18n="mk_eye">Why mobility</span>
-      <h2 data-i18n="mk_title">Higher target yield than Dubai property.</h2>
-      <p data-i18n="mk_sub">Real estate is the default Dubai investment. A well-run premium fleet targets materially higher cash yield per vehicle — while staying backed by tangible, insured assets.</p>
-    </div>
-    <div class="cmp reveal">
-      <div class="cmp-row"><div class="cmp-top"><span data-i18n="mk_r1">Dubai residential real estate</span><b>~7–10% / yr</b></div><div class="bar dim"><span style="width:18%"></span></div></div>
-      <div class="cmp-row"><div class="cmp-top"><span data-i18n="mk_r2">Per-vehicle cash yield (our model)</span><b>~20% / yr</b></div><div class="bar gold"><span style="width:40%"></span></div></div>
-      <div class="cmp-row"><div class="cmp-top"><span data-i18n="mk_r3">Partnership model, with scaling &amp; reinvestment</span><b data-i18n="mk_r3v">target 30–50% / yr</b></div><div class="bar gold"><span style="width:95%"></span></div></div>
-    </div>
-    <div class="note reveal" data-i18n="mk_note">Indicative ranges based on management projections. Returns are not guaranteed and depend on utilisation, costs and market conditions.</div>
-  </div>
-</section>
-
 <section class="sec" id="programs">
   <div class="wrap">
     <div class="sec-head reveal">
@@ -558,34 +530,64 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
     </div>
     <div class="cars">
       <div class="car reveal">
-        <div class="seg" data-i18n="ue1_seg">Business class · hybrid</div>
-        <h3>Lexus ES / Toyota Highlander</h3>
-        <div class="row"><span class="l" data-i18n="ue_inv">Total investment</span><span class="v">257,400 AED</span></div>
-        <div class="row"><span class="l" data-i18n="ue_net">Net profit / year</span><span class="v">104,230 AED</span></div>
-        <div class="row"><span class="l" data-i18n="ue_share">Investor share / year</span><span class="v">83,384 AED</span></div>
-        <div class="row"><span class="l" data-i18n="ue_5yr">5-yr (incl. residual)</span><span class="v">~100%</span></div>
-        <div class="yield">~20% / yr</div>
+        <div class="car-photo ph"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 11h18v5H3z"/><circle cx="7" cy="16" r="1.8"/><circle cx="17" cy="16" r="1.8"/></svg><span>Фото скоро</span></div>
+        <div class="seg" data-i18n="ue1_seg">Electric · comfort</div>
+        <h3>Tesla Model Y</h3>
+        <div class="row"><span class="l" data-i18n="ue_inv">Total investment</span><span class="v">179,000 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_inc">Income / year</span><span class="v">25,060 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_res">Residual value · 5 yr</span><span class="v">~64,000 AED</span></div>
+        <div class="yield">14% / yr</div>
         <div class="yieldcap" data-i18n="ue_yc">Target annual yield</div>
       </div>
       <div class="car reveal">
-        <div class="seg" data-i18n="ue2_seg">Premium · large</div>
-        <h3>GMC Yukon / Mercedes Vito</h3>
-        <div class="row"><span class="l" data-i18n="ue_inv2">Total investment</span><span class="v">408,400 AED</span></div>
-        <div class="row"><span class="l" data-i18n="ue_net2">Net profit / year</span><span class="v">161,510 AED</span></div>
-        <div class="row"><span class="l" data-i18n="ue_share2">Investor share / year</span><span class="v">129,208 AED</span></div>
-        <div class="row"><span class="l" data-i18n="ue_5yr2">5-yr (incl. residual)</span><span class="v">~102%</span></div>
-        <div class="yield">~20.5% / yr</div>
-        <div class="yieldcap" data-i18n="ue_yc2">Target annual yield</div>
+        <div class="car-photo"><img src="/img/cars/mercedes-eqs-1.jpg" alt="Mercedes-Benz EQS" loading="lazy"></div>
+        <div class="seg" data-i18n="ue2_seg">Electric · flagship</div>
+        <h3>Mercedes-Benz EQS</h3>
+        <div class="row"><span class="l" data-i18n="ue_inv">Total investment</span><span class="v">278,000 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_inc">Income / year</span><span class="v">47,260 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_res">Residual value · 5 yr</span><span class="v">~97,000 AED</span></div>
+        <div class="yield">17% / yr</div>
+        <div class="yieldcap" data-i18n="ue_yc">Target annual yield</div>
       </div>
       <div class="car reveal">
-        <div class="seg" data-i18n="ue3_seg">Comfort · rental</div>
-        <h3>VW Taos / Mazda CX-30 / K5</h3>
-        <div class="row"><span class="l" data-i18n="ue_inv3">Total investment</span><span class="v">79,600 AED</span></div>
-        <div class="row"><span class="l" data-i18n="ue_net3">Net profit / year</span><span class="v">43,950 AED</span></div>
-        <div class="row"><span class="l" data-i18n="ue_share3">Investor share / year</span><span class="v">21,975 AED</span></div>
-        <div class="row"><span class="l" data-i18n="ue_5yr3">5-yr (incl. residual)</span><span class="v">~101%</span></div>
-        <div class="yield">~20% / yr</div>
-        <div class="yieldcap" data-i18n="ue_yc3">Target annual yield</div>
+        <div class="car-photo"><img src="/img/cars/cadillac-escalade-1.jpg" alt="Cadillac Escalade" loading="lazy"></div>
+        <div class="seg" data-i18n="ue3_seg">Premium · large SUV</div>
+        <h3>Cadillac Escalade</h3>
+        <div class="row"><span class="l" data-i18n="ue_inv">Total investment</span><span class="v">400,000 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_inc">Income / year</span><span class="v">72,000 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_res">Residual value · 5 yr</span><span class="v">~220,000 AED</span></div>
+        <div class="yield">18% / yr</div>
+        <div class="yieldcap" data-i18n="ue_yc">Target annual yield</div>
+      </div>
+      <div class="car reveal">
+        <div class="car-photo"><img src="/img/cars/bmw-7-1.jpg" alt="BMW 7 Series" loading="lazy"></div>
+        <div class="seg" data-i18n="ue4_seg">Business · flagship</div>
+        <h3>BMW 7 Series</h3>
+        <div class="row"><span class="l" data-i18n="ue_inv">Total investment</span><span class="v">360,000 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_inc">Income / year</span><span class="v">72,000 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_res">Residual value · 5 yr</span><span class="v">~162,000 AED</span></div>
+        <div class="yield">20% / yr</div>
+        <div class="yieldcap" data-i18n="ue_yc">Target annual yield</div>
+      </div>
+      <div class="car reveal">
+        <div class="car-photo"><img src="/img/cars/gmc-yukon-1.jpg" alt="GMC Yukon XL" loading="lazy"></div>
+        <div class="seg" data-i18n="ue5_seg">Premium · large SUV</div>
+        <h3>GMC Yukon XL</h3>
+        <div class="row"><span class="l" data-i18n="ue_inv">Total investment</span><span class="v">400,000 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_inc">Income / year</span><span class="v">72,000 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_res">Residual value · 5 yr</span><span class="v">~210,000 AED</span></div>
+        <div class="yield">18% / yr</div>
+        <div class="yieldcap" data-i18n="ue_yc">Target annual yield</div>
+      </div>
+      <div class="car reveal">
+        <div class="car-photo ph"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 11h18v5H3z"/><circle cx="7" cy="16" r="1.8"/><circle cx="17" cy="16" r="1.8"/></svg><span>Фото скоро</span></div>
+        <div class="seg" data-i18n="ue6_seg">Business class · hybrid</div>
+        <h3>Lexus ES</h3>
+        <div class="row"><span class="l" data-i18n="ue_inv">Total investment</span><span class="v">250,000 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_inc">Income / year</span><span class="v">40,000 AED</span></div>
+        <div class="row"><span class="l" data-i18n="ue_res">Residual value · 5 yr</span><span class="v">~120,000 AED</span></div>
+        <div class="yield">16% / yr</div>
+        <div class="yieldcap" data-i18n="ue_yc">Target annual yield</div>
       </div>
     </div>
     <div class="sec-head reveal" style="margin-top:56px">
@@ -606,6 +608,38 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
       </table>
     </div>
     <div class="note reveal" data-i18n="pk_note">Figures are management estimates and rounded. Exact investment amounts, contracts and projections are provided in the full deck on request.</div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow" data-i18n="tr_eye">Track record</span>
+      <h2 data-i18n="tr_title">A team that has already built this — at scale.</h2>
+      <p data-i18n="tr_sub">Mister Ride Group brings a decade of fleet operations into Dubai, with its own technology running the business end to end.</p>
+    </div>
+    <div class="proof reveal">
+      <div><div class="num">10+</div><div class="cap" data-i18n="tr1">Years in the industry</div></div>
+      <div><div class="num">1,200+</div><div class="cap" data-i18n="tr2">Vehicles · 12 cities</div></div>
+      <div><div class="num">100+</div><div class="cap" data-i18n="tr3">Vehicles in Dubai</div></div>
+      <div><div class="num">1,500+</div><div class="cap" data-i18n="tr4">Cars on our own CRM</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec band">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow" data-i18n="mk_eye">Why mobility</span>
+      <h2 data-i18n="mk_title">Higher target yield than Dubai property.</h2>
+      <p data-i18n="mk_sub">Real estate is the default Dubai investment. A well-run premium fleet targets materially higher cash yield per vehicle — while staying backed by tangible, insured assets.</p>
+    </div>
+    <div class="cmp reveal">
+      <div class="cmp-row"><div class="cmp-top"><span data-i18n="mk_r1">Dubai residential real estate</span><b>~7–10% / yr</b></div><div class="bar dim"><span style="width:18%"></span></div></div>
+      <div class="cmp-row"><div class="cmp-top"><span data-i18n="mk_r2">Per-vehicle cash yield (our model)</span><b>~20% / yr</b></div><div class="bar gold"><span style="width:40%"></span></div></div>
+      <div class="cmp-row"><div class="cmp-top"><span data-i18n="mk_r3">Partnership model, with scaling &amp; reinvestment</span><b data-i18n="mk_r3v">target 30–50% / yr</b></div><div class="bar gold"><span style="width:95%"></span></div></div>
+    </div>
+    <div class="note reveal" data-i18n="mk_note">Indicative ranges based on management projections. Returns are not guaranteed and depend on utilisation, costs and market conditions.</div>
   </div>
 </section>
 
@@ -833,10 +867,8 @@ var I18N_RU={
  p2_4:"<span><b>Прозрачный P&L</b> — доход и расходы по каждой машине в CRM.</span>",
  p2_5:"<span><b>Первые выплаты</b> ~через 30 дней после выхода машины на линию.</span>",
  ue_eye:"Экономика на машину",ue_title:"Пример юнит-экономики.",ue_sub:"Ориентировочные цифры на машину в год после расходов — чтобы показать, как работает модель. Реальные результаты зависят от машины, загрузки и набора площадок.",
- ue1_seg:"Бизнес-класс · гибрид",ue2_seg:"Премиум · большие",ue3_seg:"Комфорт · аренда",
- ue_inv:"Всего инвестиций",ue_net:"Чистая прибыль / год",ue_share:"Доля инвестора / год",ue_5yr:"5 лет (с остаточной)",ue_yc:"Целевая годовая доходность",
- ue_inv2:"Всего инвестиций",ue_net2:"Чистая прибыль / год",ue_share2:"Доля инвестора / год",ue_5yr2:"5 лет (с остаточной)",ue_yc2:"Целевая годовая доходность",
- ue_inv3:"Всего инвестиций",ue_net3:"Чистая прибыль / год",ue_share3:"Доля инвестора / год",ue_5yr3:"5 лет (с остаточной)",ue_yc3:"Целевая годовая доходность",
+ ue1_seg:"Электро · комфорт",ue2_seg:"Электро · флагман",ue3_seg:"Премиум · большой SUV",ue4_seg:"Бизнес · флагман",ue5_seg:"Премиум · большой SUV",ue6_seg:"Бизнес-класс · гибрид",
+ ue_inv:"Всего инвестиций",ue_inc:"Доход в год",ue_res:"Остаточная стоимость · 5 лет",ue_yc:"Целевая годовая доходность",
  pk_eye:"Партнёрские пакеты",pk_title:"Масштаб меняет доходность.",pk_sub:"Большие парки несут меньше расходов на единицу и быстрее реинвестируют — это поднимает целевую доходность и сокращает окупаемость.",
  pk_c1:"Пакет",pk_c2:"Целевая годовая доходность",pk_c3:"Ориент. окупаемость",pk_c4:"Инвестиции",
  pk_30:"30 авто",pk_60:"60 авто",pk_90:"90 авто",pk_120:"120 авто",pk_240:"240 авто",
