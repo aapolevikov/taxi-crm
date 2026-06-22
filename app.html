@@ -2929,6 +2929,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
           <div id="gpsHistStats" style="font-size:12px;color:var(--text2)"></div>
         </div>
         <div id="gpsHistMap" style="height:520px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg2)"></div>
+        <div id="gpsHistReport" style="margin-top:14px"></div>
       </div>
     </div><!-- /gps -->
 
@@ -4223,7 +4224,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-07.26';
+window.APP_VERSION = '2026-06-23.27';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -9330,38 +9331,204 @@ function gpsFillVehicleDropdown(){
   if(cur) sel.value=cur;
 }
 
+/* ─────────── GPS HISTORY: дневной отчёт с разбивкой стоянок ───────────
+   Трек бьётся на отрезки «поехал → встал». Стоянки детектируются
+   кластеризацией точек по радиусу + длительности (устойчиво даже если
+   на парковке точки пишутся редко — длительность считается по времени). */
+var GPS_STOP_RADIUS_M = 75;        // в пределах этого радиуса считаем «стоит на месте»
+var GPS_STOP_MIN_MS   = 5*60000;   // минимум 5 мин — иначе это светофор/пробка, не стоянка
+var GPS_LONG_MS       = 30*60000;  // «долгая» стоянка (оранжевый)
+var GPS_VLONG_MS      = 60*60000;  // «очень долгая» стоянка (красный)
+
+function _gpsHaversine(la1,lo1,la2,lo2){
+  var Rm=6371000, toR=Math.PI/180;
+  var dLa=(la2-la1)*toR, dLo=(lo2-lo1)*toR;
+  var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*toR)*Math.cos(la2*toR)*Math.sin(dLo/2)*Math.sin(dLo/2);
+  return 2*Rm*Math.asin(Math.min(1,Math.sqrt(a)));
+}
+function _gpsPTime(p){
+  var v=(p.t!=null)?p.t:((p.time!=null)?p.time:((p.ts!=null)?p.ts:p.timestamp));
+  if(v==null) return NaN;
+  if(typeof v==='number') return v<1e12? v*1000 : v; // сек или мс
+  return new Date(v).getTime();
+}
+function _gpsPOdo(p){
+  var v=(p.odo!=null)?p.odo:p.odometer; v=Number(v);
+  return isFinite(v)?v:NaN;
+}
+function _gpsFmtDur(ms){
+  var m=Math.round(ms/60000), h=Math.floor(m/60); m=m%60;
+  if(h>0) return h+'ч '+(m<10?'0':'')+m+'м';
+  return m+'м';
+}
+function _gpsFmtTime(ms){
+  var d=new Date(ms);
+  return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+}
+function _gpsStopColor(ms){
+  if(ms>=GPS_VLONG_MS) return '#e03131';
+  if(ms>=GPS_LONG_MS)  return '#f59f00';
+  return '#2f9e44';
+}
+function _gpsMoveSeg(pts,a,b){
+  var dist=0,k;
+  for(k=a;k<b;k++){ dist+=_gpsHaversine(pts[k].lat,pts[k].lng,pts[k+1].lat,pts[k+1].lng); }
+  var oa=pts[a].odo, ob=pts[b].odo, od=null;
+  if(isFinite(oa)&&isFinite(ob)&&ob>=oa&&(ob-oa)<2000) od=ob-oa; // санити-предел
+  var distKm=(od!=null&&od>0)? od : dist/1000;
+  var durMs=pts[b].t-pts[a].t, hrs=durMs/3600000;
+  return {type:'move', start:pts[a].t, end:pts[b].t, dur:durMs, distKm:distKm, avg:(hrs>0?distKm/hrs:0), fromIdx:a, toIdx:b};
+}
+function _gpsBuildSegments(pts){
+  var n=pts.length, i=0, stops=[], k;
+  while(i<n){
+    var j=i;
+    while(j+1<n && _gpsHaversine(pts[i].lat,pts[i].lng,pts[j+1].lat,pts[j+1].lng)<=GPS_STOP_RADIUS_M) j++;
+    var dur=pts[j].t-pts[i].t;
+    if(j>i && dur>=GPS_STOP_MIN_MS){
+      var sla=0,slo=0;
+      for(k=i;k<=j;k++){ sla+=pts[k].lat; slo+=pts[k].lng; }
+      stops.push({start:pts[i].t,end:pts[j].t,dur:dur,lat:sla/(j-i+1),lng:slo/(j-i+1),fromIdx:i,toIdx:j});
+      i=j+1;
+    } else { i++; }
+  }
+  var segs=[], cur=0, s;
+  for(s=0;s<stops.length;s++){
+    var st=stops[s];
+    if(st.fromIdx>cur) segs.push(_gpsMoveSeg(pts,cur,st.fromIdx));
+    segs.push({type:'stop', n:s+1, start:st.start, end:st.end, dur:st.dur, lat:st.lat, lng:st.lng, fromIdx:st.fromIdx, toIdx:st.toIdx});
+    cur=st.toIdx;
+  }
+  if(cur<n-1) segs.push(_gpsMoveSeg(pts,cur,n-1));
+  return {segs:segs, stops:stops};
+}
+
 async function gpsLoadHistory(){
   gpsEnsureHistMap();
   var vehicle=document.getElementById('gpsHistVehicle').value;
   var from=document.getElementById('gpsHistFrom').value;
   var to=document.getElementById('gpsHistTo').value;
-  if(!vehicle||!from||!to){ showToast('Pick vehicle and dates'); return; }
-  document.getElementById('gpsHistStats').textContent='Loading…';
+  var rep=document.getElementById('gpsHistReport');
+  if(!vehicle||!from||!to){ showToast('Выберите машину и даты'); return; }
+  document.getElementById('gpsHistStats').textContent='Загрузка…';
+  if(rep) rep.innerHTML='';
   try{
     var res=await fetch(CABMAN_FN+'?action=history&vehicle='+encodeURIComponent(vehicle)+'&from='+from+'&to='+to);
     var data=await res.json();
-    if(!data.ok){ showToast('History error'); document.getElementById('gpsHistStats').textContent=''; return; }
-    var pts=data.points||[];
+    if(!data.ok){ showToast('Ошибка истории'); document.getElementById('gpsHistStats').textContent=''; return; }
+    var raw=data.points||[];
     if(_gpsHistLayer){ _gpsHistMap.removeLayer(_gpsHistLayer); _gpsHistLayer=null; }
-    if(!pts.length){
-      document.getElementById('gpsHistStats').textContent='No history for this period yet (collection just started).';
+    // нормализуем и сортируем точки (имена полей могут отличаться)
+    var pts=[];
+    raw.forEach(function(p){
+      var la=Number(p.lat), lo=Number(p.lng), t=_gpsPTime(p);
+      if(isFinite(la)&&isFinite(lo)&&isFinite(t)) pts.push({lat:la,lng:lo,t:t,odo:_gpsPOdo(p)});
+    });
+    pts.sort(function(a,b){return a.t-b.t;});
+    if(pts.length<2){
+      document.getElementById('gpsHistStats').textContent='Нет данных за период (сбор только начался).';
       return;
     }
-    var latlngs=pts.filter(function(p){return isFinite(p.lat)&&isFinite(p.lng);}).map(function(p){return [p.lat,p.lng];});
-    var grp=L.layerGroup();
-    L.polyline(latlngs,{color:'#0d9e75',weight:3,opacity:.8}).addTo(grp);
-    // start & end markers
-    if(latlngs.length){
-      L.circleMarker(latlngs[0],{radius:6,color:'#2ecc71',fillColor:'#2ecc71',fillOpacity:1}).bindPopup('Start: '+(pts[0].t||'').slice(0,19)).addTo(grp);
-      L.circleMarker(latlngs[latlngs.length-1],{radius:6,color:'#e74c3c',fillColor:'#e74c3c',fillOpacity:1}).bindPopup('End: '+(pts[pts.length-1].t||'').slice(0,19)).addTo(grp);
+    var built=_gpsBuildSegments(pts);
+    _gpsRenderHistory(pts, built, vehicle);
+  }catch(e){ showToast('Не удалось загрузить историю'); document.getElementById('gpsHistStats').textContent=''; }
+}
+
+function _gpsRenderHistory(pts, built, vehicle){
+  var segs=built.segs, stops=built.stops;
+  var grp=L.layerGroup();
+  var allLL=pts.map(function(p){return [p.lat,p.lng];});
+  // базовый трек (весь путь, бледный)
+  L.polyline(allLL,{color:'#5b6470',weight:2,opacity:.35}).addTo(grp);
+  // отрезки движения — зелёным
+  segs.forEach(function(sg){
+    if(sg.type==='move'){
+      var ll=[],k; for(k=sg.fromIdx;k<=sg.toIdx;k++) ll.push([pts[k].lat,pts[k].lng]);
+      if(ll.length>1) L.polyline(ll,{color:'#0d9e75',weight:4,opacity:.9}).addTo(grp);
     }
-    grp.addTo(_gpsHistMap);
-    _gpsHistLayer=grp;
-    try{ _gpsHistMap.fitBounds(latlngs,{padding:[40,40]}); }catch(_){}
-    // distance estimate via odometer if present
-    var odoStart=pts[0].odo, odoEnd=pts[pts.length-1].odo, dist=(isFinite(odoStart)&&isFinite(odoEnd)&&odoEnd>=odoStart)?(odoEnd-odoStart):null;
-    document.getElementById('gpsHistStats').textContent=pts.length+' points'+(dist!=null?(' · ~'+dist.toFixed(1)+' km'):'');
-  }catch(e){ showToast('History fetch failed'); document.getElementById('gpsHistStats').textContent=''; }
+  });
+  // маркеры стоянок (нумерованные, цвет по длительности)
+  stops.forEach(function(st,idx){
+    var col=_gpsStopColor(st.dur);
+    var icon=L.divIcon({className:'gps-stop',html:'<div style="background:'+col+';color:#fff;width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.5);font:bold 11px/22px monospace;text-align:center">'+(idx+1)+'</div>',iconSize:[26,26],iconAnchor:[13,13]});
+    var pop='<b>Стоянка #'+(idx+1)+'</b><br>Простоял: '+_gpsFmtDur(st.dur)+'<br>'+_gpsFmtTime(st.start)+' → '+_gpsFmtTime(st.end)+'<br><a href="https://www.google.com/maps?q='+st.lat.toFixed(6)+','+st.lng.toFixed(6)+'" target="_blank" rel="noopener">Открыть на карте ↗</a>';
+    L.marker([st.lat,st.lng],{icon:icon}).bindPopup(pop).addTo(grp);
+  });
+  grp.addTo(_gpsHistMap);
+  _gpsHistLayer=grp;
+  try{ _gpsHistMap.fitBounds(allLL,{padding:[40,40]}); }catch(_){}
+
+  // ── метрики ──
+  var firstT=pts[0].t, lastT=pts[pts.length-1].t, spanMs=lastT-firstT;
+  var stopMs=0; stops.forEach(function(s){stopMs+=s.dur;});
+  var moveMs=Math.max(0,spanMs-stopMs);
+  var distKm=0; segs.forEach(function(sg){ if(sg.type==='move') distKm+=sg.distKm; });
+  var oA=pts[0].odo, oB=pts[pts.length-1].odo;
+  if(isFinite(oA)&&isFinite(oB)&&oB>oA&&(oB-oA)<5000) distKm=Math.max(distKm,oB-oA);
+  var idlePct=spanMs>0?Math.round(stopMs/spanMs*100):0, movePct=100-idlePct;
+  var longest=null; stops.forEach(function(s){ if(!longest||s.dur>longest.dur) longest=s; });
+  var nLong=0; stops.forEach(function(s){ if(s.dur>=GPS_LONG_MS) nLong++; });
+
+  document.getElementById('gpsHistStats').textContent=
+    _gpsFmtTime(firstT)+'–'+_gpsFmtTime(lastT)+' · стоянок: '+stops.length+' · простой '+idlePct+'%';
+
+  var rep=document.getElementById('gpsHistReport'); if(!rep) return;
+  var drv=_gpsDriverFor(vehicle);
+  var card=function(label,val,sub,accent){
+    return '<div style="flex:1;min-width:130px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px">'+
+      '<div style="font-size:11px;color:var(--text3)">'+label+'</div>'+
+      '<div style="font-size:18px;font-weight:700;margin-top:2px'+(accent?(';color:'+accent):'')+'">'+val+'</div>'+
+      (sub?'<div style="font-size:11px;color:var(--text3);margin-top:1px">'+sub+'</div>':'')+
+    '</div>';
+  };
+  var html='';
+  html+='<div style="font-size:14px;font-weight:700;margin-bottom:8px">Отчёт за день · '+escHtml(vehicle)+(drv?' — '+escHtml(drv):'')+'</div>';
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">';
+  html+=card('Смена', _gpsFmtTime(firstT)+'–'+_gpsFmtTime(lastT), _gpsFmtDur(spanMs)+' всего', null);
+  html+=card('В движении', _gpsFmtDur(moveMs), movePct+'% времени', '#0d9e75');
+  html+=card('На стоянках', _gpsFmtDur(stopMs), idlePct+'% времени', idlePct>=60?'#e03131':null);
+  html+=card('Пробег', '~'+distKm.toFixed(1)+' км', '', null);
+  html+=card('Стоянок', String(stops.length), nLong+' дольше 30 мин', null);
+  html+=card('Дольше всего', longest?_gpsFmtDur(longest.dur):'—', longest?(_gpsFmtTime(longest.start)+'–'+_gpsFmtTime(longest.end)):'', longest&&longest.dur>=GPS_VLONG_MS?'#e03131':null);
+  html+='</div>';
+
+  // аналитика / флаги
+  var flags=[];
+  if(idlePct>=60) flags.push('Большую часть смены машина без движения — '+idlePct+'% времени на месте.');
+  if(longest && longest.dur>=GPS_VLONG_MS) flags.push('Самая долгая стоянка '+_gpsFmtDur(longest.dur)+' ('+_gpsFmtTime(longest.start)+'–'+_gpsFmtTime(longest.end)+') — проверить зону: <a href="https://www.google.com/maps?q='+longest.lat.toFixed(6)+','+longest.lng.toFixed(6)+'" target="_blank" rel="noopener">на карте ↗</a>.');
+  if(nLong>=3) flags.push(nLong+' стоянок дольше 30 минут за смену.');
+  if(distKm<30 && spanMs>=4*3600000) flags.push('Малый пробег — всего ~'+distKm.toFixed(1)+' км за '+_gpsFmtDur(spanMs)+' активности.');
+  if(!flags.length) flags.push('Явных аномалий не видно: движение и стоянки в пределах нормы.');
+  html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px">';
+  html+='<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px"><i class="ti ti-alert-triangle"></i> Аналитика</div>';
+  flags.forEach(function(f){ html+='<div style="font-size:12px;color:var(--text2);margin:3px 0;line-height:1.45">• '+f+'</div>'; });
+  html+='</div>';
+
+  // таймлайн смены
+  html+='<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">Таймлайн смены</div>';
+  html+='<div style="display:flex;flex-direction:column;gap:4px">';
+  segs.forEach(function(sg){
+    if(sg.type==='move'){
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px">'+
+        '<span style="font:600 11px monospace;color:var(--text3);min-width:88px">'+_gpsFmtTime(sg.start)+'–'+_gpsFmtTime(sg.end)+'</span>'+
+        '<i class="ti ti-car" style="color:#0d9e75"></i>'+
+        '<span style="font-size:12px;color:var(--text)">Поездка · '+sg.distKm.toFixed(1)+' км · ср. '+Math.round(sg.avg)+' км/ч</span>'+
+        '<span style="flex:1"></span>'+
+        '<span style="font-size:11px;color:var(--text3)">'+_gpsFmtDur(sg.dur)+'</span>'+
+      '</div>';
+    } else {
+      var col=_gpsStopColor(sg.dur);
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-left:3px solid '+col+';border-radius:8px">'+
+        '<span style="font:600 11px monospace;color:var(--text3);min-width:88px">'+_gpsFmtTime(sg.start)+'–'+_gpsFmtTime(sg.end)+'</span>'+
+        '<span style="background:'+col+';color:#fff;width:18px;height:18px;border-radius:50%;font:bold 10px/18px monospace;text-align:center;flex-shrink:0">'+sg.n+'</span>'+
+        '<span style="font-size:12px;color:var(--text)">Стоянка · простоял '+_gpsFmtDur(sg.dur)+'</span>'+
+        '<span style="flex:1"></span>'+
+        '<a href="https://www.google.com/maps?q='+sg.lat.toFixed(6)+','+sg.lng.toFixed(6)+'" target="_blank" rel="noopener" style="font-size:11px">на карте ↗</a>'+
+      '</div>';
+    }
+  });
+  html+='</div>';
+  rep.innerHTML=html;
 }
 
 function aggregateDriverData(driver,dateFrom,dateTo){
