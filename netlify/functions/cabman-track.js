@@ -129,6 +129,46 @@ exports.handler = async function(event){
       return json(200,{ok:true, snapshot:snap});
     }
 
+    // ИМПОРТ: принимает распарсенные точки из Cabman CSV (POST JSON) и сохраняет в Blobs.
+    // Тело: { vehicle:"L24628", points:[{t,lat,lng,speed,state,odo,addr,reason,src}, ...] }
+    // Точки группируются по дню (UTC) под ключом track:<vehicle>:<YYYY-MM-DD>.
+    // Cabman-точки (src:'cabman') приоритетнее само-собранных при дедупе по минуте.
+    if(action==='import'){
+      let body={};
+      try{ body = JSON.parse(event.body||'{}'); }catch(e){ return json(400,{ok:false,error:'bad JSON body'}); }
+      const vehicle = body.vehicle;
+      const incoming = Array.isArray(body.points) ? body.points : [];
+      if(!vehicle || !incoming.length) return json(400,{ok:false,error:'need vehicle and points'});
+      const s = await store(event);
+
+      // группируем входящие точки по дню (UTC)
+      const byDay = {};
+      for(const p of incoming){
+        if(!p || !p.t) continue;
+        const day = dayKey(p.t);
+        (byDay[day] = byDay[day] || []).push(p);
+      }
+
+      let savedDays = 0, savedPoints = 0;
+      for(const day of Object.keys(byDay)){
+        const key = 'track:'+vehicle+':'+day;
+        let existing = [];
+        try{ const e = await s.get(key,{type:'json'}); if(Array.isArray(e)) existing = e; }catch(_){}
+        // объединяем по минуте: Cabman перезаписывает само-собранную точку той же минуты
+        const byMin = {};
+        for(const p of existing){ const mk=(p.t||'').slice(0,16); if(mk) byMin[mk]=p; }
+        for(const p of byDay[day]){
+          const mk=(p.t||'').slice(0,16); if(!mk) continue;
+          const cur = byMin[mk];
+          if(!cur || p.src==='cabman' || cur.src!=='cabman') byMin[mk]=p; // cabman приоритетнее
+        }
+        const merged = Object.keys(byMin).sort().map(k=>byMin[k]);
+        try{ await s.setJSON(key, merged); savedDays++; savedPoints += byDay[day].length; }
+        catch(e){ return json(200,{ok:false, where:'setJSON', key, error:String(e&&e.message||e)}); }
+      }
+      return json(200,{ok:true, vehicle, savedDays, savedPoints, days:Object.keys(byDay)});
+    }
+
     // ДИАГНОСТИКА: пишем точку и тут же читаем обратно, без проглатывания ошибок
     if(action==='diag'){
       const out = { ok:true, steps:[] };
