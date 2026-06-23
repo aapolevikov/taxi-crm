@@ -2932,6 +2932,8 @@ body.no-icons .ti-external-link::before{content:"↗"}
           </div>
           <button class="fin-btn" onclick="gpsLoadHistory()"><i class="ti ti-search"></i> <span data-i18n="gpsShowRoute">Show route</span></button>
           <button class="fin-btn" onclick="gpsClearTime()" title="Сбросить время — весь день" style="padding:8px 10px"><i class="ti ti-clock-off"></i></button>
+          <button class="fin-btn" onclick="document.getElementById('gpsCabmanFile').click()" title="Загрузить отчёт Cabman (Vehicle Location, CSV)" style="background:var(--gold,#1B9E63);color:#fff;border-color:transparent"><i class="ti ti-upload"></i> <span data-i18n="gpsImportCabman">Импорт Cabman CSV</span></button>
+          <input type="file" id="gpsCabmanFile" accept=".csv" style="display:none" onchange="gpsImportCabmanCsv(this)">
           <div style="flex:1"></div>
           <div id="gpsHistStats" style="font-size:12px;color:var(--text2)"></div>
         </div>
@@ -4231,7 +4233,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-23.29';
+window.APP_VERSION = '2026-06-23.30';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -9439,6 +9441,105 @@ function gpsClearTime(){
   gpsLoadHistory();
 }
 
+/* ── Импорт отчёта Cabman "Vehicle Location" (CSV) ──
+   Cabman экспортирует CSV в формате ReportViewer: каждая строка данных
+   начинается с повтора шапки таблицы (S.No.,Ignition,...), реальные значения
+   идут после колонки Vehicle ID. Поля: Ignition(On/Off), Reg, DateTime(Dubai),
+   Address, Speed, [empty], ind1, ind2, Lat, Lng, Odometer, DrivenBy, OverSpeed, Reason.
+   Время Dubai (UTC+4) → сохраняем в UTC ISO. Адрес берём готовый из файла. ── */
+function _gpsCsvLine(line){
+  var out=[], cur='', q=false, i, c;
+  for(i=0;i<line.length;i++){
+    c=line[i];
+    if(q){
+      if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else q=false; }
+      else cur+=c;
+    } else {
+      if(c==='"') q=true;
+      else if(c===','){ out.push(cur); cur=''; }
+      else cur+=c;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+function _gpsCabmanDateToIso(s){
+  // '23-06-2026 00:05' (Dubai, UTC+4) → UTC ISO
+  var m=(s||'').trim().match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})/);
+  if(!m) return null;
+  var utcMs=Date.UTC(+m[3], +m[2]-1, +m[1], +m[4], +m[5]) - 4*3600000;
+  return new Date(utcMs).toISOString();
+}
+function _gpsParseCabmanCsv(text){
+  var lines=text.split(/\r?\n/), pts=[], veh=null, i, line, f, j, idx, ign;
+  for(i=0;i<lines.length;i++){
+    line=lines[i];
+    if(!line || line.indexOf('S.No.,Ignition,')!==0) continue;
+    f=_gpsCsvLine(line);
+    // ищем первую ячейку On/Off после позиции 12 (после Vehicle ID)
+    idx=-1;
+    for(j=12;j<f.length;j++){ if(f[j]==='On'||f[j]==='Off'){ idx=j; break; } }
+    if(idx<0) continue;
+    ign=f[idx];
+    var reg=f[idx+1], dt=f[idx+2], addr=f[idx+3], speed=f[idx+4];
+    var lat=f[idx+8], lng=f[idx+9], odo=f[idx+10], reason=f[idx+13];
+    var iso=_gpsCabmanDateToIso(dt);
+    if(!iso) continue;
+    if(!veh) veh=reg;
+    var la=parseFloat(lat), lo=parseFloat(lng);
+    if(!isFinite(la)||!isFinite(lo)) continue;
+    pts.push({ t:iso, tDev:dt, lat:la, lng:lo, speed:parseFloat(speed)||0,
+      state:(ign==='On'), odo:parseFloat(odo)||0, addr:(addr||'').trim(),
+      reason:(reason||'').trim(), src:'cabman' });
+  }
+  return { vehicle:veh, points:pts };
+}
+function gpsImportCabmanCsv(input){
+  var file=input.files && input.files[0];
+  input.value=''; // сброс, чтобы можно было повторно выбрать тот же файл
+  if(!file) return;
+  var stats=document.getElementById('gpsHistStats');
+  if(stats) stats.textContent='Чтение файла…';
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var parsed=_gpsParseCabmanCsv(String(reader.result||''));
+      if(!parsed.vehicle || !parsed.points.length){
+        showToast('Не удалось распознать CSV Cabman (нет данных)');
+        if(stats) stats.textContent=''; return;
+      }
+      // дни, что есть в файле (UTC) — для авто-показа после загрузки
+      var days={}; parsed.points.forEach(function(p){ days[(p.t||'').slice(0,10)]=1; });
+      var dayList=Object.keys(days).sort();
+      if(stats) stats.textContent='Сохранение '+parsed.points.length+' точек ('+parsed.vehicle+')…';
+      fetch(CABMAN_FN+'?action=import',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ vehicle:parsed.vehicle, points:parsed.points })
+      }).then(function(r){return r.json();}).then(function(d){
+        if(!d.ok){ showToast('Ошибка сохранения: '+(d.error||'')); if(stats) stats.textContent=''; return; }
+        showToast('Загружено: '+d.savedPoints+' точек, дней: '+d.savedDays);
+        // авто-показ: ставим машину и диапазон дат из файла, строим отчёт
+        try{
+          var selV=document.getElementById('gpsHistVehicle');
+          if(selV){
+            var found=false;
+            for(var k=0;k<selV.options.length;k++){ if(selV.options[k].value===parsed.vehicle){ selV.value=parsed.vehicle; found=true; break; } }
+          }
+          var f=document.getElementById('gpsHistFrom'), t=document.getElementById('gpsHistTo');
+          if(f&&dayList.length) f.value=dayList[0];
+          if(t&&dayList.length) t.value=dayList[dayList.length-1];
+          var ft=document.getElementById('gpsHistFromTime'), tt=document.getElementById('gpsHistToTime');
+          if(ft) ft.value=''; if(tt) tt.value='';
+        }catch(e){}
+        gpsLoadHistory();
+      }).catch(function(){ showToast('Сеть: не удалось сохранить'); if(stats) stats.textContent=''; });
+    }catch(e){ showToast('Ошибка разбора файла'); if(stats) stats.textContent=''; }
+  };
+  reader.onerror=function(){ showToast('Не удалось прочитать файл'); if(stats) stats.textContent=''; };
+  reader.readAsText(file);
+}
+
 async function gpsLoadHistory(){
   gpsEnsureHistMap();
   var vehicle=document.getElementById('gpsHistVehicle').value;
@@ -9460,7 +9561,7 @@ async function gpsLoadHistory(){
     var pts=[];
     raw.forEach(function(p){
       var la=Number(p.lat), lo=Number(p.lng), t=_gpsPTime(p);
-      if(isFinite(la)&&isFinite(lo)&&isFinite(t)) pts.push({lat:la,lng:lo,t:t,odo:_gpsPOdo(p),st:_gpsPState(p)});
+      if(isFinite(la)&&isFinite(lo)&&isFinite(t)) pts.push({lat:la,lng:lo,t:t,odo:_gpsPOdo(p),st:_gpsPState(p),addr:p.addr||'',reason:p.reason||''});
     });
     pts.sort(function(a,b){return a.t-b.t;});
     // ── фильтр по времени (вводится в дубайском времени) ──
@@ -9616,8 +9717,21 @@ function _gpsRenderHistory(pts, built, vehicle, winLabel){
 
   var rep=document.getElementById('gpsHistReport'); if(!rep) return;
   var drv=_gpsDriverFor(vehicle);
-  var geoJobs=[]; // плейсхолдеры адресов для дозагрузки
+  var geoJobs=[]; // плейсхолдеры адресов для дозагрузки (Nominatim) — только если нет готового адреса
+  // ближайшая по координатам точка с готовым адресом из Cabman
+  var _gpsNearestAddr=function(lat,lng){
+    var best='', bd=1e9;
+    for(var i=0;i<pts.length;i++){
+      if(!pts[i].addr) continue;
+      var dla=pts[i].lat-lat, dlo=pts[i].lng-lng, d=dla*dla+dlo*dlo;
+      if(d<bd){ bd=d; best=pts[i].addr; }
+    }
+    // принимаем адрес, если точка достаточно близко (~150 м)
+    return (bd<=2e-6)? best : '';
+  };
   var addrSpan=function(lat,lng){
+    var preset=_gpsNearestAddr(lat,lng);
+    if(preset){ return '<span style="color:var(--text2)">'+String(preset).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</span>'; }
     var id='gpsaddr_'+(geoJobs.length)+'_'+Math.floor(lat*1e4)+'_'+Math.floor(lng*1e4);
     geoJobs.push({id:id,lat:lat,lng:lng});
     return '<span id="'+id+'" style="color:var(--text2)">…</span>';
@@ -16708,7 +16822,7 @@ document.head.appendChild(spinStyle);
 const LANGS={
 en:{flag:'🇬🇧',code:'EN',dir:'ltr',
   dashboard:'Dashboard',cars:'Cars',drivers:'Drivers',online:'Online',
-  reports:'Drivers report',carsReport:'Cars report',bestCar:'Best car',gpsTracking:'GPS tracking',gpsLive:'Live map',gpsHistory:'Route history',gpsVehicles:'Vehicles',gpsRefresh:'Refresh',gpsPickVehicle:'Vehicle',gpsFrom:'From',gpsTo:'To',gpsFromTime:'Time from',gpsToTime:'Time to',gpsShowRoute:'Show route',illegal:'Illegal trips',orders:'Orders',
+  reports:'Drivers report',carsReport:'Cars report',bestCar:'Best car',gpsTracking:'GPS tracking',gpsLive:'Live map',gpsHistory:'Route history',gpsVehicles:'Vehicles',gpsRefresh:'Refresh',gpsPickVehicle:'Vehicle',gpsFrom:'From',gpsTo:'To',gpsFromTime:'Time from',gpsToTime:'Time to',gpsShowRoute:'Show route',gpsImportCabman:'Import Cabman CSV',illegal:'Illegal trips',orders:'Orders',
   repairs:'Repair Orders',board:'Board',settings:'Settings',more:'More',
   add:'Add',save:'Save',cancel:'Cancel',edit:'Edit',delete:'Delete',deleteDriverQ:'Delete this driver?',deleteCarQ:'Delete this car?',
   export:'XLSX',back:'Back',search:'Search...',searchCar:'Search car...',searchDriver:'Driver name...',
@@ -16992,7 +17106,7 @@ en:{flag:'🇬🇧',code:'EN',dir:'ltr',
   onlineDuration:'Online duration',
 ar:{flag:'🇦🇪',code:'عر',dir:'rtl',
   dashboard:'لوحة التحكم',cars:'السيارات',drivers:'السائقون',online:'متصل',
-  reports:'تقارير',carsReport:'تقرير السيارات',bestCar:'أفضل سيارة',gpsTracking:'تتبع GPS',gpsLive:'خريطة مباشرة',gpsHistory:'سجل المسار',gpsVehicles:'المركبات',gpsRefresh:'تحديث',gpsPickVehicle:'المركبة',gpsFrom:'من',gpsTo:'إلى',gpsFromTime:'الوقت من',gpsToTime:'الوقت إلى',gpsShowRoute:'عرض المسار',illegal:'مخالفات',orders:'الطلبات',
+  reports:'تقارير',carsReport:'تقرير السيارات',bestCar:'أفضل سيارة',gpsTracking:'تتبع GPS',gpsLive:'خريطة مباشرة',gpsHistory:'سجل المسار',gpsVehicles:'المركبات',gpsRefresh:'تحديث',gpsPickVehicle:'المركبة',gpsFrom:'من',gpsTo:'إلى',gpsFromTime:'الوقت من',gpsToTime:'الوقت إلى',gpsShowRoute:'عرض المسار',gpsImportCabman:'استيراد Cabman CSV',illegal:'مخالفات',orders:'الطلبات',
   repairs:'الصيانة',board:'المهام',settings:'الإعدادات',more:'المزيد',
   add:'إضافة',save:'حفظ',cancel:'إلغاء',edit:'تعديل',delete:'حذف',
   export:'تصدير',back:'رجوع',search:'بحث...',searchCar:'بحث عن سيارة...',searchDriver:'اسم السائق...',
@@ -17097,7 +17211,7 @@ ar:{flag:'🇦🇪',code:'عر',dir:'rtl',
   twoDrivers:'سائقان',
 },ru:{flag:'🇷🇺',code:'RU',dir:'ltr',
   dashboard:'Дашборд',cars:'Автомобили',drivers:'Водители',online:'Онлайн',
-  reports:'Отчёт водителей',carsReport:'Отчёт по автомобилям',bestCar:'Лучшая машина',gpsTracking:'GPS-трекинг',gpsLive:'Карта онлайн',gpsHistory:'История маршрутов',gpsVehicles:'Машины',gpsRefresh:'Обновить',gpsPickVehicle:'Машина',gpsFrom:'С',gpsTo:'По',gpsFromTime:'Время с',gpsToTime:'Время по',gpsShowRoute:'Показать маршрут',illegal:'Нарушения',orders:'Заказы',
+  reports:'Отчёт водителей',carsReport:'Отчёт по автомобилям',bestCar:'Лучшая машина',gpsTracking:'GPS-трекинг',gpsLive:'Карта онлайн',gpsHistory:'История маршрутов',gpsVehicles:'Машины',gpsRefresh:'Обновить',gpsPickVehicle:'Машина',gpsFrom:'С',gpsTo:'По',gpsFromTime:'Время с',gpsToTime:'Время по',gpsShowRoute:'Показать маршрут',gpsImportCabman:'Импорт Cabman CSV',illegal:'Нарушения',orders:'Заказы',
   repairs:'Ремонт',board:'Доска задач',settings:'Настройки',more:'Ещё',
   add:'Добавить',save:'Сохранить',cancel:'Отмена',edit:'Изменить',delete:'Удалить',deleteDriverQ:'Удалить этого водителя?',deleteCarQ:'Удалить эту машину?',
   export:'XLSX',back:'Назад',search:'Поиск...',searchCar:'Поиск авто...',searchDriver:'Имя водителя...',
