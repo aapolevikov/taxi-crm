@@ -19,23 +19,28 @@ let _blobs = null;
 async function store(event){
   if(_blobs) return _blobs;
   const mod = await import('@netlify/blobs');
-  // Preferred: connectLambda wires up the Blobs context from the invocation
-  // event automatically — no env vars / token needed. Works for both HTTP
-  // and scheduled calls on Netlify.
+
+  // 1) ПРИОРИТЕТ: явные креды (site ID + персональный токен Netlify).
+  // Такой токен не протухает между запросами, в отличие от контекста
+  // connectLambda(event), который на HTTP-запросах из браузера может дать
+  // "Failed to decode token: Token expired" при записи.
+  const siteID = process.env.NETLIFY_SITE_ID || process.env.CABMAN_BLOBS_SITE_ID;
+  const token  = process.env.NETLIFY_BLOBS_TOKEN || process.env.CABMAN_BLOBS_TOKEN;
+  if(siteID && token){
+    try{
+      _blobs = mod.getStore({ name:'cabman-history', siteID, token });
+      return _blobs;
+    }catch(_){ /* упадём в режим connectLambda ниже */ }
+  }
+
+  // 2) Запасной режим: контекст из invocation event (для scheduled-запусков
+  // работает стабильно; на HTTP-запросах токен может протухать).
   try{
     if(event && typeof mod.connectLambda === 'function'){
       mod.connectLambda(event);
     }
   }catch(_){}
-  try{
-    _blobs = mod.getStore('cabman-history');
-  }catch(e){
-    // Fallback to explicit creds only if they happen to exist (kept optional)
-    const siteID = process.env.CABMAN_BLOBS_SITE_ID;
-    const token  = process.env.CABMAN_BLOBS_TOKEN;
-    if(siteID && token){ _blobs = mod.getStore({ name:'cabman-history', siteID, token }); }
-    else { throw e; }
-  }
+  _blobs = mod.getStore('cabman-history');
   return _blobs;
 }
 
