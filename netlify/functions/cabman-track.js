@@ -74,23 +74,25 @@ function dayKey(iso){ return (iso||'').slice(0,10); } // 'YYYY-MM-DD'
 
 async function appendHistory(vehicles, event){
   const s = await store(event);
-  const today = dayKey(new Date().toISOString());
-  // group append per vehicle/day
+  // Метка времени = момент опроса Cabman (НЕ v.time/gmt прибора, который у
+  // стоящих машин «застывает»). Так ключ-дата всегда = сегодня по UTC и
+  // совпадает с тем, что ищет action=history.
+  const nowIso = new Date().toISOString();
+  const today  = dayKey(nowIso);
+  const nowMinute = nowIso.slice(0,16); // 'YYYY-MM-DDTHH:MM' — дедуп по минуте
   for(const v of vehicles){
     if(!v.id || !isFinite(v.lat) || !isFinite(v.lng)) continue;
-    const day = dayKey(v.time) || today;
-    const key = 'track:'+v.id+':'+day;
+    const key = 'track:'+v.id+':'+today;
     let pts = [];
     try{ const cur = await s.get(key, {type:'json'}); if(Array.isArray(cur)) pts = cur; }catch(_){}
-    // de-dup: skip if last point has identical timestamp
     const last = pts[pts.length-1];
-    if(!last || last.t !== v.time){
-      pts.push({ t:v.time, lat:v.lat, lng:v.lng, speed:v.speed, state:v.state, odo:v.odometer });
+    if(!last || (last.t||'').slice(0,16) !== nowMinute){
+      pts.push({ t:nowIso, lat:v.lat, lng:v.lng, speed:v.speed, state:v.state, odo:v.odometer, tDev:v.time });
       try{ await s.setJSON(key, pts); }catch(e){ /* ignore single-key failure */ }
     }
   }
   // save latest snapshot
-  try{ await s.setJSON('latest', { at:new Date().toISOString(), vehicles }); }catch(_){}
+  try{ await s.setJSON('latest', { at:nowIso, vehicles }); }catch(_){}
 }
 
 function json(code, obj){
