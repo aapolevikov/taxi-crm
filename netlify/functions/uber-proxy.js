@@ -1,6 +1,6 @@
 // netlify/functions/uber-proxy.js
 // Proxy для Uber Vehicle Suppliers API
-// v13.0: GraphQL GetPerformanceReport — РЕАЛЬНАЯ схема из портала (action=gql-perf)
+// v14.0: action=token-test — проверка какие scopes whitelisted (после ответа Basit 23.06.2026)
 // vehicles: /v2/vehicle-suppliers/vehicles
 // drivers:  /v1/vehicle-suppliers/drivers
 // payments: /v1/vehicle-suppliers/earners/payments (с поддержкой driver_id)
@@ -143,6 +143,75 @@ exports.handler = async (event) => {
   
   try {
     // === Token ===
+    // v14.0: проверка какие scopes теперь whitelisted после ответа Basit (23.06.2026)
+    if (action === 'token-test') {
+      // Список scopes для проверки — старые рабочие + те что раньше ломали
+      const scopesToTest = [
+        // Уже подтверждённые рабочие (для контроля)
+        'supplier.partner.payments',
+        'solutions.suppliers.drivers.status.read',
+        'solutions.suppliers.metrics.read',
+        'vehicle_suppliers.organizations.read',
+        'vehicle_suppliers.vehicles.read',
+        // Раньше ломали токен — проверяем что Basit включил
+        'supplier.driver.activity.read',
+        'supplier.performance.read',
+        'supplier.transactions.read',
+        // Возможные новые с другими именами
+        'supplier.driver.performance.read',
+        'supplier.driver.transactions.read',
+        'supplier.fleet.performance.read',
+        'supplier.analytics.read',
+        'solutions.suppliers.analytics.read',
+        'solutions.suppliers.performance.read',
+        'solutions.suppliers.transactions.read',
+        'vehicle_suppliers.analytics.read',
+        'vehicle_suppliers.performance.read',
+        'vehicle_suppliers.drivers.read',
+        'vehicle_suppliers.earnings.read',
+        // Offline Reporting API (упоминался в письме к Ahsan)
+        'supplier.offline_reporting.read',
+        'offline_reporting.read'
+      ];
+
+      const results = [];
+      for (const scope of scopesToTest) {
+        try {
+          const r = await getAccessToken(scope);
+          results.push({
+            scope,
+            ok: r.ok === true,
+            status: r.ok ? 'WORKS' : 'INVALID',
+            error: r.ok ? null : (r.error || r.data?.error_description || r.data?.error || JSON.stringify(r).substring(0,200))
+          });
+        } catch (e) {
+          results.push({ scope, ok: false, status: 'EXCEPTION', error: e.message });
+        }
+        // маленькая пауза чтобы не словить rate limit
+        await new Promise(res => setTimeout(res, 150));
+      }
+
+      const works = results.filter(r => r.ok).map(r => r.scope);
+      const invalid = results.filter(r => !r.ok).map(r => r.scope);
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          action: 'token-test',
+          summary: {
+            total_tested: results.length,
+            working: works.length,
+            invalid: invalid.length
+          },
+          working_scopes: works,
+          invalid_scopes: invalid,
+          full_results: results
+        }, null, 2)
+      };
+    }
+
+
     if (action === 'token') {
       const result = await getAccessToken();
       return { 
@@ -809,7 +878,7 @@ exports.handler = async (event) => {
       statusCode: 200, 
       headers, 
       body: JSON.stringify({
-        message: 'Uber API proxy v13.0 - GraphQL GetPerformanceReport (action=gql-perf)',
+        message: 'Uber API proxy v14.0 - token-test для проверки whitelisted scopes',
         actions: {
           'token': 'Получить access token',
           'orgs': '✅ Список организаций',
