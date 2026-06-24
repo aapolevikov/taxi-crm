@@ -4233,7 +4233,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-23.30';
+window.APP_VERSION = '2026-06-24.31';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -9511,6 +9511,10 @@ function gpsImportCabmanCsv(input){
       // дни, что есть в файле (UTC) — для авто-показа после загрузки
       var days={}; parsed.points.forEach(function(p){ days[(p.t||'').slice(0,10)]=1; });
       var dayList=Object.keys(days).sort();
+      // реальный диапазон загруженных данных (по времени устройства, Дубай) — для подсказки
+      var devTimes=parsed.points.map(function(p){return p.tDev||'';}).filter(Boolean).sort();
+      var loadedFromDev=devTimes.length?devTimes[0]:'', loadedToDev=devTimes.length?devTimes[devTimes.length-1]:'';
+      window._gpsLastImport={ vehicle:parsed.vehicle, fromDev:loadedFromDev, toDev:loadedToDev, count:parsed.points.length };
       if(stats) stats.textContent='Сохранение '+parsed.points.length+' точек ('+parsed.vehicle+')…';
       fetch(CABMAN_FN+'?action=import',{
         method:'POST',
@@ -9518,7 +9522,7 @@ function gpsImportCabmanCsv(input){
         body:JSON.stringify({ vehicle:parsed.vehicle, points:parsed.points })
       }).then(function(r){return r.json();}).then(function(d){
         if(!d.ok){ showToast('Ошибка сохранения: '+(d.error||'')); if(stats) stats.textContent=''; return; }
-        showToast('Загружено: '+d.savedPoints+' точек, дней: '+d.savedDays);
+        showToast('Загружено: '+d.savedPoints+' точек · '+(loadedFromDev||'?')+' → '+(loadedToDev||'?'));
         // авто-показ: ставим машину и диапазон дат из файла, строим отчёт
         try{
           var selV=document.getElementById('gpsHistVehicle');
@@ -9653,6 +9657,46 @@ function _gpsMapMatch(coords, cb){
   }).catch(function(){ cb(null); });
 }
 
+// ── Аналитика заказов из приложений (Bolt/Uber/Yango) для машины за период ──
+// Извлекает «район» из текстового адреса (DUBAI,AL KARAMA,10D STREET → AL KARAMA)
+function _gpsDistrictFromAddr(addr){
+  if(!addr) return '';
+  var parts=String(addr).split(',').map(function(s){return s.trim();}).filter(Boolean);
+  if(!parts.length) return '';
+  // первая часть часто город (DUBAI / RAS AL KHAIMAH) — берём вторую как район, если есть
+  if(parts.length>=2) return parts[1];
+  return parts[0];
+}
+// Собирает заказы из приложений для водителя машины за окно [fromMs,toMs] (UTC ms)
+function _gpsAppOrdersForVehicle(vehicle, fromMs, toMs){
+  var out=[]; // {svc,from,to,startMs}
+  try{
+    var pd=String(vehicle||'').replace(/\D/g,'');
+    var list=(window.drivers||[]), drv=null, i;
+    for(i=0;i<list.length;i++){ if(String(list[i].vehicleId||'').replace(/\D/g,'')===pd){ drv=list[i]; break; } }
+    if(!drv) return out;
+    // Uber (из импортированного CSV, window.uberOrders)
+    if(drv.uberId && Array.isArray(window.uberOrders)){
+      window.uberOrders.forEach(function(o){
+        if(o.driver_uuid!==drv.uberId) return;
+        var s=Number(o.start_ms)||0, e=Number(o.end_ms)||0, t=s||e;
+        if(!t||t<fromMs||t>toMs) return;
+        out.push({svc:'U',from:o.from||'',to:o.to||'',startMs:t});
+      });
+    }
+    // Bolt (window.boltOrders)
+    if(drv.boltId && Array.isArray(window.boltOrders)){
+      window.boltOrders.forEach(function(o){
+        if(o.driver_uuid!==drv.boltId) return;
+        var t=(o.pickup_ts||o.finished_ts||o.dropoff_ts||0)*1000;
+        if(!t||t<fromMs||t>toMs) return;
+        out.push({svc:'B',from:o.from||'',to:o.to||'',startMs:t});
+      });
+    }
+  }catch(_){}
+  return out;
+}
+
 function _gpsRenderHistory(pts, built, vehicle, winLabel){
   var segs=built.segs, stops=built.stops;
   var grp=L.layerGroup();
@@ -9730,11 +9774,15 @@ function _gpsRenderHistory(pts, built, vehicle, winLabel){
     return (bd<=2e-6)? best : '';
   };
   var addrSpan=function(lat,lng){
+    var mapUrl='https://www.google.com/maps?q='+lat.toFixed(6)+','+lng.toFixed(6);
     var preset=_gpsNearestAddr(lat,lng);
-    if(preset){ return '<span style="color:var(--text2)">'+String(preset).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</span>'; }
+    if(preset){
+      var safe=String(preset).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return '<a href="'+mapUrl+'" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none;border-bottom:1px dotted var(--text3)" title="Открыть на карте">'+safe+' <span style="color:var(--accent,#0d9e75);font-size:.9em">↗</span></a>';
+    }
     var id='gpsaddr_'+(geoJobs.length)+'_'+Math.floor(lat*1e4)+'_'+Math.floor(lng*1e4);
     geoJobs.push({id:id,lat:lat,lng:lng});
-    return '<span id="'+id+'" style="color:var(--text2)">…</span>';
+    return '<a href="'+mapUrl+'" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none;border-bottom:1px dotted var(--text3)" title="Открыть на карте"><span id="'+id+'">…</span> <span style="color:var(--accent,#0d9e75);font-size:.9em">↗</span></a>';
   };
   var th='text-align:left;padding:6px 8px;font-size:11px;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)';
   var td='padding:6px 8px;font-size:12px;color:var(--text);border-bottom:1px solid var(--border);vertical-align:top';
@@ -9748,6 +9796,16 @@ function _gpsRenderHistory(pts, built, vehicle, winLabel){
   };
   var html='';
   html+='<div style="font-size:14px;font-weight:700;margin-bottom:8px">Отчёт за день · '+escHtml(vehicle)+(drv?' — '+escHtml(drv):'')+(winLabel?' · интервал '+winLabel:'')+'</div>';
+
+  // строка про загруженные данные: даёт понять, с какого момента догружать следующий CSV
+  try{
+    var li=window._gpsLastImport;
+    if(li && li.vehicle===vehicle && (li.fromDev||li.toDev)){
+      html+='<div style="font-size:11px;color:var(--text3);margin:-4px 0 10px;padding:6px 10px;background:var(--bg2);border:1px dashed var(--border);border-radius:8px">'+
+        '<i class="ti ti-file-import"></i> Загружено из Cabman: <b>'+escHtml(li.fromDev)+'</b> → <b>'+escHtml(li.toDev)+'</b> · '+li.count+' точек. '+
+        '<span style="color:var(--text3)">Следующий CSV грузите с момента <b>'+escHtml(li.toDev)+'</b> и позже.</span></div>';
+    }
+  }catch(_){}
 
   // карточки-сводка
   html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">';
@@ -9857,6 +9915,86 @@ function _gpsRenderHistory(pts, built, vehicle, winLabel){
     }
   });
   html+='</div>';
+
+  // ── Аналитика заказов из приложений (Bolt/Uber) — районы и часы ──
+  (function(){
+    var appOrders=_gpsAppOrdersForVehicle(vehicle, firstT, lastT);
+    if(!appOrders.length){
+      html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px"><i class="ti ti-map-pin"></i> Заказы в приложениях (районы и часы)</div>';
+      html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text3)">Нет данных по заказам из приложений за этот период. Чтобы появилось: у водителя машины должен быть привязан Bolt/Uber ID, а заказы Bolt/Uber — загружены за эту дату.</div>';
+      return;
+    }
+    appOrders.sort(function(a,b){return a.startMs-b.startMs;});
+    var svcName={U:'Uber',B:'Bolt',Y:'Yango'};
+
+    // 1) районы посадки: район → {count, services, hours[]}
+    var byDist={};
+    appOrders.forEach(function(o){
+      var d=_gpsDistrictFromAddr(o.from)||'(без адреса)';
+      if(!byDist[d]) byDist[d]={count:0,svc:{},hours:{},sample:o.from};
+      byDist[d].count++;
+      byDist[d].svc[o.svc]=(byDist[d].svc[o.svc]||0)+1;
+      var h=new Date(o.startMs); var hh=(h.getUTCHours()+4)%24; // Дубай = UTC+4
+      byDist[d].hours[hh]=(byDist[d].hours[hh]||0)+1;
+    });
+    var distRows=Object.keys(byDist).map(function(k){return {name:k,d:byDist[k]};});
+    distRows.sort(function(a,b){return b.d.count-a.d.count;});
+
+    html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px"><i class="ti ti-map-pin"></i> Заказы в приложениях · районы посадки <span style="font-weight:400;color:var(--text3)">('+appOrders.length+' заказов)</span></div>';
+    html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px">';
+    html+='<tr><th style="'+th+'">Район</th><th style="'+th+'">Заказов</th><th style="'+th+'">Сервисы</th><th style="'+th+'">Часы (пик)</th><th style="'+th+'">Карта</th></tr>';
+    distRows.forEach(function(r){
+      var svcStr=Object.keys(r.d.svc).map(function(s){return (svcName[s]||s)+' '+r.d.svc[s];}).join(', ');
+      // топ-часы
+      var hrs=Object.keys(r.d.hours).map(function(h){return {h:+h,c:r.d.hours[h]};}).sort(function(a,b){return b.c-a.c;}).slice(0,3);
+      var hrStr=hrs.map(function(x){return ('0'+x.h).slice(-2)+':00 ('+x.c+')';}).join(', ');
+      var mapUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent((r.d.sample||r.name)+', Dubai');
+      html+='<tr><td style="'+td+'"><b>'+escHtml(r.name)+'</b></td>'+
+        '<td style="'+td+'">'+r.d.count+'</td>'+
+        '<td style="'+td+';color:var(--text3)">'+escHtml(svcStr)+'</td>'+
+        '<td style="'+td+';color:var(--text3);white-space:nowrap">'+escHtml(hrStr)+'</td>'+
+        '<td style="'+td+'"><a href="'+mapUrl+'" target="_blank" rel="noopener" style="font-size:11px">↗</a></td></tr>';
+    });
+    html+='</table></div>';
+
+    // 2) разбивка по часам (когда пик заказов)
+    var byHour={}; var maxH=0;
+    appOrders.forEach(function(o){ var hh=(new Date(o.startMs).getUTCHours()+4)%24; byHour[hh]=(byHour[hh]||0)+1; if(byHour[hh]>maxH)maxH=byHour[hh]; });
+    html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px"><i class="ti ti-clock-hour-4"></i> Заказы по часам (Дубай)</div>';
+    html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px">';
+    html+='<div style="display:flex;align-items:flex-end;gap:3px;height:90px">';
+    for(var hh=0;hh<24;hh++){
+      var c=byHour[hh]||0;
+      var pct=maxH>0?Math.round(c/maxH*100):0;
+      var barColor=c>0?'#0d9e75':'var(--border)';
+      html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%">'+
+        (c>0?'<div style="font-size:9px;color:var(--text3);margin-bottom:2px">'+c+'</div>':'')+
+        '<div title="'+('0'+hh).slice(-2)+':00 · '+c+' заказов" style="width:100%;background:'+barColor+';height:'+Math.max(pct,c>0?8:2)+'%;border-radius:3px 3px 0 0;min-height:2px"></div>'+
+      '</div>';
+    }
+    html+='</div>';
+    html+='<div style="display:flex;gap:3px;margin-top:4px">';
+    for(var hh2=0;hh2<24;hh2++){ html+='<div style="flex:1;text-align:center;font-size:8px;color:var(--text3)">'+(hh2%3===0?('0'+hh2).slice(-2):'')+'</div>'; }
+    html+='</div></div>';
+
+    // 3) список заказов с адресами и ссылками
+    html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px"><i class="ti ti-list"></i> Поездки в приложениях</div>';
+    html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px">';
+    html+='<tr><th style="'+th+'">Время</th><th style="'+th+'">Сервис</th><th style="'+th+'">Откуда → Куда</th></tr>';
+    appOrders.forEach(function(o){
+      var tm=_gpsFmtTime(o.startMs);
+      var fromUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent((o.from||'')+', Dubai');
+      var toUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent((o.to||'')+', Dubai');
+      var fromTxt=o.from?('<a href="'+fromUrl+'" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none;border-bottom:1px dotted var(--text3)">'+escHtml(o.from)+' ↗</a>'):'<span style="color:var(--text3)">—</span>';
+      var toTxt=o.to?('<a href="'+toUrl+'" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none;border-bottom:1px dotted var(--text3)">'+escHtml(o.to)+' ↗</a>'):'<span style="color:var(--text3)">—</span>';
+      var badge=o.svc==='B'?'#34c759':(o.svc==='U'?'#000':'#f59f00');
+      html+='<tr><td style="'+td+';white-space:nowrap;font-family:monospace">'+tm+'</td>'+
+        '<td style="'+td+'"><span style="background:'+badge+';color:#fff;font-size:10px;padding:2px 6px;border-radius:4px">'+(svcName[o.svc]||o.svc)+'</span></td>'+
+        '<td style="'+td+'">'+fromTxt+' <span style="color:var(--text3)">→</span> '+toTxt+'</td></tr>';
+    });
+    html+='</table></div>';
+  })();
+
   rep.innerHTML=html;
   // дозагрузка адресов (Nominatim, в фоне)
   _gpsFillAddresses(geoJobs);
