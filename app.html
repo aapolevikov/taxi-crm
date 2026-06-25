@@ -1293,6 +1293,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
   <button class="ni" onclick="switchPage(&#39;reports&#39;,this)" title="Reports"><i class="ti ti-file-text"></i></button>
   <button class="ni" onclick="switchPage(&#39;carsreport&#39;,this)" title="Cars report"><i class="ti ti-clipboard-data"></i></button>
   <button class="ni" onclick="switchPage(&#39;gps&#39;,this)" title="GPS tracking"><i class="ti ti-map-2"></i></button>
+  <button class="ni" onclick="switchPage(&#39;demand&#39;,this)" title="Demand analytics"><i class="ti ti-chart-dots"></i></button>
   <button class="ni" onclick="switchPage(&#39;illegal&#39;,this)" title="Illegal trips"><i class="ti ti-alert-triangle"></i></button>
   <button class="ni" onclick="switchPage(&#39;orders&#39;,this)" title="Orders"><i class="ti ti-briefcase"></i></button>
   <button class="ni" onclick="switchPage(&#39;repairs&#39;,this)" title="RepairOrders"><i class="ti ti-tool"></i></button>
@@ -1317,6 +1318,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
   <button class="ditem" onclick="switchPage(&#39;online&#39;);closeDrawer()"><i class="ti ti-map-pin"></i> <span data-i18n="online">Online</span></button>
   <button class="ditem" onclick="switchPage(&#39;reports&#39;);closeDrawer()"><i class="ti ti-file-text"></i> <span data-i18n="reports">Reports</span></button>
   <button class="ditem" onclick="switchPage(&#39;gps&#39;);closeDrawer()"><i class="ti ti-map-2"></i> <span data-i18n="gpsTracking">GPS tracking</span></button>
+  <button class="ditem" onclick="switchPage(&#39;demand&#39;);closeDrawer()"><i class="ti ti-chart-dots"></i> <span data-i18n="demandAnalytics">Demand analytics</span></button>
   <button class="ditem" onclick="switchPage(&#39;illegal&#39;);closeDrawer()"><i class="ti ti-alert-triangle"></i> <span data-i18n="illegal">Illegal trips</span></button>
   <button class="ditem" onclick="switchPage(&#39;orders&#39;);closeDrawer()"><i class="ti ti-briefcase"></i> <span data-i18n="orders">Orders</span></button>
   <button class="ditem" onclick="switchPage(&#39;repairs&#39;);closeDrawer()"><i class="ti ti-tool"></i> <span data-i18n="repairs">Repair Orders</span></button>
@@ -2942,6 +2944,51 @@ body.no-icons .ti-external-link::before{content:"↗"}
       </div>
     </div><!-- /gps -->
 
+    <!-- ══════════════ DEMAND ANALYTICS PAGE ══════════════ -->
+    <div class="page" id="page-demand">
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div>
+            <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">С даты</label>
+            <input type="date" id="demFrom" style="min-width:150px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">По дату</label>
+            <input type="date" id="demTo" style="min-width:150px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">Сервис</label>
+            <select id="demSvc" style="min-width:130px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <option value="">Все</option>
+              <option value="B">Bolt</option>
+              <option value="U">Uber</option>
+              <option value="Y">Yango</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">Класс машины</label>
+            <select id="demClass" style="min-width:150px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <option value="">Все классы</option>
+              <option value="economy">Эконом</option>
+              <option value="comfort">Комфорт</option>
+              <option value="business">Бизнес</option>
+              <option value="premium">Премиум</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">Карта по</label>
+            <select id="demMetric" style="min-width:150px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <option value="count">Числу заказов</option>
+              <option value="avg">Среднему чеку</option>
+            </select>
+          </div>
+          <button class="fin-btn" onclick="demandLoad()"><i class="ti ti-refresh"></i> Обновить</button>
+        </div>
+        <div id="demStatus" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+      </div>
+      <div id="demandBody"></div>
+    </div><!-- /demand -->
+
     <!-- ══════════════ ILLEGAL TRIPS PAGE ══════════════ -->
     <div class="page" id="page-illegal">
 
@@ -4233,7 +4280,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-24.31';
+window.APP_VERSION = '2026-06-25.32';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -4410,13 +4457,13 @@ let currentCar=null,filtered=[],driverFilter='all',sortKey='n',sortDir=1,page=1,
 function switchPage(name,sidebarBtn,bnBtn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  const titleKeys={dashboard:'dashboard',cars:'cars',drivers:'drivers',employees:'employees',online:'online',reports:'reports',carsreport:'carsReport',gps:'gpsTracking',illegal:'illegal',orders:'orders',repairs:'repairs',board:'board',settings:'settings'};
+  const titleKeys={dashboard:'dashboard',cars:'cars',drivers:'drivers',employees:'employees',online:'online',reports:'reports',carsreport:'carsReport',gps:'gpsTracking',demand:'demandAnalytics',illegal:'illegal',orders:'orders',repairs:'repairs',board:'board',settings:'settings'};
   const subKey=['reports','illegal','carsreport'].includes(name)?'pageSubReports':name==='orders'?'pageSubOffice':'dashboard';
   const tk=titleKeys[name]||name;
   document.getElementById('pageTitle').innerHTML=`<h1 data-i18n="${tk}">${t(tk)}</h1><p data-i18n="${subKey}">${t(subKey)}</p>`;
   document.querySelectorAll('.sidebar .ni').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
-  const idx={dashboard:0,cars:1,drivers:2,employees:3,online:4,reports:5,carsreport:6,gps:7,illegal:8,orders:9,repairs:10,board:11,finance:12,settings:13};
+  const idx={dashboard:0,cars:1,drivers:2,employees:3,online:4,reports:5,carsreport:6,gps:7,demand:8,illegal:9,orders:10,repairs:11,board:12,finance:13,settings:14};
   if(idx[name]!==undefined){
     document.querySelectorAll('.sidebar .ni')[idx[name]]?.classList.add('active');
     document.querySelectorAll('.bn-item')[idx[name]]?.classList.add('active');
@@ -4428,6 +4475,7 @@ function switchPage(name,sidebarBtn,bnBtn){
   if(name==='reports'){initReportsPage();}
   if(name==='carsreport'){ if(typeof initCarsReport==='function') initCarsReport(); }
   if(name==='gps'){ if(typeof initGpsPage==='function') initGpsPage(); }
+  if(name==='demand'){ if(typeof initDemandPage==='function') initDemandPage(); }
   if(name==='illegal'){initIllegalPage();}
   if(name==='orders'){initOrdersPage();}
   if(name==='repairs'){initRepairsPage();}
@@ -9697,7 +9745,203 @@ function _gpsAppOrdersForVehicle(vehicle, fromMs, toMs){
   return out;
 }
 
-function _gpsRenderHistory(pts, built, vehicle, winLabel){
+// ═══════════════════ DEMAND ANALYTICS (раздел «Аналитика спроса») ═══════════════════
+// Класс машины из бренда+модели водителя
+function _demCarClass(brand, model){
+  var s=((brand||'')+' '+(model||'')).toUpperCase();
+  if(/MAYBACH|S-?CLASS|\bS\d|EQS|ESCALADE|YUKON|GLS|LIMOUSINE/.test(s)) return 'premium';
+  if(/\b7ER\b|\b7 ?SERIES|BMW 7|EQE|E-?CLASS|\bGLE\b|\bX[567]\b|CADILLAC|GMC/.test(s)) return 'business';
+  if(/CAMRY|SONATA|PASSAT|ACCORD|C-?CLASS|\b5ER\b|\bES\b|TERAMONT|EQB|EQA/.test(s)) return 'comfort';
+  return 'economy';
+}
+var _DEM_CLASS_RU={premium:'Премиум',business:'Бизнес',comfort:'Комфорт',economy:'Эконом'};
+// Район из адреса посадки: "DUBAI,BUSINESS BAY,AL SAADA STREET" → "BUSINESS BAY"
+function _demDistrict(addr){
+  if(!addr) return '';
+  var parts=String(addr).split(',').map(function(s){return s.trim();}).filter(Boolean);
+  if(!parts.length) return '';
+  if(parts.length>=2) return parts[1];
+  return parts[0];
+}
+// строит карту driver_uuid → {name,class} по Bolt и Uber ID
+function _demDriverIndex(){
+  var idx={bolt:{},uber:{},yandex:{}};
+  (window.drivers||[]).forEach(function(d){
+    var cls=_demCarClass(d.carBrand,d.carModel);
+    var rec={name:d.name,cls:cls};
+    if(d.boltId) idx.bolt[d.boltId]=rec;
+    if(d.uberId) idx.uber[d.uberId]=rec;
+    if(d.yandexId) idx.yandex[d.yandexId]=rec;
+  });
+  return idx;
+}
+// Собираем все заказы за период в единый формат {svc,from,startMs,price,cls}
+function _demCollectOrders(fromMs, toMs){
+  var idx=_demDriverIndex(), out=[];
+  // Bolt
+  if(Array.isArray(window.boltOrders)){
+    window.boltOrders.forEach(function(o){
+      var t=(o.pickup_ts||o.finished_ts||o.dropoff_ts||0)*1000;
+      if(!t||t<fromMs||t>toMs) return;
+      var dr=idx.bolt[o.driver_uuid]||null;
+      out.push({svc:'B',from:o.from||'',startMs:t,price:Number(o.ride_price)||Number(o.net_earnings)||0,cls:dr?dr.cls:null});
+    });
+  }
+  // Uber (история в window.uberOrders; цены — в window.uberPayments по trip_uuid)
+  if(Array.isArray(window.uberOrders)){
+    var up=(window.uberPayments&&typeof window.uberPayments==='object')?window.uberPayments:{};
+    window.uberOrders.forEach(function(o){
+      var t=Number(o.start_ms)||Number(o.end_ms)||0;
+      if(!t||t<fromMs||t>toMs) return;
+      var dr=idx.uber[o.driver_uuid]||null;
+      var pr=o.trip_uuid&&up[o.trip_uuid]?Number(up[o.trip_uuid].fare):0;
+      out.push({svc:'U',from:o.from||'',startMs:t,price:pr||0,cls:dr?dr.cls:null});
+    });
+  }
+  // Yango
+  if(Array.isArray(window.yangoOrders)){
+    window.yangoOrders.forEach(function(o){
+      var t=(o.finished_ts||o.dropoff_ts||o.pickup_ts||0)*1000;
+      if(!t||t<fromMs||t>toMs) return;
+      var fromAddr=(o.address_from&&o.address_from.address)||o.from||'';
+      var dr=(o.driver_profile&&o.driver_profile.id)?idx.yandex[o.driver_profile.id]:null;
+      var pr=(typeof o.price==='number')?o.price:(o.price&&o.price.amount)||Number(o.amount)||0;
+      out.push({svc:'Y',from:fromAddr,startMs:t,price:pr||0,cls:dr?dr.cls:null});
+    });
+  }
+  return out;
+}
+function initDemandPage(){
+  var f=document.getElementById('demFrom'), t=document.getElementById('demTo');
+  if(f&&!f.value){ var d=new Date(); var s=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); f.value=s; if(t)t.value=s; }
+  demandLoad();
+}
+async function demandLoad(){
+  var from=document.getElementById('demFrom').value, to=document.getElementById('demTo').value;
+  var status=document.getElementById('demStatus'), body=document.getElementById('demandBody');
+  if(!from||!to){ if(status)status.textContent='Выберите даты.'; return; }
+  if(status) status.textContent='Загрузка заказов…';
+  // подгружаем Bolt за период (Uber/Yango уже в памяти как накопленная история)
+  try{ if(typeof loadBoltOrders==='function') await loadBoltOrders(from,to); }catch(_){}
+  // окно в UTC ms (даты в дубайском дне → UTC: начало from 00:00 Дубай, конец to 23:59 Дубай)
+  var fromMs=Date.UTC(+from.slice(0,4),+from.slice(5,7)-1,+from.slice(8,10),0,0)-4*3600000;
+  var toMs  =Date.UTC(+to.slice(0,4),  +to.slice(5,7)-1,  +to.slice(8,10),23,59)-4*3600000;
+  var orders=_demCollectOrders(fromMs,toMs);
+  // фильтры
+  var svc=document.getElementById('demSvc').value, cls=document.getElementById('demClass').value;
+  if(svc) orders=orders.filter(function(o){return o.svc===svc;});
+  if(cls) orders=orders.filter(function(o){return o.cls===cls;});
+  if(status) status.textContent='Заказов за период: '+orders.length+(orders.length<20?' · мало данных — для точной картины загрузите больше истории':'');
+  _demRender(orders, body);
+}
+function _demRender(orders, body){
+  if(!body) return;
+  if(!orders.length){ body.innerHTML='<div class="card" style="color:var(--text3)">Нет заказов за выбранный период/фильтры. Проверьте, что заказы Bolt/Uber/Yango загружены и у водителей привязаны ID.</div>'; return; }
+  var svcName={B:'Bolt',U:'Uber',Y:'Yango'};
+  var metric=document.getElementById('demMetric').value||'count';
+  // дубайский час заказа
+  function dubHour(ms){ return (new Date(ms).getUTCHours()+4)%24; }
+
+  // агрегаты по району
+  var byDist={};
+  orders.forEach(function(o){
+    var d=_demDistrict(o.from)||'(без адреса)';
+    if(!byDist[d]) byDist[d]={count:0,sum:0,priced:0,hours:{},svc:{}};
+    byDist[d].count++; if(o.price>0){byDist[d].sum+=o.price;byDist[d].priced++;}
+    var h=dubHour(o.startMs); byDist[d].hours[h]=(byDist[d].hours[h]||0)+1;
+    byDist[d].svc[o.svc]=(byDist[d].svc[o.svc]||0)+1;
+  });
+  var dists=Object.keys(byDist);
+
+  // ── 1. ГОРЯЧО СЕЙЧАС (текущий дубайский час) ──
+  var nowH=(new Date().getUTCHours()+4)%24;
+  var hotNow=dists.map(function(d){return {d:d,c:byDist[d].hours[nowH]||0};}).filter(function(x){return x.c>0;}).sort(function(a,b){return b.c-a.c;}).slice(0,5);
+  var html='';
+  html+='<div class="card" style="margin-bottom:14px">';
+  html+='<div style="font-size:13px;font-weight:700;margin-bottom:8px"><i class="ti ti-flame" style="color:#e8590c"></i> Горячо сейчас · '+('0'+nowH).slice(-2)+':00 (по историческим данным периода)</div>';
+  if(hotNow.length){
+    html+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
+    hotNow.forEach(function(x,i){
+      html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:8px 14px">'+
+        '<span style="font-size:11px;color:var(--text3)">#'+(i+1)+'</span> <b>'+escHtml(x.d)+'</b> <span style="color:#e8590c;font-weight:700">'+x.c+'</span> <span style="font-size:11px;color:var(--text3)">заказов в этот час</span></div>';
+    });
+    html+='</div>';
+  } else {
+    html+='<div style="font-size:12px;color:var(--text3)">В текущий час '+('0'+nowH).slice(-2)+':00 в данных периода заказов нет. Смотрите тепловую таблицу ниже.</div>';
+  }
+  html+='</div>';
+
+  // ── 2. ТЕПЛОВАЯ ТАБЛИЦА район × час ──
+  // сортируем районы по количеству заказов
+  var distSorted=dists.slice().sort(function(a,b){return byDist[b].count-byDist[a].count;}).slice(0,25);
+  // максимум для нормировки цвета
+  var maxCell=0;
+  distSorted.forEach(function(d){ for(var h=0;h<24;h++){
+    var v=metric==='avg'? (function(){var c=0,s=0;orders.forEach(function(o){if((_demDistrict(o.from)||'(без адреса)')===d&&dubHour(o.startMs)===h&&o.price>0){c++;s+=o.price;}});return c?s/c:0;})() : (byDist[d].hours[h]||0);
+    if(v>maxCell)maxCell=v;
+  }});
+  function cellColor(v){ if(v<=0) return 'transparent'; var a=maxCell>0?(0.12+0.78*v/maxCell):0; return 'rgba(13,158,117,'+a.toFixed(2)+')'; }
+  // предрасчёт avg по ячейкам (чтобы не гонять orders в цикле повторно слишком тяжело — район небольшой)
+  var th2='padding:4px 6px;font-size:10px;color:var(--text3);font-weight:600;text-align:center;border-bottom:1px solid var(--border)';
+  html+='<div class="card" style="margin-bottom:14px;overflow-x:auto">';
+  html+='<div style="font-size:13px;font-weight:700;margin-bottom:4px">Тепловая карта: район × час '+(metric==='avg'?'(средний чек, AED)':'(число заказов)')+'</div>';
+  html+='<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Дубайское время. Чем насыщеннее зелёный — тем '+(metric==='avg'?'выше средний чек':'больше заказов')+'.</div>';
+  html+='<table style="border-collapse:collapse;min-width:760px"><tr><th style="'+th2+';text-align:left;position:sticky;left:0;background:var(--bg)">Район</th>';
+  for(var h=0;h<24;h++){ html+='<th style="'+th2+'">'+('0'+h).slice(-2)+'</th>'; }
+  html+='<th style="'+th2+'">Σ</th></tr>';
+  distSorted.forEach(function(d){
+    html+='<tr><td style="padding:4px 6px;font-size:11px;font-weight:600;white-space:nowrap;position:sticky;left:0;background:var(--bg);border-bottom:1px solid var(--border)">'+escHtml(d)+'</td>';
+    for(var h=0;h<24;h++){
+      var cnt=byDist[d].hours[h]||0;
+      var val=cnt;
+      if(metric==='avg'){ var c=0,s=0; orders.forEach(function(o){ if((_demDistrict(o.from)||'(без адреса)')===d&&dubHour(o.startMs)===h&&o.price>0){c++;s+=o.price;} }); val=c?Math.round(s/c):0; }
+      var disp=cnt>0?(metric==='avg'?(val||''):cnt):'';
+      html+='<td title="'+escHtml(d)+' · '+('0'+h).slice(-2)+':00 · '+cnt+' заказов" style="padding:4px 2px;text-align:center;font-size:10px;border-bottom:1px solid var(--border);background:'+cellColor(val)+'">'+disp+'</td>';
+    }
+    html+='<td style="padding:4px 6px;text-align:center;font-size:11px;font-weight:700;border-bottom:1px solid var(--border)">'+byDist[d].count+'</td></tr>';
+  });
+  html+='</table></div>';
+
+  // ── 3. ТОП районов ──
+  var topD=dists.slice().sort(function(a,b){return byDist[b].count-byDist[a].count;}).slice(0,15);
+  var thx='text-align:left;padding:6px 8px;font-size:11px;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)';
+  var tdx='padding:6px 8px;font-size:12px;border-bottom:1px solid var(--border)';
+  html+='<div class="card" style="margin-bottom:14px;overflow-x:auto">';
+  html+='<div style="font-size:13px;font-weight:700;margin-bottom:8px">Топ районов по спросу</div>';
+  html+='<table style="width:100%;border-collapse:collapse"><tr><th style="'+thx+'">Район</th><th style="'+thx+'">Заказов</th><th style="'+thx+'">Ср. чек</th><th style="'+thx+'">Сервисы</th><th style="'+thx+'">Пиковые часы</th><th style="'+thx+'">Карта</th></tr>';
+  topD.forEach(function(d){
+    var o=byDist[d];
+    var avg=o.priced?Math.round(o.sum/o.priced):0;
+    var svcStr=Object.keys(o.svc).map(function(s){return (svcName[s]||s)+' '+o.svc[s];}).join(', ');
+    var hrs=Object.keys(o.hours).map(function(h){return {h:+h,c:o.hours[h]};}).sort(function(a,b){return b.c-a.c;}).slice(0,3).map(function(x){return ('0'+x.h).slice(-2)+':00';}).join(', ');
+    var mapUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(d+', Dubai');
+    html+='<tr><td style="'+tdx+'"><b>'+escHtml(d)+'</b></td><td style="'+tdx+'">'+o.count+'</td>'+
+      '<td style="'+tdx+'">'+(avg?('AED '+avg):'<span style="color:var(--text3)">—</span>')+'</td>'+
+      '<td style="'+tdx+';color:var(--text3)">'+escHtml(svcStr)+'</td>'+
+      '<td style="'+tdx+';color:var(--text3);white-space:nowrap">'+escHtml(hrs)+'</td>'+
+      '<td style="'+tdx+'"><a href="'+mapUrl+'" target="_blank" rel="noopener">↗</a></td></tr>';
+  });
+  html+='</table></div>';
+
+  // ── 4. График по часам (всего) ──
+  var byHour={}, maxH=0;
+  orders.forEach(function(o){ var h=dubHour(o.startMs); byHour[h]=(byHour[h]||0)+1; if(byHour[h]>maxH)maxH=byHour[h]; });
+  html+='<div class="card"><div style="font-size:13px;font-weight:700;margin-bottom:8px">Спрос по часам (весь период)</div>';
+  html+='<div style="display:flex;align-items:flex-end;gap:3px;height:110px">';
+  for(var h2=0;h2<24;h2++){ var c=byHour[h2]||0; var pct=maxH>0?Math.round(c/maxH*100):0;
+    html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%">'+
+      (c>0?'<div style="font-size:9px;color:var(--text3)">'+c+'</div>':'')+
+      '<div title="'+('0'+h2).slice(-2)+':00 · '+c+'" style="width:100%;background:'+(c>0?'#0d9e75':'var(--border)')+';height:'+Math.max(pct,c>0?6:2)+'%;border-radius:3px 3px 0 0;min-height:2px"></div></div>';
+  }
+  html+='</div><div style="display:flex;gap:3px;margin-top:4px">';
+  for(var h3=0;h3<24;h3++){ html+='<div style="flex:1;text-align:center;font-size:8px;color:var(--text3)">'+(h3%3===0?('0'+h3).slice(-2):'')+'</div>'; }
+  html+='</div></div>';
+
+  body.innerHTML=html;
+}
+window.initDemandPage=initDemandPage; window.demandLoad=demandLoad;
+
+
   var segs=built.segs, stops=built.stops;
   var grp=L.layerGroup();
   var allLL=pts.map(function(p){return [p.lat,p.lng];});
@@ -16960,7 +17204,7 @@ document.head.appendChild(spinStyle);
 const LANGS={
 en:{flag:'🇬🇧',code:'EN',dir:'ltr',
   dashboard:'Dashboard',cars:'Cars',drivers:'Drivers',online:'Online',
-  reports:'Drivers report',carsReport:'Cars report',bestCar:'Best car',gpsTracking:'GPS tracking',gpsLive:'Live map',gpsHistory:'Route history',gpsVehicles:'Vehicles',gpsRefresh:'Refresh',gpsPickVehicle:'Vehicle',gpsFrom:'From',gpsTo:'To',gpsFromTime:'Time from',gpsToTime:'Time to',gpsShowRoute:'Show route',gpsImportCabman:'Import Cabman CSV',illegal:'Illegal trips',orders:'Orders',
+  reports:'Drivers report',carsReport:'Cars report',bestCar:'Best car',gpsTracking:'GPS tracking',gpsLive:'Live map',gpsHistory:'Route history',gpsVehicles:'Vehicles',gpsRefresh:'Refresh',gpsPickVehicle:'Vehicle',gpsFrom:'From',gpsTo:'To',gpsFromTime:'Time from',gpsToTime:'Time to',gpsShowRoute:'Show route',gpsImportCabman:'Import Cabman CSV',demandAnalytics:'Demand analytics',illegal:'Illegal trips',orders:'Orders',
   repairs:'Repair Orders',board:'Board',settings:'Settings',more:'More',
   add:'Add',save:'Save',cancel:'Cancel',edit:'Edit',delete:'Delete',deleteDriverQ:'Delete this driver?',deleteCarQ:'Delete this car?',
   export:'XLSX',back:'Back',search:'Search...',searchCar:'Search car...',searchDriver:'Driver name...',
@@ -17244,7 +17488,7 @@ en:{flag:'🇬🇧',code:'EN',dir:'ltr',
   onlineDuration:'Online duration',
 ar:{flag:'🇦🇪',code:'عر',dir:'rtl',
   dashboard:'لوحة التحكم',cars:'السيارات',drivers:'السائقون',online:'متصل',
-  reports:'تقارير',carsReport:'تقرير السيارات',bestCar:'أفضل سيارة',gpsTracking:'تتبع GPS',gpsLive:'خريطة مباشرة',gpsHistory:'سجل المسار',gpsVehicles:'المركبات',gpsRefresh:'تحديث',gpsPickVehicle:'المركبة',gpsFrom:'من',gpsTo:'إلى',gpsFromTime:'الوقت من',gpsToTime:'الوقت إلى',gpsShowRoute:'عرض المسار',gpsImportCabman:'استيراد Cabman CSV',illegal:'مخالفات',orders:'الطلبات',
+  reports:'تقارير',carsReport:'تقرير السيارات',bestCar:'أفضل سيارة',gpsTracking:'تتبع GPS',gpsLive:'خريطة مباشرة',gpsHistory:'سجل المسار',gpsVehicles:'المركبات',gpsRefresh:'تحديث',gpsPickVehicle:'المركبة',gpsFrom:'من',gpsTo:'إلى',gpsFromTime:'الوقت من',gpsToTime:'الوقت إلى',gpsShowRoute:'عرض المسار',gpsImportCabman:'استيراد Cabman CSV',demandAnalytics:'تحليل الطلب',illegal:'مخالفات',orders:'الطلبات',
   repairs:'الصيانة',board:'المهام',settings:'الإعدادات',more:'المزيد',
   add:'إضافة',save:'حفظ',cancel:'إلغاء',edit:'تعديل',delete:'حذف',
   export:'تصدير',back:'رجوع',search:'بحث...',searchCar:'بحث عن سيارة...',searchDriver:'اسم السائق...',
@@ -17349,7 +17593,7 @@ ar:{flag:'🇦🇪',code:'عر',dir:'rtl',
   twoDrivers:'سائقان',
 },ru:{flag:'🇷🇺',code:'RU',dir:'ltr',
   dashboard:'Дашборд',cars:'Автомобили',drivers:'Водители',online:'Онлайн',
-  reports:'Отчёт водителей',carsReport:'Отчёт по автомобилям',bestCar:'Лучшая машина',gpsTracking:'GPS-трекинг',gpsLive:'Карта онлайн',gpsHistory:'История маршрутов',gpsVehicles:'Машины',gpsRefresh:'Обновить',gpsPickVehicle:'Машина',gpsFrom:'С',gpsTo:'По',gpsFromTime:'Время с',gpsToTime:'Время по',gpsShowRoute:'Показать маршрут',gpsImportCabman:'Импорт Cabman CSV',illegal:'Нарушения',orders:'Заказы',
+  reports:'Отчёт водителей',carsReport:'Отчёт по автомобилям',bestCar:'Лучшая машина',gpsTracking:'GPS-трекинг',gpsLive:'Карта онлайн',gpsHistory:'История маршрутов',gpsVehicles:'Машины',gpsRefresh:'Обновить',gpsPickVehicle:'Машина',gpsFrom:'С',gpsTo:'По',gpsFromTime:'Время с',gpsToTime:'Время по',gpsShowRoute:'Показать маршрут',gpsImportCabman:'Импорт Cabman CSV',demandAnalytics:'Аналитика спроса',illegal:'Нарушения',orders:'Заказы',
   repairs:'Ремонт',board:'Доска задач',settings:'Настройки',more:'Ещё',
   add:'Добавить',save:'Сохранить',cancel:'Отмена',edit:'Изменить',delete:'Удалить',deleteDriverQ:'Удалить этого водителя?',deleteCarQ:'Удалить эту машину?',
   export:'XLSX',back:'Назад',search:'Поиск...',searchCar:'Поиск авто...',searchDriver:'Имя водителя...',
