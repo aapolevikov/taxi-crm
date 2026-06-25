@@ -4280,7 +4280,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-25.32';
+window.APP_VERSION = '2026-06-25.33';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -9941,7 +9941,7 @@ function _demRender(orders, body){
 }
 window.initDemandPage=initDemandPage; window.demandLoad=demandLoad;
 
-
+function _gpsRenderHistory(pts, built, vehicle, winLabel){
   var segs=built.segs, stops=built.stops;
   var grp=L.layerGroup();
   var allLL=pts.map(function(p){return [p.lat,p.lng];});
