@@ -844,7 +844,7 @@ function setLang(l){
 var _y=document.getElementById('yr');if(_y)_y.textContent=new Date().getFullYear();
 (function(){
   document.querySelectorAll('[data-i18n]').forEach(function(el){_orig[el.getAttribute('data-i18n')]=el.innerHTML;});
-  var l='en';try{l=localStorage.getItem('mrg_lang')||'en'}catch(e){}
+  var l='en';
   setLang(l);
 })();
 var nav=document.getElementById('nav');

@@ -43,9 +43,9 @@ h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.08;letter-spacin
 .nav-links a:hover{color:var(--text)}
 .nav-cta{font-weight:600;font-size:14px;padding:9px 18px;border:1px solid var(--gold);border-radius:999px;color:var(--gold-soft)}
 .nav-cta:hover{background:var(--gold);color:#ffffff}
-.langtog{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
-.langtog button{background:none;border:none;color:var(--text3);font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:7px 11px;cursor:pointer;transition:.2s}
-html[lang="en"] .langtog [data-l="en"],html[lang="ru"] .langtog [data-l="ru"]{background:var(--gold);color:#ffffff}
+
+
+html[lang="en"] 
 .burger{display:none;background:none;border:none;color:var(--text);font-size:26px;cursor:pointer}
 .hero{position:relative;padding:160px 0 76px;overflow:hidden}
 .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(900px 480px at 78% 4%,rgba(27,158,99,.16),transparent 60%),radial-gradient(700px 600px at 6% 100%,rgba(27,158,99,.10),transparent 55%);pointer-events:none}
@@ -289,7 +289,7 @@ footer{border-top:1px solid var(--line);padding:40px 0 32px;color:var(--text3);f
 .lg-choose .t{font-family:var(--serif),Georgia,serif;font-size:17px}
 .lg-choose .arr{color:var(--gold-soft);font-size:18px}
 .lg-hide{display:none}
-</style>
+.langtog{position:relative;display:inline-block;font-family:var(--mono)}.langtog>summary{list-style:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:11px;letter-spacing:.05em;color:var(--text2);cursor:pointer;white-space:nowrap;transition:.2s;background:#fff}.langtog>summary::-webkit-details-marker{display:none}.langtog>summary:hover{color:var(--text);border-color:var(--text3)}.langtog>summary .chev{font-size:8px;opacity:.6;transition:.2s}.langtog[open]>summary .chev{transform:rotate(180deg)}.langtog .menu{position:absolute;top:calc(100% + 6px);right:0;min-width:158px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;z-index:90;box-shadow:0 10px 30px rgba(0,0,0,.13)}html[dir=rtl] .langtog .menu{right:auto;left:0}.langtog .menu a{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:12.5px;color:var(--text2);text-decoration:none;white-space:nowrap;transition:.15s}.langtog .menu a:hover{background:var(--ink)}.langtog .menu a.on{background:var(--gold);color:#fff}.langtog .menu a .flag{font-size:15px;line-height:1}</style>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -575,7 +575,7 @@ footer{border-top:1px solid var(--line);padding:40px 0 32px;color:var(--text3);f
 </div>
 <div class="tb-right">
 <a data-i18n="tb_care" href="/#contact">Customer Care</a>
-<div class="langtog"><button data-l="en" onclick="setLang('en')">EN</button><button data-l="ru" onclick="setLang('ru')">RU</button></div>
+<details class="langtog"><summary><span class="flag">🇦🇪</span><span>العربية</span><span class="chev">▼</span></summary><div class="menu"><a href="/limousine.html" hreflang="en" lang="en"><span class="flag">🇬🇧</span><span>English</span></a><a class="on" href="/limousine.ar.html" hreflang="ar" lang="ar"><span class="flag">🇦🇪</span><span>العربية</span></a><a href="/limousine.ru.html" hreflang="ru" lang="ru"><span class="flag">🇷🇺</span><span>Русский</span></a><a href="/limousine.hi.html" hreflang="hi" lang="hi"><span class="flag">🇮🇳</span><span>हिन्दी</span></a><a href="/limousine.ur.html" hreflang="ur" lang="ur"><span class="flag">🇵🇰</span><span>اردو</span></a></div></details>
 </div>
 </div></div>
 <div class="nav-in">
@@ -753,73 +753,45 @@ footer{border-top:1px solid var(--line);padding:40px 0 32px;color:var(--text3);f
 </div>
 </footer>
 <script>
-var I18N_RU={
- chat_sub:"На связи · отвечаем быстро",
- chat_greet:"Здравствуйте 👋 Чем помочь? Напишите нам в WhatsApp — ответим сразу.",
- chat_btn:"Написать в WhatsApp",
-
- tb_lim:"Лимузин",
- tb_rent:"Аренда",
- tb_tour:"Туризм",tb_guide:"Гид",
+var I18N_AR={
+ chat_sub:"متصل · نردّ بسرعة",
+ chat_greet:"مرحبًا 👋 كيف نساعدك؟ راسلنا على واتساب — نردّ فورًا.",
+ chat_btn:"راسلنا على واتساب",
+ tb_lim:"ليموزين",
+ tb_rent:"تأجير",
+ tb_tour:"سياحة",
+ tb_guide:"دليل",
  tb_crm:"Ride CRM",
- tb_inv:"Инвестиции",
- tb_care:"Поддержка",
- n_comp:"Компании",
- n_contact:"Контакты",
- n_login:"Вход",
+ tb_inv:"استثمار",
+ tb_care:"الدعم",
+ n_comp:"الشركات",
+ n_inv:"للمستثمرين",
+ n_contact:"اتصل بنا",
+ n_login:"دخول",
  lm1t:"Ride CRM",
- lm1s:"Управление парком",
- lm2t:"Кабинет инвестора",
- lm2s:"Отчёты и программы",
- lm3t:"Вход для сотрудников",
- lm3s:"Для сотрудников",
-
- bf_about:"Группа компаний из Дубая с опытом 10+ лет в премиум-перевозках — лимузин, аренда авто, туризм, технологии для автопарков и инвестиции.",
- bf_comp:"Компании",
- bf_lim:"Лимузин",
- bf_rent:"Аренда авто",
- bf_tour:"Туризм",
+ lm1s:"إدارة الأسطول",
+ lm2t:"بوابة المستثمر",
+ lm2s:"التقارير والبرامج",
+ lm3t:"دخول الموظفين",
+ lm3s:"للموظفين",
+ bf_about:"مجموعة شركات في دبي بخبرة تزيد عن 10 سنوات في التنقل الفاخر — ليموزين، تأجير سيارات، سياحة، تقنية الأساطيل، واستثمار.",
+ bf_comp:"الشركات",
+ bf_lim:"ليموزين",
+ bf_rent:"تأجير سيارات",
+ bf_tour:"سياحة",
  bf_crm:"Ride CRM",
- bf_inv:"Инвестиции",
- bf_group:"Группа",
- bf_about2:"О нас",
- bf_invrel:"Инвесторам",
- bf_login:"Вход для сотрудников",
- bf_contactl:"Контакты",
- bf_contact:"Контакты",
- bf_addr:"White Swan Building, Дубай, ОАЭ",
- bf_rights:"Все права защищены.",
-
- n_lim:"Лимузин",n_rent:"Аренда авто",n_inv:"Инвесторам",n_tech:"Ride CRM",n_book:"Заказать",
- crumb:"Лимузин",
- h_eyebrow:"Mister Ride Limousine",
- h_title:"Лимузин и аренда авто с водителем в Дубае — <em>как надо</em>.",
- h_lead:"Аренда машины с водителем в Дубае — премиальные Mercedes, BMW и внедорожники с профессиональными водителями. Трансферы в аэропорт, почасовая и помесячная аренда, корпоративные счета и экскурсии по ОАЭ.",
- h_cta1:"Заказать поездку →",h_cta2:"Посмотреть флот",
- s_eyebrow:"Что мы предлагаем",s_title:"Один сервис для любой поездки.",s_sub:"От быстрого трансфера в аэропорт до полного дня с водителем — плюс семейные и туристические трансферы под ключ.",
- sv1h:"Трансфер в аэропорт",sv1p:"Встреча в DXB и DWC, отслеживание рейса, помощь с багажом. Точно вовремя.",
- sv2h:"Почасовая аренда",sv2p:"Машина с водителем в вашем распоряжении — встречи, шопинг, мероприятия.",
- sv3h:"Корпоративным клиентам",sv3p:"Надёжный транспорт для команды и гостей, единый счёт раз в месяц.",
- sv4h:"Экскурсии по городу",sv4p:"Дубай и Абу-Даби с водителем, который знает город.",
- sv5h:"Семейные и тур. трансферы",sv5p:"Школа, встреча у отеля, поездки на день — по расписанию, для семей и туристов.",
- sv6h:"Между городами",sv6p:"Комфортные трансферы между эмиратами — Дубай, Абу-Даби и дальше.",
- f_eyebrow:"Автопарк",f_title:"Премиум-авто в идеальном состоянии.",f_sub:"Современный ухоженный парк: седаны, внедорожники и вэны, включая электромобили.",
- fc1c:"Люкс",fc1p:"BMW 7 Series",
- fc2c:"Премиум SUV",fc2p:"GMC Yukon Denali",
- fc3c:"Бизнес",fc3p:"Toyota Highlander",
- fc4c:"Электро",fc4p:"Поездки без выбросов",
- fc5c:"Группа и вэн",fc5p:"До 7 пассажиров",
- w_eyebrow:"Почему Mister Ride",w_title:"Детали, которые решают.",
- w1n:"10+",w1c:"лет в управлении автопарком",w2n:"24/7",w2c:"приём заявок и поддержка",w3n:"Pro",w3c:"проверенные водители с лицензией",w4n:"GPS",w4c:"контроль и подача вовремя",
- b_eyebrow:"Заказ",b_title:"Заказ в три шага.",b_sub:"Скажите детали, мы подтверждаем машину и водителя, вы едете. Оплата по ссылке или наличными.",
- b1h:"Опишите поездку",b1p:"Дата, время, откуда и куда — в WhatsApp или по звонку.",
- b2h:"Мы подтверждаем",b2p:"Подбираем нужную машину и профессионального водителя, присылаем детали.",
- b3h:"Поездка и оплата",b3p:"Оплата по ссылке картой или наличными. Чек — всегда.",b_s1:"ШАГ 01",b_s2:"ШАГ 02",b_s3:"ШАГ 03",
- cta_eye:"Готовы, когда скажете",cta_title:"Закажите авто сейчас.",cta_sub:"Напишите детали поездки — подтвердим сразу.",
- cta_wa:"Заказать в WhatsApp →",
- f_home:"Главная",f_investors:"Инвесторам",f_staff:"Вход для сотрудников",
-  sv_chauffeur:"Нужен личный водитель? Смотрите наш сервис шофёров →",
-  faq_eye:"Вопросы",faq_title:"Частые вопросы",faqq1:"Вы делаете трансферы из аэропортов DXB и DWC?",faqa1:"Да. Встречаем с табличкой в Дубайском международном (DXB) и Аль-Мактум (DWC), отслеживаем рейс и сдвигаем подачу при задержке — без доплаты.",faqq2:"Можно заказать машину с водителем на час?",faqa2:"Да. Почасовая аренда — машина и профессиональный водитель в вашем распоряжении для встреч, шопинга или мероприятий, обычно от нескольких часов.",faqq3:"Какие машины в лимузин-парке?",faqa3:"Седаны Mercedes S-Class и BMW 7 серии, внедорожники Cadillac Escalade и GMC Yukon, бизнес-класс вроде Lexus ES — все свежих годов и в идеальном состоянии.",faqq4:"Как оплатить заказ лимузина?",faqa4:"Картой по защищённой ссылке или наличными водителю. Чек выдаём всегда.",faqq5:"Вы возите в другие эмираты, кроме Дубая?",faqa5:"Да. Делаем межгородские трансферы по ОАЭ, включая Абу-Даби и Шарджу, на комфортных машинах с опытными водителями.",faqq6:"Можно арендовать машину с водителем в Дубае на месяц?",faqa6:"Да. Предлагаем помесячную аренду машины с водителем в Дубае для частных лиц и компаний — закреплённый водитель и автомобиль с простой ежемесячной оплатой. Расскажите о задачах — рассчитаем тариф.",faqq7:"Предоставляете личного водителя в Дубае?",faqa7:"Да. Можно нанять личного водителя в Дубае на день или на постоянной основе — профессиональный водитель с лицензией, закреплённый за вами, для деловых и личных поездок."
+ bf_inv:"استثمار",
+ bf_group:"المجموعة",
+ bf_about2:"من نحن",
+ bf_invrel:"علاقات المستثمرين",
+ bf_login:"دخول الموظفين",
+ bf_contactl:"اتصل بنا",
+ bf_contact:"اتصل بنا",
+ bf_addr:"White Swan Building، دبي، الإمارات",
+ bf_rights:"جميع الحقوق محفوظة.",
+ crumb:"ليموزين",
+ faq_eye:"الأسئلة",
+ w_eyebrow:"لماذا Mister Ride"
 };
 var _orig={};
 function setLang(l){
@@ -827,14 +799,14 @@ function setLang(l){
   document.querySelectorAll('[data-i18n]').forEach(function(el){
     var k=el.getAttribute('data-i18n');
     if(!(k in _orig)) _orig[k]=el.innerHTML;
-    el.innerHTML=(l==='ru'&&I18N_RU[k]!=null)?I18N_RU[k]:_orig[k];
+    el.innerHTML=(l==='ar'&&I18N_AR[k]!=null)?I18N_AR[k]:_orig[k];
   });
   try{localStorage.setItem('mrg_lang',l)}catch(e){}
 }
 var _y=document.getElementById('yr');if(_y)_y.textContent=new Date().getFullYear();
 (function(){
   document.querySelectorAll('[data-i18n]').forEach(function(el){_orig[el.getAttribute('data-i18n')]=el.innerHTML;});
-  var l='en';try{l=localStorage.getItem('mrg_lang')||'en'}catch(e){}
+  var l='ar';
   setLang(l);
 })();
 var nav=document.getElementById('nav');
