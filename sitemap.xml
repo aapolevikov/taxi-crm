@@ -2,10 +2,6 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://misterridegroup.com/guide.html</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://misterridegroup.com/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://misterridegroup.com/"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://misterridegroup.com/index.ru.html"/>
@@ -653,6 +649,56 @@
     <xhtml:link rel="alternate" hreflang="ur" href="https://misterridegroup.com/crm.ur.html"/>
     <xhtml:link rel="alternate" hreflang="hi" href="https://misterridegroup.com/crm.hi.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://misterridegroup.com/crm.html"/>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://misterridegroup.com/guide.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://misterridegroup.com/guide.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://misterridegroup.com/guide.ru.html"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://misterridegroup.com/guide.ar.html"/>
+    <xhtml:link rel="alternate" hreflang="ur" href="https://misterridegroup.com/guide.ur.html"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://misterridegroup.com/guide.hi.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://misterridegroup.com/guide.html"/>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://misterridegroup.com/guide.ru.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://misterridegroup.com/guide.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://misterridegroup.com/guide.ru.html"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://misterridegroup.com/guide.ar.html"/>
+    <xhtml:link rel="alternate" hreflang="ur" href="https://misterridegroup.com/guide.ur.html"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://misterridegroup.com/guide.hi.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://misterridegroup.com/guide.html"/>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://misterridegroup.com/guide.ar.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://misterridegroup.com/guide.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://misterridegroup.com/guide.ru.html"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://misterridegroup.com/guide.ar.html"/>
+    <xhtml:link rel="alternate" hreflang="ur" href="https://misterridegroup.com/guide.ur.html"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://misterridegroup.com/guide.hi.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://misterridegroup.com/guide.html"/>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://misterridegroup.com/guide.ur.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://misterridegroup.com/guide.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://misterridegroup.com/guide.ru.html"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://misterridegroup.com/guide.ar.html"/>
+    <xhtml:link rel="alternate" hreflang="ur" href="https://misterridegroup.com/guide.ur.html"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://misterridegroup.com/guide.hi.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://misterridegroup.com/guide.html"/>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://misterridegroup.com/guide.hi.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://misterridegroup.com/guide.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://misterridegroup.com/guide.ru.html"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://misterridegroup.com/guide.ar.html"/>
+    <xhtml:link rel="alternate" hreflang="ur" href="https://misterridegroup.com/guide.ur.html"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://misterridegroup.com/guide.hi.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://misterridegroup.com/guide.html"/>
     <priority>0.9</priority>
   </url>
   <url>
