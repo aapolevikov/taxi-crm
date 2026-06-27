@@ -42,9 +42,9 @@ h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.1;letter-spacing
 .nav-links a:hover{color:var(--text)}
 .nav-cta{font-weight:600;font-size:14px;padding:9px 18px;border:1px solid var(--gold);border-radius:999px;color:var(--gold)}
 .nav-cta:hover{background:var(--gold);color:#fff}
-.langtog{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
-.langtog button{background:none;border:none;color:var(--text3);font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:7px 11px;cursor:pointer;transition:.2s}
-html[lang="en"] .langtog [data-l="en"],html[lang="ru"] .langtog [data-l="ru"]{background:var(--gold);color:#fff}
+
+
+html[lang="en"] 
 .burger{display:none;background:none;border:none;color:var(--text);font-size:26px;cursor:pointer}
 .hero{position:relative;padding:150px 0 70px;overflow:hidden}
 .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(800px 420px at 80% 6%,rgba(27,158,99,.10),transparent 60%);pointer-events:none}
@@ -261,7 +261,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .lg-choose .t{font-family:var(--serif),Georgia,serif;font-size:17px}
 .lg-choose .arr{color:var(--gold-soft);font-size:18px}
 .lg-hide{display:none}
-</style>
+.langtog{position:relative;display:inline-block;font-family:var(--mono)}.langtog>summary{list-style:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:11px;letter-spacing:.05em;color:var(--text2);cursor:pointer;white-space:nowrap;transition:.2s;background:#fff}.langtog>summary::-webkit-details-marker{display:none}.langtog>summary:hover{color:var(--text);border-color:var(--text3)}.langtog>summary .chev{font-size:8px;opacity:.6;transition:.2s}.langtog[open]>summary .chev{transform:rotate(180deg)}.langtog .menu{position:absolute;top:calc(100% + 6px);right:0;min-width:158px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;z-index:90;box-shadow:0 10px 30px rgba(0,0,0,.13)}html[dir=rtl] .langtog .menu{right:auto;left:0}.langtog .menu a{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:12.5px;color:var(--text2);text-decoration:none;white-space:nowrap;transition:.15s}.langtog .menu a:hover{background:var(--ink)}.langtog .menu a.on{background:var(--gold);color:#fff}.langtog .menu a .flag{font-size:15px;line-height:1}</style>
 <link rel="canonical" href="https://misterridegroup.com/guide-car-with-driver-cost.html">
 <link rel="alternate" hreflang="en" href="https://misterridegroup.com/guide-car-with-driver-cost.html">
 <link rel="alternate" hreflang="ru" href="https://misterridegroup.com/guide-car-with-driver-cost.ru.html">
@@ -296,7 +296,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
     </div>
     <div class="tb-right">
       <a href="/#contact" data-i18n="tb_care">Customer Care</a>
-      <div class="langtog"><button data-l="en" onclick="setLang('en')">EN</button><button data-l="ru" onclick="setLang('ru')">RU</button></div>
+      <details class="langtog"><summary><span class="flag">🇬🇧</span><span>English</span><span class="chev">▼</span></summary><div class="menu"><a class="on" href="/guide-car-with-driver-cost.html" hreflang="en" lang="en"><span class="flag">🇬🇧</span><span>English</span></a><a href="/guide-car-with-driver-cost.ar.html" hreflang="ar" lang="ar"><span class="flag">🇦🇪</span><span>العربية</span></a><a href="/guide-car-with-driver-cost.ru.html" hreflang="ru" lang="ru"><span class="flag">🇷🇺</span><span>Русский</span></a><a href="/guide-car-with-driver-cost.hi.html" hreflang="hi" lang="hi"><span class="flag">🇮🇳</span><span>हिन्दी</span></a><a href="/guide-car-with-driver-cost.ur.html" hreflang="ur" lang="ur"><span class="flag">🇵🇰</span><span>اردو</span></a></div></details>
     </div>
   </div></div>
   <div class="nav-in">
@@ -499,7 +499,7 @@ function setLang(l){
 }
 (function(){
   document.querySelectorAll('[data-i18n]').forEach(function(el){_orig[el.getAttribute('data-i18n')]=el.innerHTML;});
-  var l='en';try{l=localStorage.getItem('mrg_lang')||'en'}catch(e){}
+  var l='en';
   setLang(l);
   var y=new Date().getFullYear();
   document.querySelectorAll('#yr,#yr2').forEach(function(e){e.textContent=y;});

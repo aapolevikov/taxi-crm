@@ -43,9 +43,9 @@ h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.1;letter-spacing
 .nav-links a:hover{color:var(--text)}
 .nav-cta{font-weight:600;font-size:14px;padding:9px 18px;border:1px solid var(--gold);border-radius:999px;color:var(--gold)}
 .nav-cta:hover{background:var(--gold);color:#fff}
-.langtog{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
-.langtog button{background:none;border:none;color:var(--text3);font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:7px 11px;cursor:pointer;transition:.2s}
-html[lang="en"] .langtog [data-l="en"],html[lang="ru"] .langtog [data-l="ru"]{background:var(--gold);color:#fff}
+
+
+html[lang="en"] 
 .burger{display:none;background:none;border:none;color:var(--text);font-size:26px;cursor:pointer}
 .hero{position:relative;padding:150px 0 70px;overflow:hidden}
 .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(800px 420px at 80% 6%,rgba(27,158,99,.10),transparent 60%);pointer-events:none}
@@ -262,7 +262,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .lg-choose .t{font-family:var(--serif),Georgia,serif;font-size:17px}
 .lg-choose .arr{color:var(--gold-soft);font-size:18px}
 .lg-hide{display:none}
-</style>
+.langtog{position:relative;display:inline-block;font-family:var(--mono)}.langtog>summary{list-style:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:11px;letter-spacing:.05em;color:var(--text2);cursor:pointer;white-space:nowrap;transition:.2s;background:#fff}.langtog>summary::-webkit-details-marker{display:none}.langtog>summary:hover{color:var(--text);border-color:var(--text3)}.langtog>summary .chev{font-size:8px;opacity:.6;transition:.2s}.langtog[open]>summary .chev{transform:rotate(180deg)}.langtog .menu{position:absolute;top:calc(100% + 6px);right:0;min-width:158px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;z-index:90;box-shadow:0 10px 30px rgba(0,0,0,.13)}html[dir=rtl] .langtog .menu{right:auto;left:0}.langtog .menu a{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:12.5px;color:var(--text2);text-decoration:none;white-space:nowrap;transition:.15s}.langtog .menu a:hover{background:var(--ink)}.langtog .menu a.on{background:var(--gold);color:#fff}.langtog .menu a .flag{font-size:15px;line-height:1}</style>
 <link href="https://misterridegroup.com/guide-car-with-driver-cost.ar.html" rel="canonical"/>
 <link href="https://misterridegroup.com/guide-car-with-driver-cost.html" hreflang="en" rel="alternate"/>
 <link href="https://misterridegroup.com/guide-car-with-driver-cost.ru.html" hreflang="ru" rel="alternate"/>
@@ -297,7 +297,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 </div>
 <div class="tb-right">
 <a data-i18n="tb_care" href="/#contact">Customer Care</a>
-<div class="langtog"><button data-l="en" onclick="setLang('en')">EN</button><button data-l="ru" onclick="setLang('ru')">RU</button></div>
+<details class="langtog"><summary><span class="flag">🇦🇪</span><span>العربية</span><span class="chev">▼</span></summary><div class="menu"><a href="/guide-car-with-driver-cost.html" hreflang="en" lang="en"><span class="flag">🇬🇧</span><span>English</span></a><a class="on" href="/guide-car-with-driver-cost.ar.html" hreflang="ar" lang="ar"><span class="flag">🇦🇪</span><span>العربية</span></a><a href="/guide-car-with-driver-cost.ru.html" hreflang="ru" lang="ru"><span class="flag">🇷🇺</span><span>Русский</span></a><a href="/guide-car-with-driver-cost.hi.html" hreflang="hi" lang="hi"><span class="flag">🇮🇳</span><span>हिन्दी</span></a><a href="/guide-car-with-driver-cost.ur.html" hreflang="ur" lang="ur"><span class="flag">🇵🇰</span><span>اردو</span></a></div></details>
 </div>
 </div></div>
 <div class="nav-in">
@@ -386,107 +386,42 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 </div>
 </footer>
 <script>
-var I18N_RU={
- chat_sub:"На связи · отвечаем быстро",
- chat_greet:"Здравствуйте 👋 Чем помочь? Напишите нам в WhatsApp — ответим сразу.",
- chat_btn:"Написать в WhatsApp",
-
- tb_lim:"Лимузин",
- tb_rent:"Аренда",
- tb_tour:"Туризм",tb_guide:"Гид",
+var I18N_AR={
+ chat_sub:"متصل · نردّ بسرعة",
+ chat_greet:"مرحبًا 👋 كيف نساعدك؟ راسلنا على واتساب — نردّ فورًا.",
+ chat_btn:"راسلنا على واتساب",
+ tb_lim:"ليموزين",
+ tb_rent:"تأجير",
+ tb_tour:"سياحة",
+ tb_guide:"دليل",
  tb_crm:"Ride CRM",
- tb_inv:"Инвестиции",
- tb_care:"Поддержка",
- n_comp:"Компании",
- n_inv:"Инвесторам",
- n_contact:"Контакты",
- n_login:"Вход",
+ tb_inv:"استثمار",
+ tb_care:"الدعم",
+ n_comp:"الشركات",
+ n_inv:"للمستثمرين",
+ n_contact:"اتصل بنا",
+ n_login:"دخول",
  lm1t:"Ride CRM",
- lm1s:"Управление парком",
- lm2t:"Кабинет инвестора",
- lm2s:"Отчёты и программы",
- lm3t:"Вход для сотрудников",
- lm3s:"Для сотрудников",
-
- bf_about:"Группа компаний из Дубая с опытом 10+ лет в премиум-перевозках — лимузин, аренда авто, туризм, технологии для автопарков и инвестиции.",
- bf_comp:"Компании",
- bf_lim:"Лимузин",
- bf_rent:"Аренда авто",
- bf_tour:"Туризм",
+ lm1s:"إدارة الأسطول",
+ lm2t:"بوابة المستثمر",
+ lm2s:"التقارير والبرامج",
+ lm3t:"دخول الموظفين",
+ lm3s:"للموظفين",
+ bf_about:"مجموعة شركات في دبي بخبرة تزيد عن 10 سنوات في التنقل الفاخر — ليموزين، تأجير سيارات، سياحة، تقنية الأساطيل، واستثمار.",
+ bf_comp:"الشركات",
+ bf_lim:"ليموزين",
+ bf_rent:"تأجير سيارات",
+ bf_tour:"سياحة",
  bf_crm:"Ride CRM",
- bf_inv:"Инвестиции",
- bf_group:"Группа",
- bf_about2:"О нас",
- bf_invrel:"Инвесторам",
- bf_login:"Вход для сотрудников",
- bf_contactl:"Контакты",
- bf_contact:"Контакты",
- bf_addr:"White Swan Building, Дубай, ОАЭ",
- bf_rights:"Все права защищены.",
-
- n_serv:"Услуги",n_prog:"Программы",n_num:"Цифры",n_sec:"Защита",n_deck:"Запросить презентацию",
- h_eyebrow:"Инвесторам · Mister Ride Group",
- h_title:"Инвестируйте в Дубае ради пассивного дохода — <em>под защитой активов</em>.",
- h_lead:"Высокодоходная альтернатива недвижимости Дубая: пассивный доход от премиум-автопарка под защитой активов, с прозрачной отчётностью по каждой машине и доходностью выше недвижимости. Два пути: контролирующее партнёрство или владение машинами в парке.",
- h_cta1:"Запросить презентацию →",h_cta2:"Смотреть цифры",
- h_note:"Целевые/ориентировочные цифры — не гарантия. Капитал под риском.",
- tr_eye:"Опыт",tr_title:"Команда, которая уже построила это — в масштабе.",tr_sub:"Mister Ride Group переносит в Дубай десять лет управления автопарками, с собственной технологией, управляющей бизнесом от и до.",
- tr1:"лет в индустрии",tr2:"авто · 12 городов",tr3:"авто в Дубае",tr4:"машин на нашей CRM",
- mk_eye:"Парк против недвижимости",mk_title:"Доходнее, чем недвижимость Дубая.",mk_sub:"Недвижимость — стандартная инвестиция в Дубае с доходностью около 6–8% в год. Хорошо управляемый премиум-парк нацелен на заметно более высокий пассивный доход на машину — оставаясь обеспеченным реальными застрахованными активами, как и недвижимость. Если выбираете, куда вложить в Дубае ради пассивного дохода — вот как выглядят цифры.",
- faq_eye:"Вопросы",faq_title:"Пассивный доход в Дубае — частые вопросы.",
- faqq1:"Это хорошая инвестиция для пассивного дохода в Дубае?",faqa1:"Это вариант для инвесторов, которые хотят пассивный доход от реального актива. Вы финансируете машины в управляемом автопарке Дубая и получаете долю от того, что приносит каждая, с прозрачной отчётностью по каждой машине — пассивный, обеспеченный активами способ инвестировать в Дубае.",
- faqq2:"Как это соотносится с доходностью недвижимости Дубая?",faqa2:"Жилая недвижимость Дубая обычно приносит около 6–8% в год. Наша модель на машину нацелена примерно на 20% годовых, а партнёрские пакеты — выше, оставаясь обеспеченными реальными застрахованными активами, как и недвижимость. Это высокодоходная альтернатива недвижимости в Дубае.",
- faqq3:"Инвестиция обеспечена активами и надёжна?",faqa3:"Да. До полного возврата ваш капитал — это конкретные машины в вашей собственности, каждая по полному КАСКО, с остаточной стоимостью 40–60% через пять лет. Это реальные активы, которые можно оценить и при необходимости продать, чтобы вернуть капитал.",
- faqq4:"Какой минимум для старта?",faqa4:"Можно начать с финансирования одной машины или войти в партнёрский пакет от 30 авто. Точные суммы, договоры и прогнозы — в полной презентации по запросу.",
- faqq5:"Могут ли инвесторы из-за рубежа вложиться?",faqa5:"Да. Структура оформлена как компания в ОАЭ в рамках DIFC или DMCC, средства на счёте компании под контролем инвестора. Проведём вас по юридической структуре и договорам напрямую.",
- mk_r1:"Жилая недвижимость Дубая",mk_r2:"Доходность на машину (наша модель)",mk_r3:"Партнёрская модель, с масштабом и реинвестом",mk_r3v:"цель 30–50% / год",
- mk_note:"Ориентировочные диапазоны по прогнозам менеджмента. Доходность не гарантирована и зависит от загрузки, расходов и рынка.",
- pg_eye:"Два способа инвестировать",pg_title:"Два способа инвестировать в Дубае с нами.",
- p1_k:"Программа 01 · Партнёрство",p1_h:"Доля в компании",p1_p:"Путь для тех, кто мыслит крупно. Вы держите контролирующую позицию в операционной компании и забираете основную долю результата — а за каждым дирхамом стоит реальный автопарк.",
- p1_1:"<span><b>Контрольные 51%</b> — без вас стратегические решения не проходят.</span>",
- p1_2:"<span><b>Приоритет в выплатах</b> — сначала полностью возвращается ваш капитал, затем прибыль делится 50/50.</span>",
- p1_3:"<span><b>Покрытие активами</b> — за вложением стоят машины в собственности с полным КАСКО.</span>",
- p1_4:"<span><b>Растёт вместе с вами</b> — старт от 30 машин, рост до 240.</span>",
- p1_5:"<span><b>Курс на выход</b> — понятная дорога к IPO к 2030.</span>",
- p2_k:"Программа 02 · На машину",p2_h:"Владение машинами в парке",p2_p:"Для инвесторов, которым нужна понятная доходность на уровне актива. Вы финансируете конкретные машины и получаете долю от того, что приносит каждая.",
- p2_1:"<span><b>Реальное владение</b> — ваш капитал это конкретные машины, застрахованные.</span>",
- p2_2:"<span><b>~20% целевой доходности</b> на машину в год.</span>",
- p2_3:"<span><b>Остаточная стоимость</b> — 40–60% от цены через 5 лет.</span>",
- p2_4:"<span><b>Прозрачный P&L</b> — доход и расходы по каждой машине в CRM.</span>",
- p2_5:"<span><b>Первые выплаты</b> ~через 30 дней после выхода машины на линию.</span>",
- ue_eye:"Экономика на машину",ue_title:"Пример юнит-экономики.",ue_sub:"Ориентировочные цифры на машину в год после расходов — чтобы показать, как работает модель. Реальные результаты зависят от машины, загрузки и набора площадок.",
- ue1_seg:"Электро · комфорт",ue2_seg:"Электро · флагман",ue3_seg:"Премиум · большой SUV",ue4_seg:"Бизнес · флагман",ue5_seg:"Премиум · большой SUV",ue6_seg:"Бизнес-класс · гибрид",
- ue_inv:"Всего инвестиций",ue_inc:"Доход в год",ue_res:"Остаточная стоимость · 5 лет",ue_yc:"Целевая годовая доходность",
- pk_eye:"Партнёрские пакеты",pk_title:"Масштаб меняет доходность.",pk_sub:"Большие парки несут меньше расходов на единицу и быстрее реинвестируют — это поднимает целевую доходность и сокращает окупаемость.",
- pp_h:"Партнёрство: вы — главный совладелец",pp_p:"Это не доля «для галочки», а контроль над реальным бизнесом. Вы держите управляющий пакет, забираете львиную долю дохода, а ваш капитал обеспечен живым автопарком на дорогах Дубая.",
- pp_1:"<span><b>Реальная власть</b> — 51% и право вето на стратегические вопросы.</span>",
- pp_2:"<span><b>Деньги сначала вам</b> — пока не вернёте вложенное, прибыль идёт вам полностью; затем поровну.</span>",
- pp_3:"<span><b>Защита активом</b> — машины оформлены на компанию и застрахованы по КАСКО.</span>",
- pp_4:"<span><b>От 30 до 240 машин</b> — заходите в комфортном объёме и масштабируетесь.</span>",
- pk_c1:"Пакет",pk_c2:"Целевая годовая доходность",pk_c3:"Ориент. окупаемость",pk_c4:"Инвестиции",
- pk_30:"30 авто",pk_60:"60 авто",pk_90:"90 авто",pk_120:"120 авто",pk_240:"240 авто",
- pk_y3:"~3 года",pk_y3b:"~3 года",pk_y25:"~2,5 года",pk_y25b:"~2,5 года",pk_y2:"~2 года",
- pk_req:"по запросу",pk_req2:"по запросу",pk_req3:"по запросу",pk_req4:"по запросу",pk_req5:"по запросу",
- pk_note:"Цифры — оценки менеджмента, округлены. Точные суммы, договоры и прогнозы — в полной презентации по запросу.",
- se_eye:"Защита и управление",se_title:"Создано, чтобы защитить инвестора.",
- se1_h:"Юридическая структура",se1_1:"Компания в ОАЭ; регистрация в DIFC или DMCC",se1_2:"51% доли инвестора закреплены в учредительных документах",se1_3:"Средства поступают на счёт компании под контролем инвестора",se1_4:"Возможен независимый аудит (напр. PwC / Deloitte)",
- se2_h:"Защита активов",se2_1:"Капитал — машины в вашей собственности до полного возврата",se2_2:"Полное КАСКО на каждую машину",se2_3:"Остаточная стоимость 40–60% через 5 лет",se2_4:"Возможность продать машины и вернуть капитал",
- se3_h:"Опыт и контроль",se3_1:"10+ лет управления парками такси, трансферов и аренды",se3_2:"1200+ машин в управлении в 12 городах",se3_3:"Три действующие компании в Дубае",se3_4:"51% голосов — право блокировать ключевые решения",
- se4_h:"Прозрачность",se4_1:"Доступ к CRM и финансовой отчётности в реальном времени",se4_2:"Доход и расходы по каждой машине (P&L по авто)",se4_3:"Первые выплаты ~через 30 дней после выхода машины",se4_4:"Понятная ежемесячная отчётность",
- rd_eye:"Направление",rd_title:"Куда мы движемся.",
- rd1:"Рост партнёрской сети и парка в Дубае; развитие трансферов и аренды.",
- rd2:"Переход на электромобили в русле курса ОАЭ; зарядная и сервисная инфраструктура.",
- rd3y:"К 2030",rd3:"Путь к IPO и целевой капитализации группы 200 млн USD.",
- ri_eye:"Направления реинвеста",ri_title:"Не один источник дохода.",
- ri1:"Туризм и трансферы",ri2:"Аренда авто",ri3:"Сеть электрозаправок",ri4:"Лизинг физлицам",
- ri_note:"Целевые диапазоны будущих направлений реинвеста; ориентировочные и не гарантированы.",
- ct_eye:"Следующий шаг",ct_title:"Запросите полную инвестиционную презентацию.",ct_sub:"Пришлём подробную презентацию, расчёты по машинам, цены пакетов и структуру договора — и ответим на вопросы напрямую.",
- ct_wa:"Запросить в WhatsApp →",
- disc:"Дисклеймер: эта страница носит исключительно информационный характер и не является офертой или предложением приобрести какие-либо ценные бумаги, доли или финансовые инструменты, а также инвестиционной рекомендацией. Все цифры — целевые ориентиры, оценки и прогнозы менеджмента: они ориентировочны, округлены и <b>не гарантированы</b>. Прошлые и прогнозные результаты не гарантируют будущих; вложенный капитал под риском, включая риск частичной или полной потери. Доходность зависит от загрузки машин, расходов, регулирования и рынка. Полные условия, договоры и детальные финансы предоставляются по запросу; любая инвестиция оформляется отдельным письменным соглашением по праву ОАЭ. © <span id=\"yr\"></span> Mister Ride Group, Дубай, ОАЭ.",
- f_home:"Главная",f_serv:"Услуги",f_contact:"Контакты",
- cl_eye:"Калькулятор доходности",cl_title:"Оцените свою доходность.",cl_sub:"Двигайте ползунки — увидите ориентировочный прогноз. Цифры целевые, не гарантия.",
- cl_amt:"Сумма инвестиций",cl_term:"Срок",cl_1y:"1 год",cl_5y:"5 лет",cl_prog:"Целевая годовая доходность",
- cl_peryear:"Прогноз прибыли / год",cl_total:"Всего за срок",cl_plus:"Капитал + прибыль",cl_note:"Только ориентировочно. Не гарантия; капитал под риском."
+ bf_inv:"استثمار",
+ bf_group:"المجموعة",
+ bf_about2:"من نحن",
+ bf_invrel:"علاقات المستثمرين",
+ bf_login:"دخول الموظفين",
+ bf_contactl:"اتصل بنا",
+ bf_contact:"اتصل بنا",
+ bf_addr:"White Swan Building، دبي، الإمارات",
+ bf_rights:"جميع الحقوق محفوظة."
 };
 var _orig={};
 function setLang(l){
@@ -494,13 +429,13 @@ function setLang(l){
   document.querySelectorAll('[data-i18n]').forEach(function(el){
     var k=el.getAttribute('data-i18n');
     if(!(k in _orig)) _orig[k]=el.innerHTML;
-    el.innerHTML=(l==='ru'&&I18N_RU[k]!=null)?I18N_RU[k]:_orig[k];
+    el.innerHTML=(l==='ar'&&I18N_AR[k]!=null)?I18N_AR[k]:_orig[k];
   });
   try{localStorage.setItem('mrg_lang',l)}catch(e){}
 }
 (function(){
   document.querySelectorAll('[data-i18n]').forEach(function(el){_orig[el.getAttribute('data-i18n')]=el.innerHTML;});
-  var l='en';try{l=localStorage.getItem('mrg_lang')||'en'}catch(e){}
+  var l='ar';
   setLang(l);
   var y=new Date().getFullYear();
   document.querySelectorAll('#yr,#yr2').forEach(function(e){e.textContent=y;});
