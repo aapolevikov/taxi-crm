@@ -1293,7 +1293,6 @@ body.no-icons .ti-external-link::before{content:"↗"}
   <button class="ni" onclick="switchPage(&#39;reports&#39;,this)" title="Reports"><i class="ti ti-file-text"></i></button>
   <button class="ni" onclick="switchPage(&#39;carsreport&#39;,this)" title="Cars report"><i class="ti ti-clipboard-data"></i></button>
   <button class="ni" onclick="switchPage(&#39;gps&#39;,this)" title="GPS tracking"><i class="ti ti-map-2"></i></button>
-  <button class="ni" onclick="switchPage(&#39;demand&#39;,this)" title="Demand analytics"><i class="ti ti-chart-dots"></i></button>
   <button class="ni" onclick="switchPage(&#39;illegal&#39;,this)" title="Illegal trips"><i class="ti ti-alert-triangle"></i></button>
   <button class="ni" onclick="switchPage(&#39;orders&#39;,this)" title="Orders"><i class="ti ti-briefcase"></i></button>
   <button class="ni" onclick="switchPage(&#39;repairs&#39;,this)" title="RepairOrders"><i class="ti ti-tool"></i></button>
@@ -1318,7 +1317,6 @@ body.no-icons .ti-external-link::before{content:"↗"}
   <button class="ditem" onclick="switchPage(&#39;online&#39;);closeDrawer()"><i class="ti ti-map-pin"></i> <span data-i18n="online">Online</span></button>
   <button class="ditem" onclick="switchPage(&#39;reports&#39;);closeDrawer()"><i class="ti ti-file-text"></i> <span data-i18n="reports">Reports</span></button>
   <button class="ditem" onclick="switchPage(&#39;gps&#39;);closeDrawer()"><i class="ti ti-map-2"></i> <span data-i18n="gpsTracking">GPS tracking</span></button>
-  <button class="ditem" onclick="switchPage(&#39;demand&#39;);closeDrawer()"><i class="ti ti-chart-dots"></i> <span data-i18n="demandAnalytics">Demand analytics</span></button>
   <button class="ditem" onclick="switchPage(&#39;illegal&#39;);closeDrawer()"><i class="ti ti-alert-triangle"></i> <span data-i18n="illegal">Illegal trips</span></button>
   <button class="ditem" onclick="switchPage(&#39;orders&#39;);closeDrawer()"><i class="ti ti-briefcase"></i> <span data-i18n="orders">Orders</span></button>
   <button class="ditem" onclick="switchPage(&#39;repairs&#39;);closeDrawer()"><i class="ti ti-tool"></i> <span data-i18n="repairs">Repair Orders</span></button>
@@ -2934,8 +2932,6 @@ body.no-icons .ti-external-link::before{content:"↗"}
           </div>
           <button class="fin-btn" onclick="gpsLoadHistory()"><i class="ti ti-search"></i> <span data-i18n="gpsShowRoute">Show route</span></button>
           <button class="fin-btn" onclick="gpsClearTime()" title="Сбросить время — весь день" style="padding:8px 10px"><i class="ti ti-clock-off"></i></button>
-          <button class="fin-btn" onclick="document.getElementById('gpsCabmanFile').click()" title="Загрузить отчёт Cabman (Vehicle Location, CSV)" style="background:var(--gold,#1B9E63);color:#fff;border-color:transparent"><i class="ti ti-upload"></i> <span data-i18n="gpsImportCabman">Импорт Cabman CSV</span></button>
-          <input type="file" id="gpsCabmanFile" accept=".csv" style="display:none" onchange="gpsImportCabmanCsv(this)">
           <div style="flex:1"></div>
           <div id="gpsHistStats" style="font-size:12px;color:var(--text2)"></div>
         </div>
@@ -2943,51 +2939,6 @@ body.no-icons .ti-external-link::before{content:"↗"}
         <div id="gpsHistReport" style="margin-top:14px"></div>
       </div>
     </div><!-- /gps -->
-
-    <!-- ══════════════ DEMAND ANALYTICS PAGE ══════════════ -->
-    <div class="page" id="page-demand">
-      <div class="card" style="margin-bottom:14px">
-        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-          <div>
-            <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">С даты</label>
-            <input type="date" id="demFrom" style="min-width:150px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">По дату</label>
-            <input type="date" id="demTo" style="min-width:150px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">Сервис</label>
-            <select id="demSvc" style="min-width:130px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
-              <option value="">Все</option>
-              <option value="B">Bolt</option>
-              <option value="U">Uber</option>
-              <option value="Y">Yango</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">Класс машины</label>
-            <select id="demClass" style="min-width:150px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
-              <option value="">Все классы</option>
-              <option value="economy">Эконом</option>
-              <option value="comfort">Комфорт</option>
-              <option value="business">Бизнес</option>
-              <option value="premium">Премиум</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">Карта по</label>
-            <select id="demMetric" style="min-width:150px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
-              <option value="count">Числу заказов</option>
-              <option value="avg">Среднему чеку</option>
-            </select>
-          </div>
-          <button class="fin-btn" onclick="demandLoad()"><i class="ti ti-refresh"></i> Обновить</button>
-        </div>
-        <div id="demStatus" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
-      </div>
-      <div id="demandBody"></div>
-    </div><!-- /demand -->
 
     <!-- ══════════════ ILLEGAL TRIPS PAGE ══════════════ -->
     <div class="page" id="page-illegal">
@@ -4280,7 +4231,7 @@ body.no-icons .ti-external-link::before{content:"↗"}
 
 <script>
 // ── Версия сборки (бампается при каждом релизе) ──
-window.APP_VERSION = '2026-06-25.33';
+window.APP_VERSION = '2026-06-23.28';
 /* visible version badge (bottom-left) to confirm which build is loaded */
 (function(){try{var mk=function(){var b=document.createElement('div');b.textContent='v'+window.APP_VERSION;b.style.cssText='position:fixed;left:6px;bottom:4px;z-index:999999;font-size:10px;color:#8a8f98;opacity:.6;pointer-events:none;font-family:monospace';document.body.appendChild(b);};if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);}catch(_){}})();
 window.APP_BUILD = 2026060206; // целое, сравнимое: YYYYMMDDNN
@@ -4457,13 +4408,13 @@ let currentCar=null,filtered=[],driverFilter='all',sortKey='n',sortDir=1,page=1,
 function switchPage(name,sidebarBtn,bnBtn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  const titleKeys={dashboard:'dashboard',cars:'cars',drivers:'drivers',employees:'employees',online:'online',reports:'reports',carsreport:'carsReport',gps:'gpsTracking',demand:'demandAnalytics',illegal:'illegal',orders:'orders',repairs:'repairs',board:'board',settings:'settings'};
+  const titleKeys={dashboard:'dashboard',cars:'cars',drivers:'drivers',employees:'employees',online:'online',reports:'reports',carsreport:'carsReport',gps:'gpsTracking',illegal:'illegal',orders:'orders',repairs:'repairs',board:'board',settings:'settings'};
   const subKey=['reports','illegal','carsreport'].includes(name)?'pageSubReports':name==='orders'?'pageSubOffice':'dashboard';
   const tk=titleKeys[name]||name;
   document.getElementById('pageTitle').innerHTML=`<h1 data-i18n="${tk}">${t(tk)}</h1><p data-i18n="${subKey}">${t(subKey)}</p>`;
   document.querySelectorAll('.sidebar .ni').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
-  const idx={dashboard:0,cars:1,drivers:2,employees:3,online:4,reports:5,carsreport:6,gps:7,demand:8,illegal:9,orders:10,repairs:11,board:12,finance:13,settings:14};
+  const idx={dashboard:0,cars:1,drivers:2,employees:3,online:4,reports:5,carsreport:6,gps:7,illegal:8,orders:9,repairs:10,board:11,finance:12,settings:13};
   if(idx[name]!==undefined){
     document.querySelectorAll('.sidebar .ni')[idx[name]]?.classList.add('active');
     document.querySelectorAll('.bn-item')[idx[name]]?.classList.add('active');
@@ -4475,7 +4426,6 @@ function switchPage(name,sidebarBtn,bnBtn){
   if(name==='reports'){initReportsPage();}
   if(name==='carsreport'){ if(typeof initCarsReport==='function') initCarsReport(); }
   if(name==='gps'){ if(typeof initGpsPage==='function') initGpsPage(); }
-  if(name==='demand'){ if(typeof initDemandPage==='function') initDemandPage(); }
   if(name==='illegal'){initIllegalPage();}
   if(name==='orders'){initOrdersPage();}
   if(name==='repairs'){initRepairsPage();}
@@ -9393,11 +9343,9 @@ function gpsFillVehicleDropdown(){
    кластеризацией точек по радиусу + длительности (устойчиво даже если
    на парковке точки пишутся редко — длительность считается по времени). */
 var GPS_STOP_RADIUS_M = 75;        // в пределах этого радиуса считаем «стоит на месте»
-var GPS_STOP_MIN_MS   = 2*60000;   // от 2 мин — фиксируем как остановку (короче = часть движения/светофор)
-var GPS_IDLE_MAX_MS   = 15*60000;  // до 15 мин с заведённым двигателем = Idle (ожидание/светофор/пробка)
+var GPS_STOP_MIN_MS   = 5*60000;   // минимум 5 мин — иначе это светофор/пробка, не стоянка
 var GPS_LONG_MS       = 30*60000;  // «долгая» стоянка (оранжевый)
 var GPS_VLONG_MS      = 60*60000;  // «очень долгая» стоянка (красный)
-// Stopped = двигатель заглушён ИЛИ простой дольше GPS_IDLE_MAX_MS (реальная парковка/отдых)
 
 function _gpsHaversine(la1,lo1,la2,lo2){
   var Rm=6371000, toR=Math.PI/180;
@@ -9414,13 +9362,6 @@ function _gpsPTime(p){
 function _gpsPOdo(p){
   var v=(p.odo!=null)?p.odo:p.odometer; v=Number(v);
   return isFinite(v)?v:NaN;
-}
-function _gpsPState(p){
-  // двигатель вкл/выкл: поле state (bool) из истории
-  var v=(p.state!=null)?p.state:(p.engine!=null?p.engine:null);
-  if(v===true||v===1||v==='1'||v==='on'||v==='true') return true;
-  if(v===false||v===0||v==='0'||v==='off'||v==='false') return false;
-  return null; // неизвестно
 }
 function _gpsFmtDur(ms){
   var m=Math.round(ms/60000), h=Math.floor(m/60); m=m%60;
@@ -9452,25 +9393,17 @@ function _gpsBuildSegments(pts){
     while(j+1<n && _gpsHaversine(pts[i].lat,pts[i].lng,pts[j+1].lat,pts[j+1].lng)<=GPS_STOP_RADIUS_M) j++;
     var dur=pts[j].t-pts[i].t;
     if(j>i && dur>=GPS_STOP_MIN_MS){
-      var sla=0,slo=0, engineOff=false, anyKnown=false;
-      for(k=i;k<=j;k++){
-        sla+=pts[k].lat; slo+=pts[k].lng;
-        if(pts[k].st===false){ engineOff=true; }
-        if(pts[k].st!==null){ anyKnown=true; }
-      }
-      // Stopped = двигатель глушился ИЛИ простой дольше idle-порога; иначе Idle
-      var kind=(engineOff || dur>GPS_IDLE_MAX_MS) ? 'stopped' : 'idle';
-      stops.push({start:pts[i].t,end:pts[j].t,dur:dur,lat:sla/(j-i+1),lng:slo/(j-i+1),fromIdx:i,toIdx:j,kind:kind,engineOff:engineOff});
+      var sla=0,slo=0;
+      for(k=i;k<=j;k++){ sla+=pts[k].lat; slo+=pts[k].lng; }
+      stops.push({start:pts[i].t,end:pts[j].t,dur:dur,lat:sla/(j-i+1),lng:slo/(j-i+1),fromIdx:i,toIdx:j});
       i=j+1;
     } else { i++; }
   }
-  var segs=[], cur=0, s, sn=0, idn=0;
+  var segs=[], cur=0, s;
   for(s=0;s<stops.length;s++){
     var st=stops[s];
     if(st.fromIdx>cur) segs.push(_gpsMoveSeg(pts,cur,st.fromIdx));
-    // нумеруем отдельно: стоянки (stopped) и простои (idle)
-    var label = st.kind==='stopped' ? (++sn) : (++idn);
-    segs.push({type:st.kind, n:label, start:st.start, end:st.end, dur:st.dur, lat:st.lat, lng:st.lng, fromIdx:st.fromIdx, toIdx:st.toIdx, engineOff:st.engineOff});
+    segs.push({type:'stop', n:s+1, start:st.start, end:st.end, dur:st.dur, lat:st.lat, lng:st.lng, fromIdx:st.fromIdx, toIdx:st.toIdx});
     cur=st.toIdx;
   }
   if(cur<n-1) segs.push(_gpsMoveSeg(pts,cur,n-1));
@@ -9487,109 +9420,6 @@ function gpsClearTime(){
   var a=document.getElementById('gpsHistFromTime'), b=document.getElementById('gpsHistToTime');
   if(a) a.value=''; if(b) b.value='';
   gpsLoadHistory();
-}
-
-/* ── Импорт отчёта Cabman "Vehicle Location" (CSV) ──
-   Cabman экспортирует CSV в формате ReportViewer: каждая строка данных
-   начинается с повтора шапки таблицы (S.No.,Ignition,...), реальные значения
-   идут после колонки Vehicle ID. Поля: Ignition(On/Off), Reg, DateTime(Dubai),
-   Address, Speed, [empty], ind1, ind2, Lat, Lng, Odometer, DrivenBy, OverSpeed, Reason.
-   Время Dubai (UTC+4) → сохраняем в UTC ISO. Адрес берём готовый из файла. ── */
-function _gpsCsvLine(line){
-  var out=[], cur='', q=false, i, c;
-  for(i=0;i<line.length;i++){
-    c=line[i];
-    if(q){
-      if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else q=false; }
-      else cur+=c;
-    } else {
-      if(c==='"') q=true;
-      else if(c===','){ out.push(cur); cur=''; }
-      else cur+=c;
-    }
-  }
-  out.push(cur);
-  return out;
-}
-function _gpsCabmanDateToIso(s){
-  // '23-06-2026 00:05' (Dubai, UTC+4) → UTC ISO
-  var m=(s||'').trim().match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})/);
-  if(!m) return null;
-  var utcMs=Date.UTC(+m[3], +m[2]-1, +m[1], +m[4], +m[5]) - 4*3600000;
-  return new Date(utcMs).toISOString();
-}
-function _gpsParseCabmanCsv(text){
-  var lines=text.split(/\r?\n/), pts=[], veh=null, i, line, f, j, idx, ign;
-  for(i=0;i<lines.length;i++){
-    line=lines[i];
-    if(!line || line.indexOf('S.No.,Ignition,')!==0) continue;
-    f=_gpsCsvLine(line);
-    // ищем первую ячейку On/Off после позиции 12 (после Vehicle ID)
-    idx=-1;
-    for(j=12;j<f.length;j++){ if(f[j]==='On'||f[j]==='Off'){ idx=j; break; } }
-    if(idx<0) continue;
-    ign=f[idx];
-    var reg=f[idx+1], dt=f[idx+2], addr=f[idx+3], speed=f[idx+4];
-    var lat=f[idx+8], lng=f[idx+9], odo=f[idx+10], reason=f[idx+13];
-    var iso=_gpsCabmanDateToIso(dt);
-    if(!iso) continue;
-    if(!veh) veh=reg;
-    var la=parseFloat(lat), lo=parseFloat(lng);
-    if(!isFinite(la)||!isFinite(lo)) continue;
-    pts.push({ t:iso, tDev:dt, lat:la, lng:lo, speed:parseFloat(speed)||0,
-      state:(ign==='On'), odo:parseFloat(odo)||0, addr:(addr||'').trim(),
-      reason:(reason||'').trim(), src:'cabman' });
-  }
-  return { vehicle:veh, points:pts };
-}
-function gpsImportCabmanCsv(input){
-  var file=input.files && input.files[0];
-  input.value=''; // сброс, чтобы можно было повторно выбрать тот же файл
-  if(!file) return;
-  var stats=document.getElementById('gpsHistStats');
-  if(stats) stats.textContent='Чтение файла…';
-  var reader=new FileReader();
-  reader.onload=function(){
-    try{
-      var parsed=_gpsParseCabmanCsv(String(reader.result||''));
-      if(!parsed.vehicle || !parsed.points.length){
-        showToast('Не удалось распознать CSV Cabman (нет данных)');
-        if(stats) stats.textContent=''; return;
-      }
-      // дни, что есть в файле (UTC) — для авто-показа после загрузки
-      var days={}; parsed.points.forEach(function(p){ days[(p.t||'').slice(0,10)]=1; });
-      var dayList=Object.keys(days).sort();
-      // реальный диапазон загруженных данных (по времени устройства, Дубай) — для подсказки
-      var devTimes=parsed.points.map(function(p){return p.tDev||'';}).filter(Boolean).sort();
-      var loadedFromDev=devTimes.length?devTimes[0]:'', loadedToDev=devTimes.length?devTimes[devTimes.length-1]:'';
-      window._gpsLastImport={ vehicle:parsed.vehicle, fromDev:loadedFromDev, toDev:loadedToDev, count:parsed.points.length };
-      if(stats) stats.textContent='Сохранение '+parsed.points.length+' точек ('+parsed.vehicle+')…';
-      fetch(CABMAN_FN+'?action=import',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ vehicle:parsed.vehicle, points:parsed.points })
-      }).then(function(r){return r.json();}).then(function(d){
-        if(!d.ok){ showToast('Ошибка сохранения: '+(d.error||'')); if(stats) stats.textContent=''; return; }
-        showToast('Загружено: '+d.savedPoints+' точек · '+(loadedFromDev||'?')+' → '+(loadedToDev||'?'));
-        // авто-показ: ставим машину и диапазон дат из файла, строим отчёт
-        try{
-          var selV=document.getElementById('gpsHistVehicle');
-          if(selV){
-            var found=false;
-            for(var k=0;k<selV.options.length;k++){ if(selV.options[k].value===parsed.vehicle){ selV.value=parsed.vehicle; found=true; break; } }
-          }
-          var f=document.getElementById('gpsHistFrom'), t=document.getElementById('gpsHistTo');
-          if(f&&dayList.length) f.value=dayList[0];
-          if(t&&dayList.length) t.value=dayList[dayList.length-1];
-          var ft=document.getElementById('gpsHistFromTime'), tt=document.getElementById('gpsHistToTime');
-          if(ft) ft.value=''; if(tt) tt.value='';
-        }catch(e){}
-        gpsLoadHistory();
-      }).catch(function(){ showToast('Сеть: не удалось сохранить'); if(stats) stats.textContent=''; });
-    }catch(e){ showToast('Ошибка разбора файла'); if(stats) stats.textContent=''; }
-  };
-  reader.onerror=function(){ showToast('Не удалось прочитать файл'); if(stats) stats.textContent=''; };
-  reader.readAsText(file);
 }
 
 async function gpsLoadHistory(){
@@ -9613,7 +9443,7 @@ async function gpsLoadHistory(){
     var pts=[];
     raw.forEach(function(p){
       var la=Number(p.lat), lo=Number(p.lng), t=_gpsPTime(p);
-      if(isFinite(la)&&isFinite(lo)&&isFinite(t)) pts.push({lat:la,lng:lo,t:t,odo:_gpsPOdo(p),st:_gpsPState(p),addr:p.addr||'',reason:p.reason||''});
+      if(isFinite(la)&&isFinite(lo)&&isFinite(t)) pts.push({lat:la,lng:lo,t:t,odo:_gpsPOdo(p)});
     });
     pts.sort(function(a,b){return a.t-b.t;});
     // ── фильтр по времени (вводится в дубайском времени) ──
@@ -9637,402 +9467,48 @@ async function gpsLoadHistory(){
   }catch(e){ showToast('Не удалось загрузить историю'); document.getElementById('gpsHistStats').textContent=''; }
 }
 
-/* ── Обратное геокодирование (координаты → адрес) через бесплатный Nominatim.
-   Кэш в localStorage по сетке ~110 м, троттлинг ~1.1с (политика Nominatim). ── */
-var _gpsGeoMem = {};
-function _gpsGeoKey(lat,lng){ return lat.toFixed(3)+','+lng.toFixed(3); } // ~110 м
-function _gpsGeoCacheGet(key){
-  if(_gpsGeoMem[key]!=null) return _gpsGeoMem[key];
-  try{ var v=localStorage.getItem('mrride_geo:'+key); if(v!=null){ _gpsGeoMem[key]=v; return v; } }catch(_){}
-  return null;
-}
-function _gpsGeoCacheSet(key,val){
-  _gpsGeoMem[key]=val;
-  try{ localStorage.setItem('mrride_geo:'+key, val); }catch(_){}
-}
-var _gpsGeoQueue=[], _gpsGeoBusy=false;
-function _gpsGeoPump(){
-  if(_gpsGeoBusy) return; var job=_gpsGeoQueue.shift(); if(!job) return;
-  _gpsGeoBusy=true;
-  var key=_gpsGeoKey(job.lat,job.lng);
-  var cached=_gpsGeoCacheGet(key);
-  if(cached!=null){ job.cb(cached); _gpsGeoBusy=false; setTimeout(_gpsGeoPump,0); return; }
-  var url='https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+job.lat+'&lon='+job.lng+'&zoom=16&addressdetails=1';
-  fetch(url,{headers:{'Accept':'application/json'}}).then(function(r){return r.json();}).then(function(d){
-    var a=(d&&d.address)||{}, name='';
-    var road=a.road||a.pedestrian||a.neighbourhood||a.suburb||'';
-    var area=a.suburb||a.neighbourhood||a.city_district||a.city||a.town||'';
-    if(road&&area&&road!==area) name=road+', '+area;
-    else name=road||area||(d&&d.name)||'';
-    if(!name) name=job.lat.toFixed(4)+','+job.lng.toFixed(4);
-    _gpsGeoCacheSet(key,name); job.cb(name);
-  }).catch(function(){ job.cb(job.lat.toFixed(4)+','+job.lng.toFixed(4)); })
-  .then(function(){ setTimeout(function(){ _gpsGeoBusy=false; _gpsGeoPump(); }, 1100); });
-}
-function _gpsGeocode(lat,lng,cb){
-  var key=_gpsGeoKey(lat,lng), cached=_gpsGeoCacheGet(key);
-  if(cached!=null){ cb(cached); return; }
-  _gpsGeoQueue.push({lat:lat,lng:lng,cb:cb}); _gpsGeoPump();
-}
-// заполняет все плейсхолдеры адресов на странице отчёта
-function _gpsFillAddresses(jobs){
-  jobs.forEach(function(j){
-    _gpsGeocode(j.lat, j.lng, function(name){
-      var el=document.getElementById(j.id); if(el) el.textContent=name;
-    });
-  });
-}
-
-/* ── OSRM map-matching: трасса по точкам → линия по дорогам. Лучший эффект,
-   падать не должно: при ошибке/блокировке остаётся прямая линия. ── */
-function _gpsMapMatch(coords, cb){
-  // coords: [[lat,lng],...]; OSRM ждёт lng,lat и максимум ~100 точек
-  if(!coords || coords.length<2){ cb(null); return; }
-  var pts=coords;
-  if(pts.length>95){ // прорежаем равномерно
-    var step=Math.ceil(pts.length/95), out=[],i;
-    for(i=0;i<pts.length;i+=step) out.push(pts[i]);
-    if(out[out.length-1]!==pts[pts.length-1]) out.push(pts[pts.length-1]);
-    pts=out;
-  }
-  var str=pts.map(function(p){return p[1].toFixed(5)+','+p[0].toFixed(5);}).join(';');
-  var url='https://router.project-osrm.org/match/v1/driving/'+str+'?geometries=geojson&overview=full&radiuses='+pts.map(function(){return '40';}).join(';');
-  fetch(url).then(function(r){return r.json();}).then(function(d){
-    if(d&&d.matchings&&d.matchings.length&&d.matchings[0].geometry){
-      var ll=d.matchings[0].geometry.coordinates.map(function(c){return [c[1],c[0]];});
-      cb(ll);
-    } else cb(null);
-  }).catch(function(){ cb(null); });
-}
-
-// ── Аналитика заказов из приложений (Bolt/Uber/Yango) для машины за период ──
-// Извлекает «район» из текстового адреса (DUBAI,AL KARAMA,10D STREET → AL KARAMA)
-function _gpsDistrictFromAddr(addr){
-  if(!addr) return '';
-  var parts=String(addr).split(',').map(function(s){return s.trim();}).filter(Boolean);
-  if(!parts.length) return '';
-  // первая часть часто город (DUBAI / RAS AL KHAIMAH) — берём вторую как район, если есть
-  if(parts.length>=2) return parts[1];
-  return parts[0];
-}
-// Собирает заказы из приложений для водителя машины за окно [fromMs,toMs] (UTC ms)
-function _gpsAppOrdersForVehicle(vehicle, fromMs, toMs){
-  var out=[]; // {svc,from,to,startMs}
-  try{
-    var pd=String(vehicle||'').replace(/\D/g,'');
-    var list=(window.drivers||[]), drv=null, i;
-    for(i=0;i<list.length;i++){ if(String(list[i].vehicleId||'').replace(/\D/g,'')===pd){ drv=list[i]; break; } }
-    if(!drv) return out;
-    // Uber (из импортированного CSV, window.uberOrders)
-    if(drv.uberId && Array.isArray(window.uberOrders)){
-      window.uberOrders.forEach(function(o){
-        if(o.driver_uuid!==drv.uberId) return;
-        var s=Number(o.start_ms)||0, e=Number(o.end_ms)||0, t=s||e;
-        if(!t||t<fromMs||t>toMs) return;
-        out.push({svc:'U',from:o.from||'',to:o.to||'',startMs:t});
-      });
-    }
-    // Bolt (window.boltOrders)
-    if(drv.boltId && Array.isArray(window.boltOrders)){
-      window.boltOrders.forEach(function(o){
-        if(o.driver_uuid!==drv.boltId) return;
-        var t=(o.pickup_ts||o.finished_ts||o.dropoff_ts||0)*1000;
-        if(!t||t<fromMs||t>toMs) return;
-        out.push({svc:'B',from:o.from||'',to:o.to||'',startMs:t});
-      });
-    }
-  }catch(_){}
-  return out;
-}
-
-// ═══════════════════ DEMAND ANALYTICS (раздел «Аналитика спроса») ═══════════════════
-// Класс машины из бренда+модели водителя
-function _demCarClass(brand, model){
-  var s=((brand||'')+' '+(model||'')).toUpperCase();
-  if(/MAYBACH|S-?CLASS|\bS\d|EQS|ESCALADE|YUKON|GLS|LIMOUSINE/.test(s)) return 'premium';
-  if(/\b7ER\b|\b7 ?SERIES|BMW 7|EQE|E-?CLASS|\bGLE\b|\bX[567]\b|CADILLAC|GMC/.test(s)) return 'business';
-  if(/CAMRY|SONATA|PASSAT|ACCORD|C-?CLASS|\b5ER\b|\bES\b|TERAMONT|EQB|EQA/.test(s)) return 'comfort';
-  return 'economy';
-}
-var _DEM_CLASS_RU={premium:'Премиум',business:'Бизнес',comfort:'Комфорт',economy:'Эконом'};
-// Район из адреса посадки: "DUBAI,BUSINESS BAY,AL SAADA STREET" → "BUSINESS BAY"
-function _demDistrict(addr){
-  if(!addr) return '';
-  var parts=String(addr).split(',').map(function(s){return s.trim();}).filter(Boolean);
-  if(!parts.length) return '';
-  if(parts.length>=2) return parts[1];
-  return parts[0];
-}
-// строит карту driver_uuid → {name,class} по Bolt и Uber ID
-function _demDriverIndex(){
-  var idx={bolt:{},uber:{},yandex:{}};
-  (window.drivers||[]).forEach(function(d){
-    var cls=_demCarClass(d.carBrand,d.carModel);
-    var rec={name:d.name,cls:cls};
-    if(d.boltId) idx.bolt[d.boltId]=rec;
-    if(d.uberId) idx.uber[d.uberId]=rec;
-    if(d.yandexId) idx.yandex[d.yandexId]=rec;
-  });
-  return idx;
-}
-// Собираем все заказы за период в единый формат {svc,from,startMs,price,cls}
-function _demCollectOrders(fromMs, toMs){
-  var idx=_demDriverIndex(), out=[];
-  // Bolt
-  if(Array.isArray(window.boltOrders)){
-    window.boltOrders.forEach(function(o){
-      var t=(o.pickup_ts||o.finished_ts||o.dropoff_ts||0)*1000;
-      if(!t||t<fromMs||t>toMs) return;
-      var dr=idx.bolt[o.driver_uuid]||null;
-      out.push({svc:'B',from:o.from||'',startMs:t,price:Number(o.ride_price)||Number(o.net_earnings)||0,cls:dr?dr.cls:null});
-    });
-  }
-  // Uber (история в window.uberOrders; цены — в window.uberPayments по trip_uuid)
-  if(Array.isArray(window.uberOrders)){
-    var up=(window.uberPayments&&typeof window.uberPayments==='object')?window.uberPayments:{};
-    window.uberOrders.forEach(function(o){
-      var t=Number(o.start_ms)||Number(o.end_ms)||0;
-      if(!t||t<fromMs||t>toMs) return;
-      var dr=idx.uber[o.driver_uuid]||null;
-      var pr=o.trip_uuid&&up[o.trip_uuid]?Number(up[o.trip_uuid].fare):0;
-      out.push({svc:'U',from:o.from||'',startMs:t,price:pr||0,cls:dr?dr.cls:null});
-    });
-  }
-  // Yango
-  if(Array.isArray(window.yangoOrders)){
-    window.yangoOrders.forEach(function(o){
-      var t=(o.finished_ts||o.dropoff_ts||o.pickup_ts||0)*1000;
-      if(!t||t<fromMs||t>toMs) return;
-      var fromAddr=(o.address_from&&o.address_from.address)||o.from||'';
-      var dr=(o.driver_profile&&o.driver_profile.id)?idx.yandex[o.driver_profile.id]:null;
-      var pr=(typeof o.price==='number')?o.price:(o.price&&o.price.amount)||Number(o.amount)||0;
-      out.push({svc:'Y',from:fromAddr,startMs:t,price:pr||0,cls:dr?dr.cls:null});
-    });
-  }
-  return out;
-}
-function initDemandPage(){
-  var f=document.getElementById('demFrom'), t=document.getElementById('demTo');
-  if(f&&!f.value){ var d=new Date(); var s=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); f.value=s; if(t)t.value=s; }
-  demandLoad();
-}
-async function demandLoad(){
-  var from=document.getElementById('demFrom').value, to=document.getElementById('demTo').value;
-  var status=document.getElementById('demStatus'), body=document.getElementById('demandBody');
-  if(!from||!to){ if(status)status.textContent='Выберите даты.'; return; }
-  if(status) status.textContent='Загрузка заказов…';
-  // подгружаем Bolt за период (Uber/Yango уже в памяти как накопленная история)
-  try{ if(typeof loadBoltOrders==='function') await loadBoltOrders(from,to); }catch(_){}
-  // окно в UTC ms (даты в дубайском дне → UTC: начало from 00:00 Дубай, конец to 23:59 Дубай)
-  var fromMs=Date.UTC(+from.slice(0,4),+from.slice(5,7)-1,+from.slice(8,10),0,0)-4*3600000;
-  var toMs  =Date.UTC(+to.slice(0,4),  +to.slice(5,7)-1,  +to.slice(8,10),23,59)-4*3600000;
-  var orders=_demCollectOrders(fromMs,toMs);
-  // фильтры
-  var svc=document.getElementById('demSvc').value, cls=document.getElementById('demClass').value;
-  if(svc) orders=orders.filter(function(o){return o.svc===svc;});
-  if(cls) orders=orders.filter(function(o){return o.cls===cls;});
-  if(status) status.textContent='Заказов за период: '+orders.length+(orders.length<20?' · мало данных — для точной картины загрузите больше истории':'');
-  _demRender(orders, body);
-}
-function _demRender(orders, body){
-  if(!body) return;
-  if(!orders.length){ body.innerHTML='<div class="card" style="color:var(--text3)">Нет заказов за выбранный период/фильтры. Проверьте, что заказы Bolt/Uber/Yango загружены и у водителей привязаны ID.</div>'; return; }
-  var svcName={B:'Bolt',U:'Uber',Y:'Yango'};
-  var metric=document.getElementById('demMetric').value||'count';
-  // дубайский час заказа
-  function dubHour(ms){ return (new Date(ms).getUTCHours()+4)%24; }
-
-  // агрегаты по району
-  var byDist={};
-  orders.forEach(function(o){
-    var d=_demDistrict(o.from)||'(без адреса)';
-    if(!byDist[d]) byDist[d]={count:0,sum:0,priced:0,hours:{},svc:{}};
-    byDist[d].count++; if(o.price>0){byDist[d].sum+=o.price;byDist[d].priced++;}
-    var h=dubHour(o.startMs); byDist[d].hours[h]=(byDist[d].hours[h]||0)+1;
-    byDist[d].svc[o.svc]=(byDist[d].svc[o.svc]||0)+1;
-  });
-  var dists=Object.keys(byDist);
-
-  // ── 1. ГОРЯЧО СЕЙЧАС (текущий дубайский час) ──
-  var nowH=(new Date().getUTCHours()+4)%24;
-  var hotNow=dists.map(function(d){return {d:d,c:byDist[d].hours[nowH]||0};}).filter(function(x){return x.c>0;}).sort(function(a,b){return b.c-a.c;}).slice(0,5);
-  var html='';
-  html+='<div class="card" style="margin-bottom:14px">';
-  html+='<div style="font-size:13px;font-weight:700;margin-bottom:8px"><i class="ti ti-flame" style="color:#e8590c"></i> Горячо сейчас · '+('0'+nowH).slice(-2)+':00 (по историческим данным периода)</div>';
-  if(hotNow.length){
-    html+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
-    hotNow.forEach(function(x,i){
-      html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:8px 14px">'+
-        '<span style="font-size:11px;color:var(--text3)">#'+(i+1)+'</span> <b>'+escHtml(x.d)+'</b> <span style="color:#e8590c;font-weight:700">'+x.c+'</span> <span style="font-size:11px;color:var(--text3)">заказов в этот час</span></div>';
-    });
-    html+='</div>';
-  } else {
-    html+='<div style="font-size:12px;color:var(--text3)">В текущий час '+('0'+nowH).slice(-2)+':00 в данных периода заказов нет. Смотрите тепловую таблицу ниже.</div>';
-  }
-  html+='</div>';
-
-  // ── 2. ТЕПЛОВАЯ ТАБЛИЦА район × час ──
-  // сортируем районы по количеству заказов
-  var distSorted=dists.slice().sort(function(a,b){return byDist[b].count-byDist[a].count;}).slice(0,25);
-  // максимум для нормировки цвета
-  var maxCell=0;
-  distSorted.forEach(function(d){ for(var h=0;h<24;h++){
-    var v=metric==='avg'? (function(){var c=0,s=0;orders.forEach(function(o){if((_demDistrict(o.from)||'(без адреса)')===d&&dubHour(o.startMs)===h&&o.price>0){c++;s+=o.price;}});return c?s/c:0;})() : (byDist[d].hours[h]||0);
-    if(v>maxCell)maxCell=v;
-  }});
-  function cellColor(v){ if(v<=0) return 'transparent'; var a=maxCell>0?(0.12+0.78*v/maxCell):0; return 'rgba(13,158,117,'+a.toFixed(2)+')'; }
-  // предрасчёт avg по ячейкам (чтобы не гонять orders в цикле повторно слишком тяжело — район небольшой)
-  var th2='padding:4px 6px;font-size:10px;color:var(--text3);font-weight:600;text-align:center;border-bottom:1px solid var(--border)';
-  html+='<div class="card" style="margin-bottom:14px;overflow-x:auto">';
-  html+='<div style="font-size:13px;font-weight:700;margin-bottom:4px">Тепловая карта: район × час '+(metric==='avg'?'(средний чек, AED)':'(число заказов)')+'</div>';
-  html+='<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Дубайское время. Чем насыщеннее зелёный — тем '+(metric==='avg'?'выше средний чек':'больше заказов')+'.</div>';
-  html+='<table style="border-collapse:collapse;min-width:760px"><tr><th style="'+th2+';text-align:left;position:sticky;left:0;background:var(--bg)">Район</th>';
-  for(var h=0;h<24;h++){ html+='<th style="'+th2+'">'+('0'+h).slice(-2)+'</th>'; }
-  html+='<th style="'+th2+'">Σ</th></tr>';
-  distSorted.forEach(function(d){
-    html+='<tr><td style="padding:4px 6px;font-size:11px;font-weight:600;white-space:nowrap;position:sticky;left:0;background:var(--bg);border-bottom:1px solid var(--border)">'+escHtml(d)+'</td>';
-    for(var h=0;h<24;h++){
-      var cnt=byDist[d].hours[h]||0;
-      var val=cnt;
-      if(metric==='avg'){ var c=0,s=0; orders.forEach(function(o){ if((_demDistrict(o.from)||'(без адреса)')===d&&dubHour(o.startMs)===h&&o.price>0){c++;s+=o.price;} }); val=c?Math.round(s/c):0; }
-      var disp=cnt>0?(metric==='avg'?(val||''):cnt):'';
-      html+='<td title="'+escHtml(d)+' · '+('0'+h).slice(-2)+':00 · '+cnt+' заказов" style="padding:4px 2px;text-align:center;font-size:10px;border-bottom:1px solid var(--border);background:'+cellColor(val)+'">'+disp+'</td>';
-    }
-    html+='<td style="padding:4px 6px;text-align:center;font-size:11px;font-weight:700;border-bottom:1px solid var(--border)">'+byDist[d].count+'</td></tr>';
-  });
-  html+='</table></div>';
-
-  // ── 3. ТОП районов ──
-  var topD=dists.slice().sort(function(a,b){return byDist[b].count-byDist[a].count;}).slice(0,15);
-  var thx='text-align:left;padding:6px 8px;font-size:11px;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)';
-  var tdx='padding:6px 8px;font-size:12px;border-bottom:1px solid var(--border)';
-  html+='<div class="card" style="margin-bottom:14px;overflow-x:auto">';
-  html+='<div style="font-size:13px;font-weight:700;margin-bottom:8px">Топ районов по спросу</div>';
-  html+='<table style="width:100%;border-collapse:collapse"><tr><th style="'+thx+'">Район</th><th style="'+thx+'">Заказов</th><th style="'+thx+'">Ср. чек</th><th style="'+thx+'">Сервисы</th><th style="'+thx+'">Пиковые часы</th><th style="'+thx+'">Карта</th></tr>';
-  topD.forEach(function(d){
-    var o=byDist[d];
-    var avg=o.priced?Math.round(o.sum/o.priced):0;
-    var svcStr=Object.keys(o.svc).map(function(s){return (svcName[s]||s)+' '+o.svc[s];}).join(', ');
-    var hrs=Object.keys(o.hours).map(function(h){return {h:+h,c:o.hours[h]};}).sort(function(a,b){return b.c-a.c;}).slice(0,3).map(function(x){return ('0'+x.h).slice(-2)+':00';}).join(', ');
-    var mapUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(d+', Dubai');
-    html+='<tr><td style="'+tdx+'"><b>'+escHtml(d)+'</b></td><td style="'+tdx+'">'+o.count+'</td>'+
-      '<td style="'+tdx+'">'+(avg?('AED '+avg):'<span style="color:var(--text3)">—</span>')+'</td>'+
-      '<td style="'+tdx+';color:var(--text3)">'+escHtml(svcStr)+'</td>'+
-      '<td style="'+tdx+';color:var(--text3);white-space:nowrap">'+escHtml(hrs)+'</td>'+
-      '<td style="'+tdx+'"><a href="'+mapUrl+'" target="_blank" rel="noopener">↗</a></td></tr>';
-  });
-  html+='</table></div>';
-
-  // ── 4. График по часам (всего) ──
-  var byHour={}, maxH=0;
-  orders.forEach(function(o){ var h=dubHour(o.startMs); byHour[h]=(byHour[h]||0)+1; if(byHour[h]>maxH)maxH=byHour[h]; });
-  html+='<div class="card"><div style="font-size:13px;font-weight:700;margin-bottom:8px">Спрос по часам (весь период)</div>';
-  html+='<div style="display:flex;align-items:flex-end;gap:3px;height:110px">';
-  for(var h2=0;h2<24;h2++){ var c=byHour[h2]||0; var pct=maxH>0?Math.round(c/maxH*100):0;
-    html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%">'+
-      (c>0?'<div style="font-size:9px;color:var(--text3)">'+c+'</div>':'')+
-      '<div title="'+('0'+h2).slice(-2)+':00 · '+c+'" style="width:100%;background:'+(c>0?'#0d9e75':'var(--border)')+';height:'+Math.max(pct,c>0?6:2)+'%;border-radius:3px 3px 0 0;min-height:2px"></div></div>';
-  }
-  html+='</div><div style="display:flex;gap:3px;margin-top:4px">';
-  for(var h3=0;h3<24;h3++){ html+='<div style="flex:1;text-align:center;font-size:8px;color:var(--text3)">'+(h3%3===0?('0'+h3).slice(-2):'')+'</div>'; }
-  html+='</div></div>';
-
-  body.innerHTML=html;
-}
-window.initDemandPage=initDemandPage; window.demandLoad=demandLoad;
-
 function _gpsRenderHistory(pts, built, vehicle, winLabel){
   var segs=built.segs, stops=built.stops;
   var grp=L.layerGroup();
   var allLL=pts.map(function(p){return [p.lat,p.lng];});
-  // базовый трек (весь путь, бледный) — поверх него лягут дороги
-  L.polyline(allLL,{color:'#5b6470',weight:2,opacity:.3}).addTo(grp);
-  // отрезки движения — зелёным (сначала прямые, затем заменим на дороги через OSRM)
-  var moveLayers=[];
+  // базовый трек (весь путь, бледный)
+  L.polyline(allLL,{color:'#5b6470',weight:2,opacity:.35}).addTo(grp);
+  // отрезки движения — зелёным
   segs.forEach(function(sg){
     if(sg.type==='move'){
       var ll=[],k; for(k=sg.fromIdx;k<=sg.toIdx;k++) ll.push([pts[k].lat,pts[k].lng]);
-      if(ll.length>1){
-        var pl=L.polyline(ll,{color:'#0d9e75',weight:4,opacity:.9}).addTo(grp);
-        moveLayers.push({pl:pl, ll:ll});
-      }
+      if(ll.length>1) L.polyline(ll,{color:'#0d9e75',weight:4,opacity:.9}).addTo(grp);
     }
   });
-  // маркеры: stopped (нумерованные, цвет по длительности) + idle (мелкие янтарные)
-  segs.forEach(function(sg){
-    if(sg.type==='stopped'){
-      var col=_gpsStopColor(sg.dur);
-      var icon=L.divIcon({className:'gps-stop',html:'<div style="background:'+col+';color:#fff;width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.5);font:bold 11px/22px monospace;text-align:center">'+sg.n+'</div>',iconSize:[26,26],iconAnchor:[13,13]});
-      var pop='<b>Стоянка #'+sg.n+'</b><br>Простоял: '+_gpsFmtDur(sg.dur)+(sg.engineOff?' (двигатель выкл)':'')+'<br>'+_gpsFmtTime(sg.start)+' → '+_gpsFmtTime(sg.end)+'<br><a href="https://www.google.com/maps?q='+sg.lat.toFixed(6)+','+sg.lng.toFixed(6)+'" target="_blank" rel="noopener">Открыть на карте ↗</a>';
-      L.marker([sg.lat,sg.lng],{icon:icon}).bindPopup(pop).addTo(grp);
-    } else if(sg.type==='idle'){
-      L.circleMarker([sg.lat,sg.lng],{radius:5,color:'#f59f00',fillColor:'#f59f00',fillOpacity:.85,weight:1}).bindPopup('Простой (idle) · '+_gpsFmtDur(sg.dur)+'<br>'+_gpsFmtTime(sg.start)+' → '+_gpsFmtTime(sg.end)).addTo(grp);
-    }
+  // маркеры стоянок (нумерованные, цвет по длительности)
+  stops.forEach(function(st,idx){
+    var col=_gpsStopColor(st.dur);
+    var icon=L.divIcon({className:'gps-stop',html:'<div style="background:'+col+';color:#fff;width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.5);font:bold 11px/22px monospace;text-align:center">'+(idx+1)+'</div>',iconSize:[26,26],iconAnchor:[13,13]});
+    var pop='<b>Стоянка #'+(idx+1)+'</b><br>Простоял: '+_gpsFmtDur(st.dur)+'<br>'+_gpsFmtTime(st.start)+' → '+_gpsFmtTime(st.end)+'<br><a href="https://www.google.com/maps?q='+st.lat.toFixed(6)+','+st.lng.toFixed(6)+'" target="_blank" rel="noopener">Открыть на карте ↗</a>';
+    L.marker([st.lat,st.lng],{icon:icon}).bindPopup(pop).addTo(grp);
   });
   grp.addTo(_gpsHistMap);
   _gpsHistLayer=grp;
   try{ _gpsHistMap.fitBounds(allLL,{padding:[40,40]}); }catch(_){}
-  // асинхронно притягиваем линии движения к дорогам (OSRM); ошибка — остаётся прямая
-  moveLayers.forEach(function(m){
-    _gpsMapMatch(m.ll, function(road){
-      if(road && road.length>1 && _gpsHistLayer===grp){ try{ m.pl.setLatLngs(road); }catch(_){} }
-    });
-  });
 
-  // ── разбивка по состояниям ──
-  var moves=[], idles=[], parks=[];
-  segs.forEach(function(sg){
-    if(sg.type==='move') moves.push(sg);
-    else if(sg.type==='idle') idles.push(sg);
-    else if(sg.type==='stopped') parks.push(sg);
-  });
-  var sum=function(arr){ var s=0; arr.forEach(function(x){s+=x.dur;}); return s; };
-  var moveMs=sum(moves), idleMs=sum(idles), parkMs=sum(parks);
+  // ── метрики ──
   var firstT=pts[0].t, lastT=pts[pts.length-1].t, spanMs=lastT-firstT;
-  // дистанция: по GPS (хаверсин по всем точкам) и по одометру
-  var gpsDist=0,k; for(k=0;k<pts.length-1;k++) gpsDist+=_gpsHaversine(pts[k].lat,pts[k].lng,pts[k+1].lat,pts[k+1].lng);
-  gpsDist=gpsDist/1000;
-  var oA=null,oB=null; for(k=0;k<pts.length;k++){ if(isFinite(pts[k].odo)){ if(oA===null)oA=pts[k].odo; oB=pts[k].odo; } }
-  var odoDist=(oA!==null&&oB!==null&&oB>=oA)?(oB-oA):null;
-  var distKm=(odoDist!=null&&odoDist>0&&odoDist<5000)?odoDist:gpsDist;
-  var idlePctTotal=spanMs>0?Math.round((idleMs+parkMs)/spanMs*100):0, movePct=100-idlePctTotal;
-  var longestPark=null; parks.forEach(function(s){ if(!longestPark||s.dur>longestPark.dur) longestPark=s; });
-  var longestMove=null; moves.forEach(function(s){ if(!longestMove||s.dur>longestMove.dur) longestMove=s; });
-  var nLong=0; parks.forEach(function(s){ if(s.dur>=GPS_LONG_MS) nLong++; });
+  var stopMs=0; stops.forEach(function(s){stopMs+=s.dur;});
+  var moveMs=Math.max(0,spanMs-stopMs);
+  var distKm=0; segs.forEach(function(sg){ if(sg.type==='move') distKm+=sg.distKm; });
+  var oA=pts[0].odo, oB=pts[pts.length-1].odo;
+  if(isFinite(oA)&&isFinite(oB)&&oB>oA&&(oB-oA)<5000) distKm=Math.max(distKm,oB-oA);
+  var idlePct=spanMs>0?Math.round(stopMs/spanMs*100):0, movePct=100-idlePct;
+  var longest=null; stops.forEach(function(s){ if(!longest||s.dur>longest.dur) longest=s; });
+  var nLong=0; stops.forEach(function(s){ if(s.dur>=GPS_LONG_MS) nLong++; });
 
   document.getElementById('gpsHistStats').textContent=
-    _gpsFmtTime(firstT)+'–'+_gpsFmtTime(lastT)+' · поездок: '+moves.length+' · стоянок: '+parks.length+' · простой '+idlePctTotal+'%';
+    _gpsFmtTime(firstT)+'–'+_gpsFmtTime(lastT)+' · стоянок: '+stops.length+' · простой '+idlePct+'%';
 
   var rep=document.getElementById('gpsHistReport'); if(!rep) return;
   var drv=_gpsDriverFor(vehicle);
-  var geoJobs=[]; // плейсхолдеры адресов для дозагрузки (Nominatim) — только если нет готового адреса
-  // ближайшая по координатам точка с готовым адресом из Cabman
-  var _gpsNearestAddr=function(lat,lng){
-    var best='', bd=1e9;
-    for(var i=0;i<pts.length;i++){
-      if(!pts[i].addr) continue;
-      var dla=pts[i].lat-lat, dlo=pts[i].lng-lng, d=dla*dla+dlo*dlo;
-      if(d<bd){ bd=d; best=pts[i].addr; }
-    }
-    // принимаем адрес, если точка достаточно близко (~150 м)
-    return (bd<=2e-6)? best : '';
-  };
-  var addrSpan=function(lat,lng){
-    var mapUrl='https://www.google.com/maps?q='+lat.toFixed(6)+','+lng.toFixed(6);
-    var preset=_gpsNearestAddr(lat,lng);
-    if(preset){
-      var safe=String(preset).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      return '<a href="'+mapUrl+'" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none;border-bottom:1px dotted var(--text3)" title="Открыть на карте">'+safe+' <span style="color:var(--accent,#0d9e75);font-size:.9em">↗</span></a>';
-    }
-    var id='gpsaddr_'+(geoJobs.length)+'_'+Math.floor(lat*1e4)+'_'+Math.floor(lng*1e4);
-    geoJobs.push({id:id,lat:lat,lng:lng});
-    return '<a href="'+mapUrl+'" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none;border-bottom:1px dotted var(--text3)" title="Открыть на карте"><span id="'+id+'">…</span> <span style="color:var(--accent,#0d9e75);font-size:.9em">↗</span></a>';
-  };
-  var th='text-align:left;padding:6px 8px;font-size:11px;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)';
-  var td='padding:6px 8px;font-size:12px;color:var(--text);border-bottom:1px solid var(--border);vertical-align:top';
-
   var card=function(label,val,sub,accent){
-    return '<div style="flex:1;min-width:120px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px">'+
+    return '<div style="flex:1;min-width:130px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px">'+
       '<div style="font-size:11px;color:var(--text3)">'+label+'</div>'+
       '<div style="font-size:18px;font-weight:700;margin-top:2px'+(accent?(';color:'+accent):'')+'">'+val+'</div>'+
       (sub?'<div style="font-size:11px;color:var(--text3);margin-top:1px">'+sub+'</div>':'')+
@@ -10040,97 +9516,29 @@ function _gpsRenderHistory(pts, built, vehicle, winLabel){
   };
   var html='';
   html+='<div style="font-size:14px;font-weight:700;margin-bottom:8px">Отчёт за день · '+escHtml(vehicle)+(drv?' — '+escHtml(drv):'')+(winLabel?' · интервал '+winLabel:'')+'</div>';
-
-  // строка про загруженные данные: даёт понять, с какого момента догружать следующий CSV
-  try{
-    var li=window._gpsLastImport;
-    if(li && li.vehicle===vehicle && (li.fromDev||li.toDev)){
-      html+='<div style="font-size:11px;color:var(--text3);margin:-4px 0 10px;padding:6px 10px;background:var(--bg2);border:1px dashed var(--border);border-radius:8px">'+
-        '<i class="ti ti-file-import"></i> Загружено из Cabman: <b>'+escHtml(li.fromDev)+'</b> → <b>'+escHtml(li.toDev)+'</b> · '+li.count+' точек. '+
-        '<span style="color:var(--text3)">Следующий CSV грузите с момента <b>'+escHtml(li.toDev)+'</b> и позже.</span></div>';
-    }
-  }catch(_){}
-
-  // карточки-сводка
   html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">';
   html+=card('Смена', _gpsFmtTime(firstT)+'–'+_gpsFmtTime(lastT), _gpsFmtDur(spanMs)+' всего', null);
   html+=card('В движении', _gpsFmtDur(moveMs), movePct+'% времени', '#0d9e75');
-  html+=card('Простой (idle)', _gpsFmtDur(idleMs), idles.length+' раз', '#f59f00');
-  html+=card('Стоянки', _gpsFmtDur(parkMs), parks.length+' · '+(spanMs>0?Math.round(parkMs/spanMs*100):0)+'%', parkMs/Math.max(1,spanMs)>=0.6?'#e03131':null);
-  html+=card('Пробег', '~'+distKm.toFixed(1)+' км', odoDist!=null?'по одометру':'по GPS', null);
-  html+='</div>';
-
-  // Activity Summary
-  html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px">Сводка активности</div>';
-  html+='<table style="width:100%;border-collapse:collapse;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px">';
-  html+='<tr><th style="'+th+'">Активность</th><th style="'+th+'">Кол-во</th><th style="'+th+'">Всего</th><th style="'+th+'">Комментарий</th></tr>';
-  html+='<tr><td style="'+td+'"><i class="ti ti-car" style="color:#0d9e75"></i> Движение</td><td style="'+td+'">'+moves.length+'</td><td style="'+td+'">'+_gpsFmtDur(moveMs)+'</td><td style="'+td+';color:var(--text3)">поездки</td></tr>';
-  html+='<tr><td style="'+td+'"><i class="ti ti-player-pause" style="color:#f59f00"></i> Простой (idle)</td><td style="'+td+'">'+idles.length+'</td><td style="'+td+'">'+_gpsFmtDur(idleMs)+'</td><td style="'+td+';color:var(--text3)">короткие остановки 2–15 мин</td></tr>';
-  html+='<tr><td style="'+td+';border-bottom:none"><i class="ti ti-map-pin" style="color:#e03131"></i> Стоянки</td><td style="'+td+';border-bottom:none">'+parks.length+'</td><td style="'+td+';border-bottom:none">'+_gpsFmtDur(parkMs)+'</td><td style="'+td+';border-bottom:none;color:var(--text3)">&gt;15 мин или двигатель выкл</td></tr>';
-  html+='</table>';
-
-  // Movement Summary (поездки)
-  html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px"><i class="ti ti-route"></i> Поездки</div>';
-  if(moves.length){
-    html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px">';
-    html+='<tr><th style="'+th+'">#</th><th style="'+th+'">Откуда → Куда</th><th style="'+th+'">Время</th><th style="'+th+'">Км</th></tr>';
-    moves.forEach(function(sg,i){
-      var aFrom=addrSpan(pts[sg.fromIdx].lat,pts[sg.fromIdx].lng);
-      var aTo=addrSpan(pts[sg.toIdx].lat,pts[sg.toIdx].lng);
-      html+='<tr><td style="'+td+'">'+(i+1)+'</td>'+
-        '<td style="'+td+'">'+aFrom+' <span style="color:var(--text3)">→</span> '+aTo+'</td>'+
-        '<td style="'+td+';white-space:nowrap;font-family:monospace">'+_gpsFmtTime(sg.start)+'–'+_gpsFmtTime(sg.end)+'</td>'+
-        '<td style="'+td+'">'+sg.distKm.toFixed(1)+'</td></tr>';
-    });
-    html+='</table></div>';
-  } else {
-    html+='<div style="font-size:12px;color:var(--text3);margin-bottom:14px">Поездок за период не зафиксировано.</div>';
-  }
-
-  // Сверка пробега
-  html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px">Сверка пробега</div>';
-  html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.6">';
-  if(odoDist!=null){
-    html+='По одометру: '+(oA!=null?Math.round(oA):'—')+' → '+(oB!=null?Math.round(oB):'—')+' = <b>'+odoDist.toFixed(0)+' км</b><br>';
-  } else {
-    html+='Одометр недоступен за период.<br>';
-  }
-  html+='По GPS-точкам: <b>~'+gpsDist.toFixed(1)+' км</b><br>';
-  if(odoDist!=null){
-    var diff=Math.abs(odoDist-gpsDist);
-    html+='<span style="color:var(--text3)">Разница: '+diff.toFixed(1)+' км — возможны пропуски GPS или одометра.</span>';
-  }
-  html+='</div>';
-
-  // Notable durations
-  html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px"><i class="ti ti-clock"></i> Заметное</div>';
-  html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.6">';
-  if(longestPark){
-    html+='Самая долгая стоянка: <b>'+_gpsFmtDur(longestPark.dur)+'</b> ('+_gpsFmtTime(longestPark.start)+'–'+_gpsFmtTime(longestPark.end)+') · '+addrSpan(longestPark.lat,longestPark.lng)+' <a href="https://www.google.com/maps?q='+longestPark.lat.toFixed(6)+','+longestPark.lng.toFixed(6)+'" target="_blank" rel="noopener">↗</a><br>';
-  }
-  if(longestMove){
-    html+='Самая долгая поездка: <b>'+_gpsFmtDur(longestMove.dur)+'</b> ('+_gpsFmtTime(longestMove.start)+'–'+_gpsFmtTime(longestMove.end)+') · '+longestMove.distKm.toFixed(1)+' км<br>';
-  }
-  var activeWin=_gpsMostActive(moves);
-  if(activeWin) html+='Самый активный период: <b>'+activeWin+'</b>';
-  if(!longestPark&&!longestMove) html+='<span style="color:var(--text3)">Недостаточно данных.</span>';
+  html+=card('На стоянках', _gpsFmtDur(stopMs), idlePct+'% времени', idlePct>=60?'#e03131':null);
+  html+=card('Пробег', '~'+distKm.toFixed(1)+' км', '', null);
+  html+=card('Стоянок', String(stops.length), nLong+' дольше 30 мин', null);
+  html+=card('Дольше всего', longest?_gpsFmtDur(longest.dur):'—', longest?(_gpsFmtTime(longest.start)+'–'+_gpsFmtTime(longest.end)):'', longest&&longest.dur>=GPS_VLONG_MS?'#e03131':null);
   html+='</div>';
 
   // аналитика / флаги
   var flags=[];
-  if(idlePctTotal>=60) flags.push('Большую часть смены машина без движения — '+idlePctTotal+'% времени на месте.');
-  if(longestPark && longestPark.dur>=GPS_VLONG_MS) flags.push('Очень долгая стоянка '+_gpsFmtDur(longestPark.dur)+' ('+_gpsFmtTime(longestPark.start)+'–'+_gpsFmtTime(longestPark.end)+') — проверить зону: <a href="https://www.google.com/maps?q='+longestPark.lat.toFixed(6)+','+longestPark.lng.toFixed(6)+'" target="_blank" rel="noopener">на карте ↗</a>.');
+  if(idlePct>=60) flags.push('Большую часть смены машина без движения — '+idlePct+'% времени на месте.');
+  if(longest && longest.dur>=GPS_VLONG_MS) flags.push('Самая долгая стоянка '+_gpsFmtDur(longest.dur)+' ('+_gpsFmtTime(longest.start)+'–'+_gpsFmtTime(longest.end)+') — проверить зону: <a href="https://www.google.com/maps?q='+longest.lat.toFixed(6)+','+longest.lng.toFixed(6)+'" target="_blank" rel="noopener">на карте ↗</a>.');
   if(nLong>=3) flags.push(nLong+' стоянок дольше 30 минут за смену.');
   if(distKm<30 && spanMs>=4*3600000) flags.push('Малый пробег — всего ~'+distKm.toFixed(1)+' км за '+_gpsFmtDur(spanMs)+' активности.');
-  if(idles.length>=10) flags.push('Много коротких простоев ('+idles.length+') — частые остановки/ожидания.');
   if(!flags.length) flags.push('Явных аномалий не видно: движение и стоянки в пределах нормы.');
-  html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px">';
+  html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px">';
   html+='<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px"><i class="ti ti-alert-triangle"></i> Аналитика</div>';
   flags.forEach(function(f){ html+='<div style="font-size:12px;color:var(--text2);margin:3px 0;line-height:1.45">• '+f+'</div>'; });
   html+='</div>';
 
   // таймлайн смены
-  html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:6px">Таймлайн смены</div>';
+  html+='<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">Таймлайн смены</div>';
   html+='<div style="display:flex;flex-direction:column;gap:4px">';
   segs.forEach(function(sg){
     if(sg.type==='move'){
@@ -10141,120 +9549,19 @@ function _gpsRenderHistory(pts, built, vehicle, winLabel){
         '<span style="flex:1"></span>'+
         '<span style="font-size:11px;color:var(--text3)">'+_gpsFmtDur(sg.dur)+'</span>'+
       '</div>';
-    } else if(sg.type==='idle'){
-      html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-left:3px solid #f59f00;border-radius:8px">'+
-        '<span style="font:600 11px monospace;color:var(--text3);min-width:88px">'+_gpsFmtTime(sg.start)+'–'+_gpsFmtTime(sg.end)+'</span>'+
-        '<i class="ti ti-player-pause" style="color:#f59f00"></i>'+
-        '<span style="font-size:12px;color:var(--text)">Простой · '+_gpsFmtDur(sg.dur)+'</span>'+
-      '</div>';
     } else {
       var col=_gpsStopColor(sg.dur);
       html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-left:3px solid '+col+';border-radius:8px">'+
         '<span style="font:600 11px monospace;color:var(--text3);min-width:88px">'+_gpsFmtTime(sg.start)+'–'+_gpsFmtTime(sg.end)+'</span>'+
         '<span style="background:'+col+';color:#fff;width:18px;height:18px;border-radius:50%;font:bold 10px/18px monospace;text-align:center;flex-shrink:0">'+sg.n+'</span>'+
-        '<span style="font-size:12px;color:var(--text)">Стоянка · '+_gpsFmtDur(sg.dur)+(sg.engineOff?' · двигатель выкл':'')+'</span>'+
+        '<span style="font-size:12px;color:var(--text)">Стоянка · простоял '+_gpsFmtDur(sg.dur)+'</span>'+
         '<span style="flex:1"></span>'+
         '<a href="https://www.google.com/maps?q='+sg.lat.toFixed(6)+','+sg.lng.toFixed(6)+'" target="_blank" rel="noopener" style="font-size:11px">на карте ↗</a>'+
       '</div>';
     }
   });
   html+='</div>';
-
-  // ── Аналитика заказов из приложений (Bolt/Uber) — районы и часы ──
-  (function(){
-    var appOrders=_gpsAppOrdersForVehicle(vehicle, firstT, lastT);
-    if(!appOrders.length){
-      html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px"><i class="ti ti-map-pin"></i> Заказы в приложениях (районы и часы)</div>';
-      html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text3)">Нет данных по заказам из приложений за этот период. Чтобы появилось: у водителя машины должен быть привязан Bolt/Uber ID, а заказы Bolt/Uber — загружены за эту дату.</div>';
-      return;
-    }
-    appOrders.sort(function(a,b){return a.startMs-b.startMs;});
-    var svcName={U:'Uber',B:'Bolt',Y:'Yango'};
-
-    // 1) районы посадки: район → {count, services, hours[]}
-    var byDist={};
-    appOrders.forEach(function(o){
-      var d=_gpsDistrictFromAddr(o.from)||'(без адреса)';
-      if(!byDist[d]) byDist[d]={count:0,svc:{},hours:{},sample:o.from};
-      byDist[d].count++;
-      byDist[d].svc[o.svc]=(byDist[d].svc[o.svc]||0)+1;
-      var h=new Date(o.startMs); var hh=(h.getUTCHours()+4)%24; // Дубай = UTC+4
-      byDist[d].hours[hh]=(byDist[d].hours[hh]||0)+1;
-    });
-    var distRows=Object.keys(byDist).map(function(k){return {name:k,d:byDist[k]};});
-    distRows.sort(function(a,b){return b.d.count-a.d.count;});
-
-    html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px"><i class="ti ti-map-pin"></i> Заказы в приложениях · районы посадки <span style="font-weight:400;color:var(--text3)">('+appOrders.length+' заказов)</span></div>';
-    html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px">';
-    html+='<tr><th style="'+th+'">Район</th><th style="'+th+'">Заказов</th><th style="'+th+'">Сервисы</th><th style="'+th+'">Часы (пик)</th><th style="'+th+'">Карта</th></tr>';
-    distRows.forEach(function(r){
-      var svcStr=Object.keys(r.d.svc).map(function(s){return (svcName[s]||s)+' '+r.d.svc[s];}).join(', ');
-      // топ-часы
-      var hrs=Object.keys(r.d.hours).map(function(h){return {h:+h,c:r.d.hours[h]};}).sort(function(a,b){return b.c-a.c;}).slice(0,3);
-      var hrStr=hrs.map(function(x){return ('0'+x.h).slice(-2)+':00 ('+x.c+')';}).join(', ');
-      var mapUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent((r.d.sample||r.name)+', Dubai');
-      html+='<tr><td style="'+td+'"><b>'+escHtml(r.name)+'</b></td>'+
-        '<td style="'+td+'">'+r.d.count+'</td>'+
-        '<td style="'+td+';color:var(--text3)">'+escHtml(svcStr)+'</td>'+
-        '<td style="'+td+';color:var(--text3);white-space:nowrap">'+escHtml(hrStr)+'</td>'+
-        '<td style="'+td+'"><a href="'+mapUrl+'" target="_blank" rel="noopener" style="font-size:11px">↗</a></td></tr>';
-    });
-    html+='</table></div>';
-
-    // 2) разбивка по часам (когда пик заказов)
-    var byHour={}; var maxH=0;
-    appOrders.forEach(function(o){ var hh=(new Date(o.startMs).getUTCHours()+4)%24; byHour[hh]=(byHour[hh]||0)+1; if(byHour[hh]>maxH)maxH=byHour[hh]; });
-    html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px"><i class="ti ti-clock-hour-4"></i> Заказы по часам (Дубай)</div>';
-    html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px">';
-    html+='<div style="display:flex;align-items:flex-end;gap:3px;height:90px">';
-    for(var hh=0;hh<24;hh++){
-      var c=byHour[hh]||0;
-      var pct=maxH>0?Math.round(c/maxH*100):0;
-      var barColor=c>0?'#0d9e75':'var(--border)';
-      html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%">'+
-        (c>0?'<div style="font-size:9px;color:var(--text3);margin-bottom:2px">'+c+'</div>':'')+
-        '<div title="'+('0'+hh).slice(-2)+':00 · '+c+' заказов" style="width:100%;background:'+barColor+';height:'+Math.max(pct,c>0?8:2)+'%;border-radius:3px 3px 0 0;min-height:2px"></div>'+
-      '</div>';
-    }
-    html+='</div>';
-    html+='<div style="display:flex;gap:3px;margin-top:4px">';
-    for(var hh2=0;hh2<24;hh2++){ html+='<div style="flex:1;text-align:center;font-size:8px;color:var(--text3)">'+(hh2%3===0?('0'+hh2).slice(-2):'')+'</div>'; }
-    html+='</div></div>';
-
-    // 3) список заказов с адресами и ссылками
-    html+='<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 6px"><i class="ti ti-list"></i> Поездки в приложениях</div>';
-    html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px">';
-    html+='<tr><th style="'+th+'">Время</th><th style="'+th+'">Сервис</th><th style="'+th+'">Откуда → Куда</th></tr>';
-    appOrders.forEach(function(o){
-      var tm=_gpsFmtTime(o.startMs);
-      var fromUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent((o.from||'')+', Dubai');
-      var toUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent((o.to||'')+', Dubai');
-      var fromTxt=o.from?('<a href="'+fromUrl+'" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none;border-bottom:1px dotted var(--text3)">'+escHtml(o.from)+' ↗</a>'):'<span style="color:var(--text3)">—</span>';
-      var toTxt=o.to?('<a href="'+toUrl+'" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none;border-bottom:1px dotted var(--text3)">'+escHtml(o.to)+' ↗</a>'):'<span style="color:var(--text3)">—</span>';
-      var badge=o.svc==='B'?'#34c759':(o.svc==='U'?'#000':'#f59f00');
-      html+='<tr><td style="'+td+';white-space:nowrap;font-family:monospace">'+tm+'</td>'+
-        '<td style="'+td+'"><span style="background:'+badge+';color:#fff;font-size:10px;padding:2px 6px;border-radius:4px">'+(svcName[o.svc]||o.svc)+'</span></td>'+
-        '<td style="'+td+'">'+fromTxt+' <span style="color:var(--text3)">→</span> '+toTxt+'</td></tr>';
-    });
-    html+='</table></div>';
-  })();
-
   rep.innerHTML=html;
-  // дозагрузка адресов (Nominatim, в фоне)
-  _gpsFillAddresses(geoJobs);
-}
-
-// самый активный период: 2-часовое окно с максимумом поездок
-function _gpsMostActive(moves){
-  if(!moves||moves.length<2) return null;
-  var best=null, win=2*3600000, i,j;
-  for(i=0;i<moves.length;i++){
-    var s=moves[i].start, cnt=0;
-    for(j=0;j<moves.length;j++){ if(moves[j].start>=s && moves[j].start<s+win) cnt++; }
-    if(!best||cnt>best.cnt) best={start:s,cnt:cnt};
-  }
-  if(!best||best.cnt<2) return null;
-  return _gpsFmtTime(best.start)+'–'+_gpsFmtTime(best.start+win)+' ('+best.cnt+' поездок)';
 }
 
 function aggregateDriverData(driver,dateFrom,dateTo){
@@ -11684,6 +10991,7 @@ const boardData={
     {id:'v_rabote',title:'В работе'},
     {id:'karlift',title:'Задачи Карлифт'},
     {id:'rent',title:'Задачи Рент-Кар'},
+    {id:'sayt',title:'🌐 Сайт / SEO'},
     {id:'srochnye',title:'Срочные оплаты 18 мая'},
     {id:'done',title:'✅ Выполнено'},
   ],
@@ -11730,6 +11038,15 @@ const boardData={
       {id:52,priority:'Medium',title:'Кадилак Лирик переоформ нужно 5000 к',date:'24 May',assignees:['AA'],done:false,desc:''},
       {id:53,priority:'Critical',title:'Рта контракт 59 + 129 банк гарантия.',date:'24 May',assignees:['AA'],done:false,desc:''},
       {id:54,priority:'Critical',title:'Инфинити штраф стояка',date:'24 May',assignees:['AA'],done:false,desc:''},
+    ],
+    sayt:[
+      {id:201,priority:'Critical',title:'🔴 Google Business Profile — подтвердить',date:'27 Jun',assignees:['AA'],done:false,desc:'Профиль создан, но не верифицирован. Главный источник клиентов из Google Maps по запросам limousine и трансфер Dubai. Довести верификацию (адрес/телефон).'},
+      {id:202,priority:'Medium',title:'Cookie-баннер согласия',date:'27 Jun',assignees:['AA'],done:false,desc:'На сайте установлены GA4-cookies. Добавить плашку согласия для аккуратности и посетителей из Европы.'},
+      {id:203,priority:'Medium',title:'Microsoft Clarity — установить',date:'27 Jun',assignees:['AA'],done:false,desc:'Тепловые карты и записи сессий. Создать проект на clarity.microsoft.com, прислать project ID — код вставим на все 115 страниц.'},
+      {id:204,priority:'Low',title:'GA4 — подтвердить сбор данных',date:'27 Jun',assignees:['AA'],done:false,desc:'Проверить отчёт В реальном времени в режиме инкогнито или с телефона. Расширения браузера могут блокировать тег.'},
+      {id:205,priority:'Low',title:'GSC — проверить индексацию',date:'27 Jun',assignees:['AA'],done:false,desc:'Через 3-5 дней: Search Console, раздел Индексирование, Страницы. Сколько из 115 URL попало в индекс.'},
+      {id:206,priority:'Low',title:'Яндекс — проверить регион Дубай',date:'27 Jun',assignees:['AA'],done:false,desc:'Заявка на геопривязку Дубай отправлена, проверяется до 7 дней. Убедиться в Вебмастере, что принято.'},
+      {id:207,priority:'Low',title:'Title/description под реальные запросы',date:'27 Jun',assignees:['AA'],done:false,desc:'Когда в GSC и Яндексе появятся поисковые запросы — подогнать заголовки и описания топ-страниц под реальные слова.'},
     ],
     done:[],
   }
@@ -17204,7 +16521,7 @@ document.head.appendChild(spinStyle);
 const LANGS={
 en:{flag:'🇬🇧',code:'EN',dir:'ltr',
   dashboard:'Dashboard',cars:'Cars',drivers:'Drivers',online:'Online',
-  reports:'Drivers report',carsReport:'Cars report',bestCar:'Best car',gpsTracking:'GPS tracking',gpsLive:'Live map',gpsHistory:'Route history',gpsVehicles:'Vehicles',gpsRefresh:'Refresh',gpsPickVehicle:'Vehicle',gpsFrom:'From',gpsTo:'To',gpsFromTime:'Time from',gpsToTime:'Time to',gpsShowRoute:'Show route',gpsImportCabman:'Import Cabman CSV',demandAnalytics:'Demand analytics',illegal:'Illegal trips',orders:'Orders',
+  reports:'Drivers report',carsReport:'Cars report',bestCar:'Best car',gpsTracking:'GPS tracking',gpsLive:'Live map',gpsHistory:'Route history',gpsVehicles:'Vehicles',gpsRefresh:'Refresh',gpsPickVehicle:'Vehicle',gpsFrom:'From',gpsTo:'To',gpsFromTime:'Time from',gpsToTime:'Time to',gpsShowRoute:'Show route',illegal:'Illegal trips',orders:'Orders',
   repairs:'Repair Orders',board:'Board',settings:'Settings',more:'More',
   add:'Add',save:'Save',cancel:'Cancel',edit:'Edit',delete:'Delete',deleteDriverQ:'Delete this driver?',deleteCarQ:'Delete this car?',
   export:'XLSX',back:'Back',search:'Search...',searchCar:'Search car...',searchDriver:'Driver name...',
@@ -17488,7 +16805,7 @@ en:{flag:'🇬🇧',code:'EN',dir:'ltr',
   onlineDuration:'Online duration',
 ar:{flag:'🇦🇪',code:'عر',dir:'rtl',
   dashboard:'لوحة التحكم',cars:'السيارات',drivers:'السائقون',online:'متصل',
-  reports:'تقارير',carsReport:'تقرير السيارات',bestCar:'أفضل سيارة',gpsTracking:'تتبع GPS',gpsLive:'خريطة مباشرة',gpsHistory:'سجل المسار',gpsVehicles:'المركبات',gpsRefresh:'تحديث',gpsPickVehicle:'المركبة',gpsFrom:'من',gpsTo:'إلى',gpsFromTime:'الوقت من',gpsToTime:'الوقت إلى',gpsShowRoute:'عرض المسار',gpsImportCabman:'استيراد Cabman CSV',demandAnalytics:'تحليل الطلب',illegal:'مخالفات',orders:'الطلبات',
+  reports:'تقارير',carsReport:'تقرير السيارات',bestCar:'أفضل سيارة',gpsTracking:'تتبع GPS',gpsLive:'خريطة مباشرة',gpsHistory:'سجل المسار',gpsVehicles:'المركبات',gpsRefresh:'تحديث',gpsPickVehicle:'المركبة',gpsFrom:'من',gpsTo:'إلى',gpsFromTime:'الوقت من',gpsToTime:'الوقت إلى',gpsShowRoute:'عرض المسار',illegal:'مخالفات',orders:'الطلبات',
   repairs:'الصيانة',board:'المهام',settings:'الإعدادات',more:'المزيد',
   add:'إضافة',save:'حفظ',cancel:'إلغاء',edit:'تعديل',delete:'حذف',
   export:'تصدير',back:'رجوع',search:'بحث...',searchCar:'بحث عن سيارة...',searchDriver:'اسم السائق...',
@@ -17593,7 +16910,7 @@ ar:{flag:'🇦🇪',code:'عر',dir:'rtl',
   twoDrivers:'سائقان',
 },ru:{flag:'🇷🇺',code:'RU',dir:'ltr',
   dashboard:'Дашборд',cars:'Автомобили',drivers:'Водители',online:'Онлайн',
-  reports:'Отчёт водителей',carsReport:'Отчёт по автомобилям',bestCar:'Лучшая машина',gpsTracking:'GPS-трекинг',gpsLive:'Карта онлайн',gpsHistory:'История маршрутов',gpsVehicles:'Машины',gpsRefresh:'Обновить',gpsPickVehicle:'Машина',gpsFrom:'С',gpsTo:'По',gpsFromTime:'Время с',gpsToTime:'Время по',gpsShowRoute:'Показать маршрут',gpsImportCabman:'Импорт Cabman CSV',demandAnalytics:'Аналитика спроса',illegal:'Нарушения',orders:'Заказы',
+  reports:'Отчёт водителей',carsReport:'Отчёт по автомобилям',bestCar:'Лучшая машина',gpsTracking:'GPS-трекинг',gpsLive:'Карта онлайн',gpsHistory:'История маршрутов',gpsVehicles:'Машины',gpsRefresh:'Обновить',gpsPickVehicle:'Машина',gpsFrom:'С',gpsTo:'По',gpsFromTime:'Время с',gpsToTime:'Время по',gpsShowRoute:'Показать маршрут',illegal:'Нарушения',orders:'Заказы',
   repairs:'Ремонт',board:'Доска задач',settings:'Настройки',more:'Ещё',
   add:'Добавить',save:'Сохранить',cancel:'Отмена',edit:'Изменить',delete:'Удалить',deleteDriverQ:'Удалить этого водителя?',deleteCarQ:'Удалить эту машину?',
   export:'XLSX',back:'Назад',search:'Поиск...',searchCar:'Поиск авто...',searchDriver:'Имя водителя...',
