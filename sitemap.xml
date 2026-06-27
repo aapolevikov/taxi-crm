@@ -2,10 +2,6 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://misterridegroup.com/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
     <loc>https://misterridegroup.com/carlift.html</loc>
     <priority>0.7</priority>
   </url>
@@ -20,6 +16,56 @@
   <url>
     <loc>https://misterridegroup.com/crm.html</loc>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://misterridegroup.com/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://misterridegroup.com/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://misterridegroup.com/index.ru.html"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://misterridegroup.com/index.ar.html"/>
+    <xhtml:link rel="alternate" hreflang="ur" href="https://misterridegroup.com/index.ur.html"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://misterridegroup.com/index.hi.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://misterridegroup.com/"/>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://misterridegroup.com/index.ru.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://misterridegroup.com/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://misterridegroup.com/index.ru.html"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://misterridegroup.com/index.ar.html"/>
+    <xhtml:link rel="alternate" hreflang="ur" href="https://misterridegroup.com/index.ur.html"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://misterridegroup.com/index.hi.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://misterridegroup.com/"/>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://misterridegroup.com/index.ar.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://misterridegroup.com/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://misterridegroup.com/index.ru.html"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://misterridegroup.com/index.ar.html"/>
+    <xhtml:link rel="alternate" hreflang="ur" href="https://misterridegroup.com/index.ur.html"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://misterridegroup.com/index.hi.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://misterridegroup.com/"/>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://misterridegroup.com/index.ur.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://misterridegroup.com/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://misterridegroup.com/index.ru.html"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://misterridegroup.com/index.ar.html"/>
+    <xhtml:link rel="alternate" hreflang="ur" href="https://misterridegroup.com/index.ur.html"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://misterridegroup.com/index.hi.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://misterridegroup.com/"/>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://misterridegroup.com/index.hi.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://misterridegroup.com/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://misterridegroup.com/index.ru.html"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://misterridegroup.com/index.ar.html"/>
+    <xhtml:link rel="alternate" hreflang="ur" href="https://misterridegroup.com/index.ur.html"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://misterridegroup.com/index.hi.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://misterridegroup.com/"/>
+    <priority>1.0</priority>
   </url>
   <url>
     <loc>https://misterridegroup.com/limousine.html</loc>
